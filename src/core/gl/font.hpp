@@ -14,6 +14,21 @@
 namespace gl
 {
 
+struct FontChar
+{
+	float ax = 0.0f; // advance.x
+	float ay = 0.0f; // advance.y
+
+	float bw = 0.0f; // bitmap.width;
+	float bh = 0.0f; // bitmap.rows;
+
+	float bl = 0.0f; // bitmap_left;
+	float bt = 0.0f; // bitmap_top;
+
+	float tx = 0.0f; // x offset of glyph in texture coordinates
+	float ty = 0.0f; // y offset of glyph in texture coordinates
+};
+
 class Font
 {
 public:
@@ -26,12 +41,18 @@ public:
 
 	std::unique_ptr<Source> source{nullptr};
 
+	float atlas_width = 0.0f;
+	float atlas_height = 0.0f;
+
 	FT_Face face{nullptr};
 	GLuint tex = 0;
 	GLuint vao = 0;
 	GLuint vbo = 0;
 
-	glm::vec2 position{-1.f, 1.f};
+	std::vector<FontChar> chars{};
+
+	glm::vec2 position{-1.0f, 1.0f};
+	glm::vec3 color{1.0f, 0.475f, 0.0f};
 	int fontSize = 16;
 	int lineHeight = 20;
 
