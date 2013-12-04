@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <memory>
+#include <string>
 #include <GL/glew.h>
 #include "util.hpp"
 #include "gl/types.hpp"
@@ -21,7 +22,7 @@ public:
 
 	virtual void use() {}
 	virtual void release() {}
-
+	virtual std::string name() { return "Unknown"; }
 	virtual ~Mesh() {}
 };
 
@@ -34,7 +35,7 @@ public:
 	~MeshScoper() { mesh.release(); }
 };
 
-#define SRC_MESH_USE(meshSource) src::MeshScoper UTIL_CONCAT2(meshScoper, __COUNTER__){meshSource}
+#define SRC_MESH_USE(meshSource) src::MeshScoper UTIL_CONCAT2(meshScoper, __COUNTER__)(meshSource)
 
 class Stream
 {
@@ -43,7 +44,7 @@ public:
 
 	virtual void use() {}
 	virtual void release() {}
-	virtual std::string name() { return "Unknown"; };
+	virtual std::string name() { return "Unknown"; }
 	virtual ~Stream() {}
 
 };
@@ -57,7 +58,7 @@ public:
 	~StreamScoper() { stream.release(); }
 };
 
-#define SRC_STREAM_USE(streamSource) src::StreamScoper UTIL_CONCAT2(streamScoper, __COUNTER__){streamSource}
+#define SRC_STREAM_USE(streamSource) src::StreamScoper UTIL_CONCAT2(streamScoper, __COUNTER__)(streamSource)
 
 } // src
 

@@ -77,6 +77,7 @@ void startLoop()
 void endLoop()
 {
 	glUseProgram(0);
+	gl::stats = {0, 0};
 	sys::window::swapBuffers();
 }
 

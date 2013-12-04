@@ -21,14 +21,8 @@ FT_Library ft;
 list<Font *> Font::collection{};
 gl::Program prog{};
 
-float sx = 2.0f / 1600.0f;
-float sy = 2.0f /  900.0f;
-
 void Font::reloadAll()
 {
-	sx = 2.0f / sys::window::width;
-	sy = 2.0f / sys::window::height;
-
 	for (Font *font : Font::collection)
 	{
 		try
@@ -53,9 +47,6 @@ void Font::init()
 	{
 		prog.load(src::file::stream("gl/font.frag"), src::file::stream("gl/font.vert"));
 	}
-
-	sx = 2.0f / sys::window::width;
-	sy = 2.0f / sys::window::height;
 }
 
 void Font::deinit()
@@ -118,6 +109,9 @@ void Font::reload()
 	}
 
 	FT_Set_Pixel_Sizes(face, 0, fontSize);
+
+	sx = sx ? sx : 2.0f / sys::window::width;
+	sy = sy ? sy : 2.0f / sys::window::height;
 
 	GL_CHECK(glGenVertexArrays(1, &vao));
 	GL_CHECK(glGenBuffers(1, &vbo));
@@ -265,7 +259,7 @@ void Font::render(const string &text)
 			continue;
 		}
 
-		FontChar &fc = chars[c];
+		const FontChar &fc = chars[c];
 
 		float x2 =  x + fc.bl * sx;
 		float y2 = -y - fc.bt * sy;
@@ -275,7 +269,7 @@ void Font::render(const string &text)
 		x += fc.ax * sx;
 		y += fc.ay * sy;
 
-		if( ! w || ! h)
+		if ( ! w || ! h)
 		{
 			continue;
 		}
@@ -290,6 +284,8 @@ void Font::render(const string &text)
 
 	GL_CHECK(glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * text.size() * 6, coords.get(), GL_DYNAMIC_DRAW));
 	GL_CHECK(glDrawArrays(GL_TRIANGLES, 0, n));
+
+	gl::stats.triangles += n;
 
 	glBindVertexArray(0);
 	glUseProgram(0);

@@ -44,6 +44,9 @@ public:
 	float atlas_width = 0.0f;
 	float atlas_height = 0.0f;
 
+	float sx = 0.0f;
+	float sy = 0.0f;
+
 	FT_Face face{nullptr};
 	GLuint tex = 0;
 	GLuint vao = 0;

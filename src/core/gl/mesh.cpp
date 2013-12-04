@@ -1,5 +1,6 @@
 #include "mesh.hpp"
 #include "../gl.hpp"
+#include "../sys.hpp"
 #include "../sys/fs.hpp"
 #include <iostream>
 
@@ -60,6 +61,8 @@ void Mesh::reload()
 		throw string{"gl::Mesh::reload() - empty source"};
 	}
 
+	double timer = sys::time();
+
 	SRC_MESH_USE(*source);
 
 	const auto &layouts = source->layouts;
@@ -92,6 +95,9 @@ void Mesh::reload()
 	}
 
 	GL_CHECK(glBindVertexArray(0));
+
+	clog << fixed;
+	clog << "  [" << source->name() << ":" << sys::time() - timer << "s]" << endl;
 }
 
 void Mesh::reset()
@@ -112,11 +118,13 @@ void Mesh::render()
 	for (const auto &index : indices)
 	{
 		GL_CHECK(glDrawElements(index.mode, index.count, index.type, reinterpret_cast<GLvoid *>(index.offset)));
+		gl::stats.triangles += index.count;
 	}
 
 	for (const auto &array : arrays)
 	{
 		GL_CHECK(glDrawArrays(array.mode, array.offset, array.count));
+		gl::stats.triangles += array.count;
 	}
 
 	GL_CHECK(glBindVertexArray(0));

@@ -9,6 +9,7 @@ namespace gl
 
 using namespace std;
 
+Stats stats = {0, 0};
 Status status = Status::uninited;
 
 void debugHandler(GLenum source, GLenum type, GLuint, GLenum severity, GLsizei, const GLchar *message, GLvoid *userParams)
@@ -51,17 +52,18 @@ void debugHandler(GLenum source, GLenum type, GLuint, GLenum severity, GLsizei, 
 
 void init()
 {
+	glEnable(GL_CULL_FACE);
 	// glEnable(GL_CULL_FACE);
 	// glCullFace(GL_BACK);
-	// glFrontFace(GL_CW);
+	glFrontFace(GL_CCW);
 
-	// glEnable(GL_DEPTH_TEST);
+	glEnable(GL_DEPTH_TEST);
 	// glDepthMask(GL_TRUE);
 	// glDepthFunc(GL_LEQUAL);
 	// glDepthRange(0.0, 1.0);
 	// glEnable(GL_DEPTH_CLAMP);
 
-	// glEnable(GL_BLEND);`
+	// glEnable(GL_BLEND);
 	// glEnable(GL_ALPHA_TEST);
 	// glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 

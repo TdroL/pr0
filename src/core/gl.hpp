@@ -17,6 +17,13 @@ enum Status
 	inited = 1,
 };
 
+struct Stats
+{
+	size_t triangles;
+	size_t meshes;
+};
+
+extern Stats stats;
 extern Status status;
 
 void init();

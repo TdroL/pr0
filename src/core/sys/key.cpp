@@ -31,7 +31,7 @@ bool hit(size_t key)
 {
 	if (key >= keyIsHit.size())
 	{
-		throw string{"sys::key::keyIsHit() - invalid key "} + to_string(key);
+		throw string{"sys::key::isHit() - invalid key " + to_string(key)};
 	}
 	return keyIsHit[key];
 }
@@ -40,7 +40,7 @@ bool pressed(size_t key)
 {
 	if (key >= keyIsPressed.size())
 	{
-		throw string{"sys::key::keyIsPressed() - invalid key "} + to_string(key);
+		throw string{"sys::key::isPressed() - invalid key " + to_string(key)};
 	}
 	return keyIsPressed[key];
 }
@@ -49,7 +49,7 @@ bool wasPressed(size_t key)
 {
 	if (key >= keyWasPressed.size())
 	{
-		throw string{"sys::key::keyWasPressed() - invalid key "} + to_string(key);
+		throw string{"sys::key::wasPressed() - invalid key " + to_string(key)};
 	}
 	return keyWasPressed[key];
 }

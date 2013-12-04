@@ -4,6 +4,7 @@ RM ?= rm -f
 SRCDIR = src
 VNDDIR = vendor
 BUILDDIR = tmp
+ARDIR = lib
 PROGRAM = main
 CXXFLAGS = -Wall -Winline -Wextra -std=c++11 -m64 -march=native
 CXXFLAGS_DEBUG = -g -Og -Weffc++ -Wfatal-errors -DDEBUG
@@ -77,4 +78,9 @@ clean: clean-dep
 	@$(RM) -r ./$(PROGRAM)
 	@find $(BUILDDIR) -name '*.o' -type f | xargs $(RM) -v
 
-.PHONY: all release force run clean clean-dep
+archive:
+	@echo "Creating archive..."
+	@mkdir -p $(ARDIR)
+	@ar cr $(ARDIR)/libcore.a `find $(BUILDDIR) -name '*.o' -type f`
+
+.PHONY: all release force run clean clean-dep archive

@@ -25,7 +25,7 @@ int main()
 	std::vector<char *> vc_str{"c_str1", "c_str2", "c_str3", "c_str4ext"};
 	std::vector<std::string> vstr{"str1", "str2", "str3", "str4ext"};
 
-	std::cout << "Test print (sep, new line):" << std::endl;
+	std::cout << "Test \"print\" (sep, new line):" << std::endl;
 	print "i =", i;
 	print "ui =", ui;
 	print "f =", f;
@@ -42,7 +42,7 @@ int main()
 	print "vstr =", vstr;
 
 	std::cout << "----------------------------------" << std::endl;
-	std::cout << "Test sputs (sep, no new line):" << std::endl;
+	std::cout << "Test \"sputs\" (sep, no new line):" << std::endl;
 	puts "i =", i, "\n";
 	puts "ui =", ui, "\n";
 	puts "f =", f, "\n";
@@ -59,7 +59,7 @@ int main()
 	puts "vstr =", vstr, "\n";
 
 	std::cout << "----------------------------------" << std::endl;
-	std::cout << "Test echo (no sep, no new line):" << std::endl;
+	std::cout << "Test \"echo\" (no sep, no new line):" << std::endl;
 	echo "i = ", i, "\n";
 	echo "ui = ", ui, "\n";
 	echo "f = ", f, "\n";
@@ -76,7 +76,7 @@ int main()
 	echo "vstr = ", vstr, "\n";
 
 	std::cout << "----------------------------------" << std::endl;
-	std::cout << "Test echon (no sep, new line):" << std::endl;
+	std::cout << "Test \"echon\" (no sep, new line):" << std::endl;
 	echon "i = ", i;
 	echon "ui = ", ui;
 	echon "f = ", f;
@@ -93,7 +93,7 @@ int main()
 	echon "vstr = ", vstr;
 
 	std::cout << "----------------------------------" << std::endl;
-	std::cout << "Test puts collision:" << std::endl;
+	std::cout << "Test \"puts\" collision:" << std::endl;
 	puts "puts\n";
 	puts("puts()\n");
 

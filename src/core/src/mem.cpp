@@ -9,13 +9,13 @@ using namespace std;
 namespace mem
 {
 
-Mesh::Mesh(std::vector<GLfloat> &&vertices, std::vector<GLuint> &&indices)
+Mesh::Mesh(vector<GLfloat> &&vertices, vector<GLuint> &&indices)
 {
 	setVertices(move(vertices));
 	setIndices(move(indices));
 }
 
-void Mesh::setVertices(std::vector<GLfloat> &&vertices)
+void Mesh::setVertices(vector<GLfloat> &&vertices)
 {
 	vertexCache = move(vertices);
 
@@ -24,7 +24,7 @@ void Mesh::setVertices(std::vector<GLfloat> &&vertices)
 	vertexData.usage = GL_STATIC_DRAW;
 }
 
-void Mesh::setIndices(std::vector<GLuint> &&indices, GLenum mode)
+void Mesh::setIndices(vector<GLuint> &&indices, GLenum mode)
 {
 	indexCache = move(indices);
 
@@ -37,12 +37,12 @@ void Mesh::setIndices(std::vector<GLuint> &&indices, GLenum mode)
 
 unique_ptr<src::Mesh> mesh()
 {
-	return unique_ptr<src::Mesh>{new src::mem::Mesh{}};
+	return unique_ptr<src::Mesh>{new Mesh{}};
 }
 
-unique_ptr<src::Mesh> mesh(vector<GLfloat> &&vertices, std::vector<GLuint> &&indices)
+unique_ptr<src::Mesh> mesh(vector<GLfloat> &&vertices, vector<GLuint> &&indices)
 {
-	return unique_ptr<src::Mesh>{new src::mem::Mesh{move(vertices), move(indices)}};
+	return unique_ptr<src::Mesh>{new Mesh{move(vertices), move(indices)}};
 }
 
 } // mem

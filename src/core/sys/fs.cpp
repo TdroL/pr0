@@ -29,8 +29,10 @@ string contents(const string &fileName, bool throws)
 	if (in && in.good())
 	{
 		string contents{};
-		size_t fileSize = size(in);
+		size_t fileSize = size(in) / sizeof(char);
 		contents.reserve(fileSize);
+		contents[fileSize - 1] = '\0';
+
 		contents.assign(istreambuf_iterator<char>(in), istreambuf_iterator<char>());
 
 		return contents;
@@ -52,8 +54,10 @@ vector<char> contents(const string &fileName, bool throws)
 	if (in && in.good())
 	{
 		vector<char> contents{};
-		size_t fileSize = size(in);
+		size_t fileSize = size(in) / sizeof(char);
 		contents.reserve(fileSize);
+		contents[fileSize - 1] = '\0';
+
 		contents.assign(istreambuf_iterator<char>(in), istreambuf_iterator<char>());
 
 		return contents;
