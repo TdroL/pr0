@@ -50,7 +50,7 @@ int main(int argc, char const* argv[])
 
 		sys::window::vsync(0);
 
-		GLboolean cullFace;
+		// GLboolean cullFace;
 		sys::window::switchMode(sys::window::Mode::windowed);
 		gl::init();
 
@@ -142,7 +142,7 @@ int main(int argc, char const* argv[])
 				sys::window::switchMode(modes[currentMode]);
 				cout << "done" << endl;
 
-				gl::init();
+				gl::reload();
 
 				cout << "Reloading meshes..." << endl;
 				gl::Mesh::reloadAll();
@@ -156,6 +156,7 @@ int main(int argc, char const* argv[])
 			if (sys::key::hit(KEY_ESC))
 			{
 				sys::window::close();
+				continue;
 			}
 
 			glClearColor(0.0f, 0.3125f, 1.0f, 1.0f);
@@ -216,6 +217,8 @@ int main(int argc, char const* argv[])
 				}
 			}
 		}
+
+		/**/
 	}
 	catch (const exception &e)
 	{

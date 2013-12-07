@@ -12,6 +12,7 @@ namespace window
 
 extern std::string title;
 extern GLFWwindow *handler;
+extern GLFWwindow *initial;
 extern int width;
 extern int height;
 

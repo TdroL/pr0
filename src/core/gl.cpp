@@ -52,25 +52,6 @@ void debugHandler(GLenum source, GLenum type, GLuint, GLenum severity, GLsizei, 
 
 void init()
 {
-	glEnable(GL_CULL_FACE);
-	// glEnable(GL_CULL_FACE);
-	// glCullFace(GL_BACK);
-	glFrontFace(GL_CCW);
-
-	glEnable(GL_DEPTH_TEST);
-	// glDepthMask(GL_TRUE);
-	// glDepthFunc(GL_LEQUAL);
-	// glDepthRange(0.0, 1.0);
-	// glEnable(GL_DEPTH_CLAMP);
-
-	// glEnable(GL_BLEND);
-	// glEnable(GL_ALPHA_TEST);
-	// glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	// glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
-
-	// glEnable(GL_MULTISAMPLE);
-
 	reload();
 
 	status = Status::inited;
@@ -78,6 +59,25 @@ void init()
 
 void reload()
 {
+	GL_CHECK(glEnable(GL_CULL_FACE));
+	GL_CHECK(glEnable(GL_CULL_FACE));
+	GL_CHECK(glCullFace(GL_BACK));
+	GL_CHECK(glFrontFace(GL_CCW));
+
+	GL_CHECK(glEnable(GL_DEPTH_TEST));
+	GL_CHECK(glDepthMask(GL_TRUE));
+	GL_CHECK(glDepthFunc(GL_LEQUAL));
+	GL_CHECK(glDepthRange(0.0, 1.0));
+	GL_CHECK(glEnable(GL_DEPTH_CLAMP));
+
+	GL_CHECK(glEnable(GL_BLEND));
+	GL_CHECK(glEnable(GL_ALPHA_TEST));
+	GL_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+
+	GL_CHECK(glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST));
+
+	// glEnable(GL_MULTISAMPLE);
+
 	GL_CHECK(glEnable(GL_BLEND));
 	GL_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 

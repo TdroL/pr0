@@ -4,6 +4,7 @@
 #include "sys/window.hpp"
 #include "sys/key.hpp"
 
+#include <iostream>
 #include <limits>
 #include <GLFW/glfw3.h>
 #include <GL/glew.h>
@@ -31,6 +32,8 @@ void init()
 	}
 
 	window::create(1600, 900);
+
+	cout << __FILE__ << ':' << __LINE__ << endl;
 
 	{
 		glewExperimental = GL_TRUE;

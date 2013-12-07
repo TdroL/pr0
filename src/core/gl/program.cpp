@@ -239,7 +239,7 @@ void Program::reload()
 
 void Program::reset()
 {
-	if (glIsProgram(id))
+	if (id && glIsProgram(id))
 	{
 		GL_CHECK(glDeleteProgram(id));
 	}
@@ -260,7 +260,15 @@ void Program::use()
 	GL_CHECK(glUseProgram(id));
 }
 
-UniformValue & Program::getUniform(const string &name)
+GLint Program::getName(const string &name)
+{
+	GLint location = glGetUniformLocation(id, name.c_str());
+	GL_VALIDATE(glGetUniformLocation(id, name.c_str()));
+
+	return location;
+}
+
+UniformValue & Program::getValue(const string &name)
 {
 	const auto &it = uniforms.find(name);
 
@@ -269,8 +277,7 @@ UniformValue & Program::getUniform(const string &name)
 		return it->second;
 	}
 
-	GLint location = glGetUniformLocation(id, name.c_str());
-	GL_VALIDATE(glGetUniformLocation(id, name.c_str()));
+	GLint location = getName(name);
 
 	auto &uniformValue = uniforms[name];
 	uniformValue.id = location;
@@ -278,133 +285,264 @@ UniformValue & Program::getUniform(const string &name)
 	return uniformValue;
 }
 
+void Program::var(GLint name, GLint value)
+{
+	GL_CHECK(glProgramUniform1i(id, name, value));
+}
+
+void Program::var(GLint name, GLuint value)
+{
+	GL_CHECK(glProgramUniform1ui(id, name, value));
+}
+
+void Program::var(GLint name, GLfloat value)
+{
+	GL_CHECK(glProgramUniform1f(id, name, value));
+}
+
+void Program::var(GLint name, GLfloat x, GLfloat y)
+{
+	GL_CHECK(glProgramUniform2f(id, name, x, y));
+}
+
+void Program::var(GLint name, GLfloat x, GLfloat y, GLfloat z)
+{
+	GL_CHECK(glProgramUniform3f(id, name, x, y, z));
+}
+
+void Program::var(GLint name, GLfloat x, GLfloat y, GLfloat z, GLfloat w)
+{
+	GL_CHECK(glProgramUniform4f(id, name, x, y, z, w));
+}
+
+void Program::var(GLint name, const glm::vec2 &value)
+{
+	GL_CHECK(glProgramUniform2fv(id, name, 1, glm::value_ptr(value)));
+}
+
+void Program::var(GLint name, const glm::vec3 &value)
+{
+	GL_CHECK(glProgramUniform3fv(id, name, 1, glm::value_ptr(value)));
+}
+
+void Program::var(GLint name, const glm::vec4 &value)
+{
+	GL_CHECK(glProgramUniform4fv(id, name, 1, glm::value_ptr(value)));
+}
+
+void Program::var(GLint name, const glm::mat3 &value)
+{
+	GL_CHECK(glProgramUniformMatrix3fv(id, name, 1, GL_FALSE, glm::value_ptr(value)));
+}
+
+void Program::var(GLint name, const glm::mat4 &value)
+{
+	GL_CHECK(glProgramUniformMatrix4fv(id, name, 1, GL_FALSE, glm::value_ptr(value)));
+}
+
+
+GLint Program::var(const std::string &name, GLint value)
+{
+	GLint location = getName(name);
+	var(location, value);
+	return location;
+}
+
+GLint Program::var(const std::string &name, GLuint value)
+{
+	GLint location = getName(name);
+	var(location, value);
+	return location;
+}
+
+GLint Program::var(const std::string &name, GLfloat value)
+{
+	GLint location = getName(name);
+	var(location, value);
+	return location;
+}
+
+GLint Program::var(const std::string &name, GLfloat x, GLfloat y)
+{
+	GLint location = getName(name);
+	var(location, x, y);
+	return location;
+}
+
+GLint Program::var(const std::string &name, GLfloat x, GLfloat y, GLfloat z)
+{
+	GLint location = getName(name);
+	var(location, x, y, z);
+	return location;
+}
+
+GLint Program::var(const std::string &name, GLfloat x, GLfloat y, GLfloat z, GLfloat w)
+{
+	GLint location = getName(name);
+	var(location, x, y, z, w);
+	return location;
+}
+
+GLint Program::var(const std::string &name, const glm::vec2 &value)
+{
+	GLint location = getName(name);
+	var(location, value);
+	return location;
+}
+
+GLint Program::var(const std::string &name, const glm::vec3 &value)
+{
+	GLint location = getName(name);
+	var(location, value);
+	return location;
+}
+
+GLint Program::var(const std::string &name, const glm::vec4 &value)
+{
+	GLint location = getName(name);
+	var(location, value);
+	return location;
+}
+
+GLint Program::var(const std::string &name, const glm::mat3 &value)
+{
+	GLint location = getName(name);
+	var(location, value);
+	return location;
+}
+
+GLint Program::var(const std::string &name, const glm::mat4 &value)
+{
+	GLint location = getName(name);
+	var(location, value);
+	return location;
+}
 
 GLint Program::uniform(const string &name, GLint value)
 {
-	UniformValue &uniformValue = getUniform(name);
+	UniformValue &uniformValue = getValue(name);
 	uniformValue.type = UniformValue::Type::uniform_int;
 	uniformValue.i = value;
 
-	GL_CHECK(glProgramUniform1i(id, uniformValue.id, value));
+	var(uniformValue.id, value);
 
 	return uniformValue.id;
 }
 
 GLint Program::uniform(const string &name, GLuint value)
 {
-	UniformValue &uniformValue = getUniform(name);
+	UniformValue &uniformValue = getValue(name);
 	uniformValue.type = UniformValue::Type::uniform_uint;
 	uniformValue.ui = value;
 
-	GL_CHECK(glProgramUniform1ui(id, uniformValue.id, value));
+	var(uniformValue.id, value);
 
 	return uniformValue.id;
 }
 
 GLint Program::uniform(const string &name, GLfloat value)
 {
-	UniformValue &uniformValue = getUniform(name);
+	UniformValue &uniformValue = getValue(name);
 	uniformValue.type = UniformValue::Type::uniform_float;
 	uniformValue.f = value;
 
-	GL_CHECK(glProgramUniform1f(id, uniformValue.id, value));
+	var(uniformValue.id, value);
 
 	return uniformValue.id;
 }
 
 GLint Program::uniform(const string &name, GLfloat x, GLfloat y)
 {
-	UniformValue &uniformValue = getUniform(name);
+	UniformValue &uniformValue = getValue(name);
 	uniformValue.type = UniformValue::Type::uniform_vec2;
 	uniformValue.v2.x = x;
 	uniformValue.v2.y = y;
 
-	GL_CHECK(glProgramUniform2fv(id, uniformValue.id, 1, glm::value_ptr(uniformValue.v2)));
+	var(uniformValue.id, uniformValue.v2);
 
 	return uniformValue.id;
 }
 
 GLint Program::uniform(const string &name, GLfloat x, GLfloat y, GLfloat z)
 {
-	UniformValue &uniformValue = getUniform(name);
+	UniformValue &uniformValue = getValue(name);
 	uniformValue.type = UniformValue::Type::uniform_vec3;
 	uniformValue.v3.x = x;
 	uniformValue.v3.y = y;
 	uniformValue.v3.z = z;
 
-	GL_CHECK(glProgramUniform3fv(id, uniformValue.id, 1, glm::value_ptr(uniformValue.v3)));
+	var(uniformValue.id, uniformValue.v3);
 
 	return uniformValue.id;
 }
 
 GLint Program::uniform(const string &name, GLfloat x, GLfloat y, GLfloat z, GLfloat w)
 {
-	UniformValue &uniformValue = getUniform(name);
+	UniformValue &uniformValue = getValue(name);
 	uniformValue.type = UniformValue::Type::uniform_vec4;
 	uniformValue.v4.x = x;
 	uniformValue.v4.y = y;
 	uniformValue.v4.z = z;
 	uniformValue.v4.w = w;
 
-	GL_CHECK(glProgramUniform4fv(id, uniformValue.id, 1, glm::value_ptr(uniformValue.v4)));
+	var(uniformValue.id, uniformValue.v4);
 
 	return uniformValue.id;
 }
 
 GLint Program::uniform(const string &name, const glm::vec2 &value)
 {
-	UniformValue &uniformValue = getUniform(name);
+	UniformValue &uniformValue = getValue(name);
 	uniformValue.type = UniformValue::Type::uniform_vec2;
 	uniformValue.v2 = value;
 
-	GL_CHECK(glProgramUniform2fv(id, uniformValue.id, 1, glm::value_ptr(value)));
+	var(uniformValue.id, value);
 
 	return uniformValue.id;
 }
 
 GLint Program::uniform(const string &name, const glm::vec3 &value)
 {
-	UniformValue &uniformValue = getUniform(name);
+	UniformValue &uniformValue = getValue(name);
 	uniformValue.type = UniformValue::Type::uniform_vec3;
 	uniformValue.v3 = value;
 
-	GL_CHECK(glProgramUniform3fv(id, uniformValue.id, 1, glm::value_ptr(value)));
+	var(uniformValue.id, value);
 
 	return uniformValue.id;
 }
 
 GLint Program::uniform(const string &name, const glm::vec4 &value)
 {
-	UniformValue &uniformValue = getUniform(name);
+	UniformValue &uniformValue = getValue(name);
 	uniformValue.type = UniformValue::Type::uniform_vec4;
 	uniformValue.v4 = value;
 
-	GL_CHECK(glProgramUniform4fv(id, uniformValue.id, 1, glm::value_ptr(value)));
+	var(uniformValue.id, value);
 
 	return uniformValue.id;
 }
 
 GLint Program::uniform(const string &name, const glm::mat3 &value)
 {
-	UniformValue &uniformValue = getUniform(name);
+	UniformValue &uniformValue = getValue(name);
 	uniformValue.type = UniformValue::Type::uniform_mat3;
 	uniformValue.m3 = value;
 
-	GL_CHECK(glProgramUniformMatrix3fv(id, uniformValue.id, 1, GL_FALSE, glm::value_ptr(value)));
+	var(uniformValue.id, value);
 
 	return uniformValue.id;
 }
 
 GLint Program::uniform(const string &name, const glm::mat4 &value)
 {
-	UniformValue &uniformValue = getUniform(name);
+	UniformValue &uniformValue = getValue(name);
 	uniformValue.type = UniformValue::Type::uniform_mat4;
 	uniformValue.m4 = value;
 
-	GL_CHECK(glProgramUniformMatrix4fv(id, uniformValue.id, 1, GL_FALSE, glm::value_ptr(value)));
+	var(uniformValue.id, value);
 
 	return uniformValue.id;
 }
-
 
 } // gl

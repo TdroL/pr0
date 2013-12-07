@@ -43,7 +43,32 @@ public:
 
 	void use();
 
-	UniformValue & getUniform(const std::string &name);
+	GLint getName(const std::string &name);
+	UniformValue & getValue(const std::string &name);
+
+	void var(GLint name, GLint value);
+	void var(GLint name, GLuint value);
+	void var(GLint name, GLfloat value);
+	void var(GLint name, GLfloat x, GLfloat y);
+	void var(GLint name, GLfloat x, GLfloat y, GLfloat z);
+	void var(GLint name, GLfloat x, GLfloat y, GLfloat z, GLfloat w);
+	void var(GLint name, const glm::vec2 &value);
+	void var(GLint name, const glm::vec3 &value);
+	void var(GLint name, const glm::vec4 &value);
+	void var(GLint name, const glm::mat3 &value);
+	void var(GLint name, const glm::mat4 &value);
+
+	GLint var(const std::string &name, GLint value);
+	GLint var(const std::string &name, GLuint value);
+	GLint var(const std::string &name, GLfloat value);
+	GLint var(const std::string &name, GLfloat x, GLfloat y);
+	GLint var(const std::string &name, GLfloat x, GLfloat y, GLfloat z);
+	GLint var(const std::string &name, GLfloat x, GLfloat y, GLfloat z, GLfloat w);
+	GLint var(const std::string &name, const glm::vec2 &value);
+	GLint var(const std::string &name, const glm::vec3 &value);
+	GLint var(const std::string &name, const glm::vec4 &value);
+	GLint var(const std::string &name, const glm::mat3 &value);
+	GLint var(const std::string &name, const glm::mat4 &value);
 
 	GLint uniform(const std::string &name, GLint value);
 	GLint uniform(const std::string &name, GLuint value);
