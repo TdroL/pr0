@@ -15,7 +15,7 @@ INCLUDES := $(INCLUDES) $(patsubst $(VNDDIR)/%,-I$(VNDDIR)/%,$(VENDORS))
 
 LDIR += \
 	-L/local/lib \
-	-L$(GLFW)/lib-msys \
+	-L$(GLFW)/lib-mingw \
 	-L$(GLEW)/lib \
 
 VENDORS := $(shell find $(VNDDIR) -maxdepth 3 -type d -name lib)

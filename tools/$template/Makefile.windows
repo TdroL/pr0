@@ -1,0 +1,21 @@
+BOOST := $(HOME)/lib/boost
+
+INCLUDES += \
+	-I/local/include \
+	-I$(BOOST)
+
+VENDORS := $(shell find $(VNDDIR) -maxdepth 3 -type d -name include)
+INCLUDES := $(INCLUDES) $(patsubst $(VNDDIR)/%,-I$(VNDDIR)/%,$(VENDORS))
+
+LDIR +=
+
+VENDORS := $(shell find $(VNDDIR) -maxdepth 3 -type d -name lib)
+LDIR += $(patsubst $(VNDDIR)/%,-L$(VNDDIR)/%,$(VENDORS))
+
+LFLAGS += -mwindows -mconsole
+
+ifeq ($(MAKECMDGOALS),release)
+	LFLAGS += -mconsole
+endif
+
+PROGRAM := $(PROGRAM).exe

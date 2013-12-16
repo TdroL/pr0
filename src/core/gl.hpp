@@ -28,6 +28,7 @@ extern Status status;
 
 void init();
 void reload();
+void reloadAll();
 
 std::string getEnumName(GLenum value);
 std::string getBasicInfo(std::string prefix = "");

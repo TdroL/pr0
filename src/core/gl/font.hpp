@@ -32,12 +32,11 @@ struct FontChar
 class Font
 {
 public:
-	typedef src::Stream Source;
-
 	static std::list<Font *> collection;
 	static void reloadAll();
 	static void init();
-	static void deinit();
+
+	typedef src::Stream Source;
 
 	std::unique_ptr<Source> source{nullptr};
 

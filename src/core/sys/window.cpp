@@ -14,12 +14,9 @@ GLFWwindow *handler = nullptr;
 int width = -1;
 int height = -1;
 
-void create(int width, int height)
+void resetHints()
 {
-	release();
-
-	window::width = width;
-	window::height = height;
+	glfwDefaultWindowHints();
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -27,6 +24,16 @@ void create(int width, int height)
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
 
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+}
+
+void create(int width, int height)
+{
+	release();
+
+	window::width = width;
+	window::height = height;
+
+	resetHints();
 
 	glfwWindowHint(GLFW_DECORATED, GL_TRUE);
 	glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
@@ -53,9 +60,7 @@ void release()
 
 void switchMode(Mode mode)
 {
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	resetHints();
 
 	if (mode == Mode::borderless)
 	{

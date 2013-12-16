@@ -32,7 +32,10 @@ public:
 	std::unique_ptr<Source> fragmentShader{nullptr};
 	std::unique_ptr<Source> vertexShader{nullptr};
 
+	std::string programName = "Unnamed program";
+
 	Program();
+	Program(std::string &&name);
 	~Program();
 
 	void load(const std::string &fragmentShader, const std::string &vertexShader);

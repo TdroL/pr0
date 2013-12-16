@@ -16,10 +16,13 @@ namespace gl
 
 using namespace std;
 
-FT_Library ft;
+namespace
+{
+	FT_Library ft;
+	gl::Program prog{};
+}
 
 list<Font *> Font::collection{};
-gl::Program prog{};
 
 void Font::reloadAll()
 {
@@ -45,13 +48,8 @@ void Font::init()
 
 	if ( ! prog.id)
 	{
-		prog.load(src::file::stream("gl/font.frag"), src::file::stream("gl/font.vert"));
+		prog.load("gl/font.frag", "gl/font.vert");
 	}
-}
-
-void Font::deinit()
-{
-	prog.reset();
 }
 
 Font::Font()
@@ -106,6 +104,11 @@ void Font::reload()
 	if ((err = FT_Open_Face(ft, &args, 0, &face)) != 0)
 	{
 		throw string{"gl::Font::init() - could not load font (error " + to_string(err) + ")"};
+	}
+
+	if (gl::status != gl::Status::inited)
+	{
+		throw string{"gl::Font::init() - OpenGL not initialized"};
 	}
 
 	FT_Set_Pixel_Sizes(face, 0, fontSize);
@@ -214,14 +217,24 @@ void Font::reset()
 		tex = 0;
 	}
 
-	GL_CHECK(glDeleteBuffers(1, &vbo));
-	GL_CHECK(glDeleteVertexArrays(1, &vao));
+	if (vbo)
+	{
+		GL_CHECK(glDeleteBuffers(1, &vbo));
+	}
+
+	if (vao)
+	{
+		GL_CHECK(glDeleteVertexArrays(1, &vao));
+	}
 
 	vao = vbo = 0;
 }
 
 void Font::render(const string &text)
 {
+	bool cullFace = glIsEnabled(GL_CULL_FACE);
+	GL_CHECK(glDisable(GL_CULL_FACE));
+
 	float x = position.x;
 	float y = position.y - lineHeight * sy + max(static_cast<float>(lineHeight - fontSize), 0.f) * 0.5f * sy;
 
@@ -287,8 +300,12 @@ void Font::render(const string &text)
 
 	gl::stats.triangles += n;
 
-	glBindVertexArray(0);
-	glUseProgram(0);
+	GL_CHECK(glBindVertexArray(0));
+	GL_CHECK(glUseProgram(0));
+
+	if (cullFace) {
+		GL_CHECK(glEnable(GL_CULL_FACE));
+	}
 }
 
 

@@ -5,6 +5,7 @@
 
 #include "core/cam/basic.hpp"
 #include "core/gl.hpp"
+#include "core/gl/fbo.hpp"
 #include "core/gl/font.hpp"
 #include "core/gl/mesh.hpp"
 #include "core/gl/program.hpp"
@@ -50,15 +51,15 @@ int main(int argc, char const* argv[])
 
 		sys::window::vsync(0);
 
-		GLboolean cullFace;
 		sys::window::switchMode(sys::window::Mode::windowed);
-		gl::init();
+		gl::reloadAll();
 
 		gl::Program prog{};
-		gl::Mesh dummy{};
-		gl::Mesh suzanne{};
-		gl::Mesh venus{};
+
+		gl::Mesh suzanne{"suzanne"};
+		gl::Mesh venus{"venus"};
 		gl::Font font{};
+		gl::FBO fbo{};
 
 		cam::Basic camera{glm::vec3{0.f, 0.f, 5.f}};
 
@@ -69,32 +70,16 @@ int main(int argc, char const* argv[])
 		prog.uniform("color", 1.0, 1.0, 1.0);
 
 		{
-			auto &&mesh = src::mem::mesh({
-				 1.0f,  1.0f, 0.0f,
-				 1.0f, -1.0f, 0.0f,
-				-1.0f,  1.0f, 0.0f,
-				-1.0f, -1.0f, 0.0f,
-			});
-
-			mesh->arrays.emplace_back(GL_TRIANGLE_STRIP, 0, 4);
-			mesh->layouts.emplace_back(0, 3, GL_FLOAT, 0, 0);
-
-			dummy.load(move(mesh));
+			suzanne.load(src::obj::mesh("suzanne.obj"));
 		}
 
 		{
-			auto &&mesh= src::obj::mesh("suzanne.obj");
-
-			suzanne.load(move(mesh));
-		}
-
-		{
-			auto &&mesh= src::sbm::mesh("venus.sbm");
-
-			venus.load(move(mesh));
+			venus.load(src::sbm::mesh("venus.sbm"));
 		}
 
 		font.load("DejaVu/DejaVuSansMono.ttf");
+
+		fbo.create(1);
 
 		sys::update();
 
@@ -135,6 +120,13 @@ int main(int argc, char const* argv[])
 				cout << "done" << endl;
 			}
 
+			if (sys::key::hit(KEY_F8))
+			{
+				cout << "Reloading FBOs..." << endl;
+				gl::FBO::reloadAll();
+				cout << "done" << endl;
+			}
+
 			if (sys::key::hit(KEY_F11))
 			{
 				cout << "Switching window mode..." << endl;
@@ -142,14 +134,8 @@ int main(int argc, char const* argv[])
 				sys::window::switchMode(modes[currentMode]);
 				cout << "done" << endl;
 
-				gl::init();
-
-				cout << "Reloading meshes..." << endl;
-				gl::Mesh::reloadAll();
-				cout << "done" << endl;
-
-				cout << "Reloading fonts..." << endl;
-				gl::Font::reloadAll();
+				cout << "Reloading GL..." << endl;
+				gl::reloadAll();
 				cout << "done" << endl;
 			}
 
@@ -178,18 +164,28 @@ int main(int argc, char const* argv[])
 				position_delta *= speed * sys::dt;
 			}
 
-			camera.updateRecalc(glm::vec3{0.f}, position_delta);
+			rotation_delta.y = (sys::key::pressed(KEY_LEFT) - sys::key::pressed(KEY_RIGHT));
+			rotation_delta.x = (sys::key::pressed(KEY_UP) - sys::key::pressed(KEY_DOWN));
+
+			camera.updateRecalc(rotation_delta, position_delta);
 
 			prog.use();
 			prog.uniform("P", projectionMatrix);
 			prog.uniform("V", camera.viewMatrix);
 
-			prog.uniform("M", glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{2.f, 0.f, 0.f}), static_cast<float>(90.0 * sys::time()), glm::vec3{0.f, 1.f, 0.f}));
+			{
+				GL_FBO_USE(fbo);
 
-			suzanne.render();
+				prog.uniform("M", glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{2.f, 0.f, 0.f}), static_cast<float>(90.0 * sys::time()), glm::vec3{0.f, 1.f, 0.f}));
 
-			prog.uniform("M", glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-2.f, 0.f, 0.f}), static_cast<float>(-90.0 * sys::time()), glm::vec3{0.f, 1.f, 0.f}));
-			venus.render();
+				suzanne.render();
+
+
+				prog.uniform("M", glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-2.f, 0.f, 0.f}), static_cast<float>(-90.0 * sys::time()), glm::vec3{0.f, 1.f, 0.f}));
+				venus.render();
+			}
+
+			fbo.render();
 
 			{
 				double ft = sys::time() - sys::ct;
