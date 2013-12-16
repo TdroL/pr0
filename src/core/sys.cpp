@@ -1,6 +1,7 @@
 #include "sys.hpp"
 #include "gl.hpp"
 #include "gl/font.hpp"
+#include "gl/fbo.hpp"
 #include "sys/window.hpp"
 #include "sys/key.hpp"
 
@@ -48,13 +49,13 @@ void init()
 
 	gl::Font::init();
 
+	gl::FBO::init();
+
 	key::init();
 }
 
 void deinit()
 {
-	gl::Font::deinit();
-
 	window::release();
 
 	glfwTerminate();
@@ -66,7 +67,6 @@ void update()
 	dt = t - ct;
 	ct = t;
 
-	// poll events
 	glfwPollEvents();
 
 	key::update();

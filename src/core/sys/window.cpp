@@ -14,7 +14,7 @@ GLFWwindow *handler = nullptr;
 int width = -1;
 int height = -1;
 
-void setHints()
+void resetHints()
 {
 	glfwDefaultWindowHints();
 
@@ -32,7 +32,7 @@ void create(int width, int height)
 	window::width = width;
 	window::height = height;
 
-	setHints();
+	resetHints();
 
 	glfwWindowHint(GLFW_DECORATED, GL_TRUE);
 	glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
@@ -59,7 +59,7 @@ void release()
 
 void switchMode(Mode mode)
 {
-	setHints();
+	resetHints();
 
 	if (mode == Mode::borderless)
 	{

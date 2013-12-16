@@ -1,4 +1,7 @@
 #include "gl.hpp"
+#include "gl/font.hpp"
+#include "gl/fbo.hpp"
+#include "gl/mesh.hpp"
 #include <GL/glew.h>
 #include <ranges>
 #include <sstream>
@@ -60,19 +63,16 @@ void init()
 void reload()
 {
 	GL_CHECK(glEnable(GL_CULL_FACE));
-	GL_CHECK(glEnable(GL_CULL_FACE));
 	GL_CHECK(glCullFace(GL_BACK));
 	GL_CHECK(glFrontFace(GL_CCW));
 
 	GL_CHECK(glEnable(GL_DEPTH_TEST));
+	GL_CHECK(glEnable(GL_DEPTH_CLAMP));
 	GL_CHECK(glDepthMask(GL_TRUE));
 	GL_CHECK(glDepthFunc(GL_LEQUAL));
 	GL_CHECK(glDepthRange(0.0, 1.0));
-	GL_CHECK(glEnable(GL_DEPTH_CLAMP));
 
-	GL_CHECK(glEnable(GL_BLEND));
 	GL_CHECK(glEnable(GL_ALPHA_TEST));
-	GL_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
 	GL_CHECK(glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST));
 
@@ -90,8 +90,17 @@ void reload()
 	}
 	else
 	{
-		clog << "[GL warning] ARB_debug_output not avaible" << endl;
+		clog << "gl::reload() - ARB_debug_output not avaible" << endl;
 	}
+}
+
+void reloadAll()
+{
+	reload();
+
+	gl::Mesh::reloadAll();
+	gl::Font::reloadAll();
+	gl::FBO::reloadAll();
 }
 
 string getEnumName(GLenum value)

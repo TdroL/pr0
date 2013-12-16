@@ -28,7 +28,10 @@ public:
 	std::vector<DrawIndex> indices{};
 	std::vector<DrawArray> arrays{};
 
+	std::string meshName = "Unnamed mesh";
+
 	Mesh();
+	Mesh(std::string &&name);
 	~Mesh();
 
 	void load(Source *source);

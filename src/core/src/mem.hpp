@@ -16,8 +16,13 @@ public:
 	std::vector<GLfloat> vertexCache{};
 	std::vector<GLuint> indexCache{};
 
+	std::string sourceName = "Unnamed memory mesh source";
+
 	Mesh() = default;
 	Mesh(std::vector<GLfloat> &&vertices, std::vector<GLuint> &&indices = {});
+
+	std::string name();
+	void setName(std::string &&sourceName);
 
 	void setVertices(std::vector<GLfloat> &&vertices);
 	void setIndices(std::vector<GLuint> &&indices, GLenum mode = GL_TRIANGLES);

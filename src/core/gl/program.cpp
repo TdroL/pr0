@@ -9,7 +9,8 @@ namespace gl
 
 using namespace std;
 
-std::list<Program *> Program::collection{};
+list<Program *> Program::collection{};
+
 void Program::reloadAll()
 {
 	for (Program *prog : Program::collection)
@@ -120,10 +121,14 @@ Program::Program()
 	Program::collection.push_back(this);
 }
 
+Program::Program(string &&name)
+	: Program{}
+{
+	programName = move(name);
+}
+
 Program::~Program()
 {
-	reset();
-
 	Program::collection.remove(this);
 }
 
@@ -157,12 +162,12 @@ void Program::reload()
 
 	if ( ! fragmentShader)
 	{
-		throw string{"gl::Program::reload() - missing fragment shader source"};
+		throw string{"gl::Program{" + programName + "}::reload() - missing fragment shader source"};
 	}
 
 	if ( ! vertexShader)
 	{
-		throw string{"gl::Program::reload() - missing vertex shader source"};
+		throw string{"gl::Program{" + programName + "}::reload() - missing vertex shader source"};
 	}
 
 	SRC_STREAM_USE(*fragmentShader);
@@ -177,7 +182,7 @@ void Program::reload()
 
 	if ( ! glIsProgram(id))
 	{
-		throw string{"gl::Program::reload() - could not create proper OpenGL shader program (\"" + fragmentShader->name() + "\", \"" + vertexShader->name() + "\")"};
+		throw string{"gl::Program{" + programName + "}::reload() - could not create proper OpenGL shader program (\"" + fragmentShader->name() + "\", \"" + vertexShader->name() + "\")"};
 	}
 
 	for (auto &item : uniforms)

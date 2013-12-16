@@ -15,6 +15,15 @@ Mesh::Mesh(vector<GLfloat> &&vertices, vector<GLuint> &&indices)
 	setIndices(move(indices));
 }
 
+string Mesh::name()
+{
+	return sourceName;
+}
+void Mesh::setName(string &&sourceName)
+{
+	this->sourceName = move(sourceName);
+}
+
 void Mesh::setVertices(vector<GLfloat> &&vertices)
 {
 	vertexCache = move(vertices);
@@ -28,11 +37,14 @@ void Mesh::setIndices(vector<GLuint> &&indices, GLenum mode)
 {
 	indexCache = move(indices);
 
-	indexData.size = indexCache.size() * sizeof(indexCache[0]);
-	indexData.data = indexCache.data();
-	indexData.usage = GL_STATIC_DRAW;
+	if (indexCache.size())
+	{
+		indexData.size = indexCache.size() * sizeof(indexCache[0]);
+		indexData.data = indexCache.data();
+		indexData.usage = GL_STATIC_DRAW;
 
-	this->indices.emplace_back(static_cast<GLenum>(mode), static_cast<GLsizeiptr>(indexCache.size()), static_cast<GLenum>(GL_UNSIGNED_INT), static_cast<GLsizeiptr>(0));
+		this->indices.emplace_back(static_cast<GLenum>(mode), static_cast<GLsizeiptr>(indexCache.size()), static_cast<GLenum>(GL_UNSIGNED_INT), static_cast<GLsizeiptr>(0));
+	}
 }
 
 unique_ptr<src::Mesh> mesh()

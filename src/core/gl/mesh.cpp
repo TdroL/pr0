@@ -30,6 +30,12 @@ Mesh::Mesh()
 	Mesh::collection.push_back(this);
 }
 
+Mesh::Mesh(string &&name)
+	: Mesh{}
+{
+	meshName = move(name);
+}
+
 Mesh::~Mesh()
 {
 	Mesh::collection.remove(this);
@@ -44,7 +50,7 @@ void Mesh::load(unique_ptr<Source> &&source)
 {
 	if ( ! gl::status)
 	{
-		throw string{"gl::Mesh::load() - OpenGL not initialized"};
+		throw string{"gl::Mesh{" + meshName + "}::load() - OpenGL not initialized"};
 	}
 
 	reset();
@@ -58,7 +64,7 @@ void Mesh::reload()
 {
 	if ( ! source)
 	{
-		throw string{"gl::Mesh::reload() - empty source"};
+		throw string{"gl::Mesh{" + meshName + "}::reload() - empty source"};
 	}
 
 	double timer = sys::time();
@@ -97,7 +103,7 @@ void Mesh::reload()
 	GL_CHECK(glBindVertexArray(0));
 
 	clog << fixed;
-	clog << "  [" << source->name() << ":" << sys::time() - timer << "s]" << endl;
+	clog << "  [" << meshName << "{" << source->name() << "}:" << sys::time() - timer << "s]" << endl;
 }
 
 void Mesh::reset()
