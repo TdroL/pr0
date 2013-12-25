@@ -47,7 +47,7 @@ void Basic::update(const glm::vec3 &rotate, const glm::vec3 &translate)
 	position.z += rotatedQuat.z;
 }
 
-void Basic::updateRecalc(const glm::vec3 &rotate, const glm::vec3 &translate)
+void Basic::apply(const glm::vec3 &rotate, const glm::vec3 &translate)
 {
 	update(rotate, translate);
 	recalc();

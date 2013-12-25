@@ -1,9 +1,10 @@
 #include "loop.hpp"
-#include "../mem.hpp"
 #include <memory>
 #include <algorithm>
 #include <cassert>
 #include <iostream>
+#include "../mem.hpp"
+#include "../util/align.hpp"
 
 namespace mem
 {
@@ -16,7 +17,7 @@ using namespace std;
 
 uint8_t *currentPtr = nullptr;
 uint8_t *endPtr = nullptr;
-size_t poolSize = 20; // * 1024 * 1024; // 20 MiB
+size_t poolSize = 20; // 20 * 1024 * 1024 = 20 MiB
 unique_ptr<uint8_t[]> pool{};
 
 void init()
@@ -25,7 +26,7 @@ void init()
 
 	if ( ! pool || poolSize > static_cast<decltype(poolSize)>(endPtr - currentPtr))
 	{
-		poolSize = mem::align(poolSize);
+		poolSize = util::align(poolSize);
 		pool.reset(); // release first
 		pool.reset(new uint8_t[poolSize]);
 	}
@@ -33,13 +34,13 @@ void init()
 	currentPtr = pool.get();
 	endPtr = pool.get() + poolSize;
 
-	clog << "Init loop memory: " << poolSize << " bytes (aligned to " << mem::alignTo << ")" << endl;
+	clog << "Init loop memory: " << poolSize << " bytes (aligned to " << sizeof(void *) << ")" << endl;
 }
 
 void * alloc(size_t size)
 {
 	// align
-	size = mem::align(size);
+	size = util::align(size);
 
 	clog << "Allocating " << size << " bytes" << endl;
 
@@ -51,7 +52,7 @@ void * alloc(size_t size)
 		return returnPtr;
 	}
 
-	poolSize += mem::align(currentPtr - endPtr);
+	poolSize += util::align(currentPtr - endPtr);
 	clog << "Pool overflow, requesting pool resize to " << poolSize << " bytes" << endl;
 
 	currentPtr -= size;

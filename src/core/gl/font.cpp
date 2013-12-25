@@ -5,6 +5,7 @@
 #include "mesh.hpp"
 #include "program.hpp"
 #include "../src/file.hpp"
+#include "../sys.hpp"
 #include "../sys/window.hpp"
 
 #include <algorithm>
@@ -39,6 +40,21 @@ void Font::reloadAll()
 	}
 }
 
+void Font::reloadSoftAll()
+{
+	for (Font *font : Font::collection)
+	{
+		try
+		{
+			font->reloadSoft();
+		}
+		catch (const string &e)
+		{
+			clog << endl << e << endl;
+		}
+	}
+}
+
 void Font::init()
 {
 	if (FT_Init_FreeType(&ft))
@@ -55,6 +71,12 @@ void Font::init()
 Font::Font()
 {
 	Font::collection.push_back(this);
+}
+
+Font::Font(string &&name)
+	: Font{}
+{
+	fontName = move(name);
 }
 
 Font::~Font()
@@ -86,6 +108,8 @@ void Font::load(unique_ptr<Source> &&source)
 void Font::reload()
 {
 	reset();
+
+	double timer = sys::time();
 
 	if ( ! source)
 	{
@@ -159,8 +183,8 @@ void Font::reload()
 	w = max(w, roww);
 	h += rowh;
 
-	atlas_width = w;
-	atlas_height = h;
+	atlasWidth = w;
+	atlasHeight = h;
 
 	GL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr));
 
@@ -201,6 +225,16 @@ void Font::reload()
 		rowh = max(rowh, g->bitmap.rows);
 		ox += g->bitmap.width + 1;
 	}
+
+	GL_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
+
+	clog << fixed;
+	clog << "  [Font:" << fontName << " {" << source->name() << "}:" << sys::time() - timer << "s]" << endl;
+}
+
+void Font::reloadSoft()
+{
+	GL_CHECK(glGenVertexArrays(1, &vao));
 }
 
 void Font::reset()
@@ -220,14 +254,14 @@ void Font::reset()
 	if (vbo)
 	{
 		GL_CHECK(glDeleteBuffers(1, &vbo));
+		vbo = 0;
 	}
 
 	if (vao)
 	{
 		GL_CHECK(glDeleteVertexArrays(1, &vao));
+		vao = 0;
 	}
-
-	vao = vbo = 0;
 }
 
 void Font::render(const string &text)
@@ -258,8 +292,8 @@ void Font::render(const string &text)
 
 	GLsizei n = 0;
 
-	auto &aw = atlas_width;
-	auto &ah = atlas_height;
+	auto &aw = atlasWidth;
+	auto &ah = atlasHeight;
 
 	for (int i = 0, size = text.size(); i < size; i++)
 	{
@@ -301,12 +335,18 @@ void Font::render(const string &text)
 	gl::stats.triangles += n;
 
 	GL_CHECK(glBindVertexArray(0));
-	GL_CHECK(glUseProgram(0));
 
 	if (cullFace) {
 		GL_CHECK(glEnable(GL_CULL_FACE));
 	}
 }
 
+namespace
+{
+	const util::InitQAttacher attach{gl::initQ, []
+	{
+		gl::Font::init();
+	}};
+}
 
 }

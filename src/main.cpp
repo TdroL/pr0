@@ -3,28 +3,31 @@
 #include <iostream>
 #include <iomanip>
 
-#include "core/cam/basic.hpp"
+// #include "core/cam/basic.hpp"
 #include "core/gl.hpp"
-#include "core/gl/fbo.hpp"
+// #include "core/gl/fbo.hpp"
 #include "core/gl/font.hpp"
-#include "core/gl/mesh.hpp"
-#include "core/gl/program.hpp"
-#include "core/util.hpp"
+// #include "core/gl/mesh.hpp"
+// #include "core/gl/program.hpp"
+// #include "core/util.hpp"
+#include "core/util/count.hpp"
+#include "core/util/scope.hpp"
+// #include "core/util/initq.hpp"
 #include "core/sys.hpp"
 #include "core/sys/fs.hpp"
 #include "core/sys/key.hpp"
 #include "core/sys/loop.hpp"
 #include "core/sys/window.hpp"
-#include "core/src/mem.hpp"
-#include "core/src/obj.hpp"
-#include "core/src/sbm.hpp"
-#include "core/sg/root.hpp"
-#include "core/sm/machine.hpp"
-#include "core/sm/state.hpp"
+// #include "core/src/mem.hpp"
+// #include "core/src/sbm.hpp"
+
+#include "app.hpp"
 
 using namespace std;
 
 namespace fs = sys::fs;
+namespace key = sys::key;
+namespace win = sys::window;
 
 int main(int argc, char const* argv[])
 {
@@ -49,144 +52,95 @@ int main(int argc, char const* argv[])
 			}
 		}
 
-		sys::window::vsync(0);
+		App app{};
+		app.init();
 
-		sys::window::switchMode(sys::window::Mode::windowed);
-		gl::reloadAll();
-
-		gl::Program prog{};
-
-		gl::Mesh suzanne{"suzanne"};
-		gl::Mesh venus{"venus"};
-		gl::Font font{};
-		gl::FBO fbo{};
-
-		cam::Basic camera{glm::vec3{0.f, 0.f, 5.f}};
-
-		glm::mat4 projectionMatrix = glm::perspective(45.f, static_cast<float>(sys::window::width)/static_cast<float>(sys::window::height), 1.0f/128.0f, 1000.0f);
-
-		prog.load("normal.frag", "PN.vert");
-
-		prog.uniform("color", 1.0, 1.0, 1.0);
-
-		{
-			suzanne.load(src::obj::mesh("suzanne.obj"));
-		}
-
-		{
-			venus.load(src::sbm::mesh("venus.sbm"));
-		}
-
+		gl::Font font{"DejaVuSansMono"};
 		font.load("DejaVu/DejaVuSansMono.ttf");
 
-		fbo.create(1);
+		/* Test: switch to window mode */
+		UTIL_DEBUG
+		{
+			win::switchMode(win::Mode::windowed);
+			gl::reloadSoftAll();
+		}
+
+		/* Refresh system */
 
 		sys::update();
 
-		const sys::window::Mode modes[] {
-			sys::window::Mode::windowed,
-			sys::window::Mode::borderless,
-			sys::window::Mode::fullscreen
+		const win::Mode modes[] {
+			win::Mode::windowed,
+			win::Mode::borderless,
+			win::Mode::fullscreen
 		};
 		int currentMode = 0;
 
-		while ( ! sys::window::shouldClose())
+		while ( ! win::shouldClose())
 		{
 			SYS_LOOP;
 
-			if (sys::key::hit(KEY_ESC))
+			if (key::hit(KEY_ESC))
 			{
-				sys::window::close();
+				win::close();
 			}
 
-			if (sys::key::hit(KEY_F5))
+			if (key::hit(KEY_F5))
 			{
 				cout << "Reloading shaders..." << endl;
-				gl::Program::reloadAll();
-				cout << "done" << endl;
+				try
+				{
+					gl::Program::reloadAll();
+					cout << "done" << endl;
+				}
+				catch (string e)
+				{
+					cerr << "  - " << e << endl;
+				}
 			}
 
-			if (sys::key::hit(KEY_F6))
+			if (key::hit(KEY_F6))
 			{
 				cout << "Reloading meshes..." << endl;
 				gl::Mesh::reloadAll();
 				cout << "done" << endl;
 			}
 
-			if (sys::key::hit(KEY_F7))
+			if (key::hit(KEY_F7))
 			{
 				cout << "Reloading fonts..." << endl;
 				gl::Font::reloadAll();
 				cout << "done" << endl;
 			}
 
-			if (sys::key::hit(KEY_F8))
+			if (key::hit(KEY_F8))
 			{
 				cout << "Reloading FBOs..." << endl;
 				gl::FBO::reloadAll();
 				cout << "done" << endl;
 			}
 
-			if (sys::key::hit(KEY_F11))
+			if (key::hit(KEY_F11))
 			{
 				cout << "Switching window mode..." << endl;
 				currentMode = (currentMode + 1) % util::countOf(modes);
-				sys::window::switchMode(modes[currentMode]);
+				win::switchMode(modes[currentMode]);
 				cout << "done" << endl;
 
-				cout << "Reloading GL..." << endl;
+				cout << "Soft-reloading GL..." << endl;
 				gl::reloadAll();
 				cout << "done" << endl;
 			}
 
-			if (sys::key::hit(KEY_ESC))
+			if (key::hit(KEY_ESC))
 			{
-				sys::window::close();
+				win::close();
 				continue;
 			}
 
-			glClearColor(0.0f, 0.3125f, 1.0f, 1.0f);
-			glClearDepth(1.0f);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+			app.update();
 
-
-			glm::vec3 position_delta{0.0, 0.0, 0.0};
-			glm::vec3 rotation_delta{0.0, 0.0, 0.0};
-
-			position_delta.z = (sys::key::pressed('s') - sys::key::pressed('w'));
-			position_delta.x = (sys::key::pressed('d') - sys::key::pressed('a'));
-			position_delta.y = (sys::key::pressed(KEY_SPACE) - sys::key::pressed(KEY_CTRL));
-
-			if (glm::length(position_delta) != 0.0)
-			{
-				position_delta = glm::normalize(position_delta);
-
-				float speed = 10.f;
-				position_delta *= speed * sys::dt;
-			}
-
-			rotation_delta.y = (sys::key::pressed(KEY_LEFT) - sys::key::pressed(KEY_RIGHT));
-			rotation_delta.x = (sys::key::pressed(KEY_UP) - sys::key::pressed(KEY_DOWN));
-
-			camera.updateRecalc(rotation_delta, position_delta);
-
-			prog.use();
-			prog.uniform("P", projectionMatrix);
-			prog.uniform("V", camera.viewMatrix);
-
-			{
-				GL_FBO_USE(fbo);
-
-				prog.uniform("M", glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{2.f, 0.f, 0.f}), static_cast<float>(90.0 * sys::time()), glm::vec3{0.f, 1.f, 0.f}));
-
-				suzanne.render();
-
-
-				prog.uniform("M", glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-2.f, 0.f, 0.f}), static_cast<float>(-90.0 * sys::time()), glm::vec3{0.f, 1.f, 0.f}));
-				venus.render();
-			}
-
-			fbo.render();
+			app.render();
 
 			{
 				double ft = sys::time() - sys::ct;
@@ -198,7 +152,15 @@ int main(int argc, char const* argv[])
 					oss << "ft=" << ft * 1000.0 << " ms\n";
 					oss << "fps=" << 1.0/sys::dt << "\n";
 					oss << "fps=" << 1.0/ft << " (real)\n";
-
+					oss << "\n"; // triangles=
+					oss << "\n";
+					oss << "\n";
+					oss << "F5 - reload shaders\n";
+					oss << "F6 - reload meshes\n";
+					oss << "F7 - reload fonts\n";
+					oss << "F8 - reload FBOs\n";
+					oss << "\n";
+					oss << "F11 - change window mode\n";
 					font.render(oss.str());
 				}
 

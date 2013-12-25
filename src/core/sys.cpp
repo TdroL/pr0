@@ -1,19 +1,21 @@
 #include "sys.hpp"
+
 #include "gl.hpp"
-#include "gl/font.hpp"
-#include "gl/fbo.hpp"
+
+#include <GLFW/glfw3.h>
+#include <GL/glew.h>
+
 #include "sys/window.hpp"
 #include "sys/key.hpp"
 
 #include <iostream>
-#include <limits>
-#include <GLFW/glfw3.h>
-#include <GL/glew.h>
 
 namespace sys
 {
 
 using namespace std;
+
+util::InitQ initQ{};
 
 double ct = 0.0;
 double dt = numeric_limits<double>::epsilon();
@@ -34,8 +36,6 @@ void init()
 
 	window::create(1600, 900);
 
-	cout << __FILE__ << ':' << __LINE__ << endl;
-
 	{
 		glewExperimental = GL_TRUE;
 		auto err = glewInit();
@@ -45,13 +45,7 @@ void init()
 		}
 	}
 
-	gl::init();
-
-	gl::Font::init();
-
-	gl::FBO::init();
-
-	key::init();
+	sys::initQ.run();
 }
 
 void deinit()

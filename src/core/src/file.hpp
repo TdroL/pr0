@@ -17,8 +17,8 @@ public:
 
 	Stream();
 	Stream(std::string &&fileName);
-	void use();
-	std::string name();
+	void use() override;
+	std::string name() override;
 };
 
 std::unique_ptr<src::Stream> stream(const std::string &fileName);

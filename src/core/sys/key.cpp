@@ -1,4 +1,5 @@
 #include "key.hpp"
+#include "../sys.hpp"
 #include "window.hpp"
 #include <vector>
 #include <string>
@@ -74,5 +75,13 @@ void update()
 }
 
 } // key
+
+namespace
+{
+	const util::InitQAttacher attach{sys::initQ, []
+	{
+		key::init();
+	}};
+}
 
 } // sys

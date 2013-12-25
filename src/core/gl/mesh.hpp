@@ -19,14 +19,16 @@ public:
 
 	static std::list<Mesh *> collection;
 	static void reloadAll();
+	static void reloadSoftAll();
 
 	GLuint vbo = 0;
 	GLuint ibo = 0;
 	GLuint vao = 0;
 
 	std::unique_ptr<Source> source{nullptr};
-	std::vector<DrawIndex> indices{};
-	std::vector<DrawArray> arrays{};
+	std::vector<gl::VertexLayout> layouts{};
+	std::vector<gl::DrawIndex> indices{};
+	std::vector<gl::DrawArray> arrays{};
 
 	std::string meshName = "Unnamed mesh";
 
@@ -37,6 +39,7 @@ public:
 	void load(Source *source);
 	void load(std::unique_ptr<Source> &&source);
 	void reload();
+	void reloadSoft();
 	void reset();
 
 	void render();

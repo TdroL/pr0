@@ -255,7 +255,7 @@ void Program::reset()
 void Program::use()
 {
 	#if defined(DEBUG) || defined(_DEBUG)
-	if ( ! glIsProgram(id))
+	if (id && ! glIsProgram(id))
 	{
 		clog << "[notice] gl::Program::use() - invalid program id [" << id << "] ("
 			 << ((fragmentShader) ? fragmentShader->name() : string{"Unknown fragment shader"}) << ", "
@@ -267,10 +267,15 @@ void Program::use()
 
 GLint Program::getName(const string &name)
 {
-	GLint location = glGetUniformLocation(id, name.c_str());
-	GL_VALIDATE(glGetUniformLocation(id, name.c_str()));
+	if (id)
+	{
+		GLint location = glGetUniformLocation(id, name.c_str());
+		GL_VALIDATE(glGetUniformLocation(id, name.c_str()));
 
-	return location;
+		return location;
+	}
+
+	return 0;
 }
 
 UniformValue & Program::getValue(const string &name)
@@ -292,57 +297,90 @@ UniformValue & Program::getValue(const string &name)
 
 void Program::var(GLint name, GLint value)
 {
-	GL_CHECK(glProgramUniform1i(id, name, value));
+	if (id)
+	{
+		GL_CHECK(glProgramUniform1i(id, name, value));
+	}
 }
 
 void Program::var(GLint name, GLuint value)
 {
-	GL_CHECK(glProgramUniform1ui(id, name, value));
+	if (id)
+	{
+		GL_CHECK(glProgramUniform1ui(id, name, value));
+	}
 }
 
 void Program::var(GLint name, GLfloat value)
 {
-	GL_CHECK(glProgramUniform1f(id, name, value));
+	if (id)
+	{
+		GL_CHECK(glProgramUniform1f(id, name, value));
+	}
 }
 
 void Program::var(GLint name, GLfloat x, GLfloat y)
 {
-	GL_CHECK(glProgramUniform2f(id, name, x, y));
+	if (id)
+	{
+		GL_CHECK(glProgramUniform2f(id, name, x, y));
+	}
 }
 
 void Program::var(GLint name, GLfloat x, GLfloat y, GLfloat z)
 {
-	GL_CHECK(glProgramUniform3f(id, name, x, y, z));
+	if (id)
+	{
+		GL_CHECK(glProgramUniform3f(id, name, x, y, z));
+	}
 }
 
 void Program::var(GLint name, GLfloat x, GLfloat y, GLfloat z, GLfloat w)
 {
-	GL_CHECK(glProgramUniform4f(id, name, x, y, z, w));
+	if (id)
+	{
+		GL_CHECK(glProgramUniform4f(id, name, x, y, z, w));
+	}
 }
 
 void Program::var(GLint name, const glm::vec2 &value)
 {
-	GL_CHECK(glProgramUniform2fv(id, name, 1, glm::value_ptr(value)));
+	if (id)
+	{
+		GL_CHECK(glProgramUniform2fv(id, name, 1, glm::value_ptr(value)));
+	}
 }
 
 void Program::var(GLint name, const glm::vec3 &value)
 {
-	GL_CHECK(glProgramUniform3fv(id, name, 1, glm::value_ptr(value)));
+	if (id)
+	{
+		GL_CHECK(glProgramUniform3fv(id, name, 1, glm::value_ptr(value)));
+	}
 }
 
 void Program::var(GLint name, const glm::vec4 &value)
 {
-	GL_CHECK(glProgramUniform4fv(id, name, 1, glm::value_ptr(value)));
+	if (id)
+	{
+		GL_CHECK(glProgramUniform4fv(id, name, 1, glm::value_ptr(value)));
+	}
 }
 
 void Program::var(GLint name, const glm::mat3 &value)
 {
-	GL_CHECK(glProgramUniformMatrix3fv(id, name, 1, GL_FALSE, glm::value_ptr(value)));
+	if (id)
+	{
+		GL_CHECK(glProgramUniformMatrix3fv(id, name, 1, GL_FALSE, glm::value_ptr(value)));
+	}
 }
 
 void Program::var(GLint name, const glm::mat4 &value)
 {
-	GL_CHECK(glProgramUniformMatrix4fv(id, name, 1, GL_FALSE, glm::value_ptr(value)));
+	if (id)
+	{
+		GL_CHECK(glProgramUniformMatrix4fv(id, name, 1, GL_FALSE, glm::value_ptr(value)));
+	}
 }
 
 

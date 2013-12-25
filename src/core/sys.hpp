@@ -1,8 +1,14 @@
 #ifndef SYS_HPP
 #define SYS_HPP
 
+#include <limits>
+
+#include "util/initq.hpp"
+
 namespace sys
 {
+
+extern util::InitQ initQ;
 
 extern double ct;
 extern double dt;
@@ -16,10 +22,6 @@ void update();
 void startLoop();
 
 void endLoop();
-
-// void args(int argc, char const* argv[]);
-
-// void run();
 
 double time();
 

@@ -2,6 +2,7 @@
 #include "gl/font.hpp"
 #include "gl/fbo.hpp"
 #include "gl/mesh.hpp"
+#include "sys.hpp"
 #include <GL/glew.h>
 #include <ranges>
 #include <sstream>
@@ -11,6 +12,8 @@ namespace gl
 {
 
 using namespace std;
+
+util::InitQ initQ{};
 
 Stats stats = {0, 0};
 Status status = Status::uninited;
@@ -58,6 +61,8 @@ void init()
 	reload();
 
 	status = Status::inited;
+
+	gl::initQ.run();
 }
 
 void reload()
@@ -101,6 +106,15 @@ void reloadAll()
 	gl::Mesh::reloadAll();
 	gl::Font::reloadAll();
 	gl::FBO::reloadAll();
+}
+
+void reloadSoftAll()
+{
+	reload();
+
+	gl::Mesh::reloadSoftAll();
+	gl::Font::reloadSoftAll();
+	gl::FBO::reloadSoftAll();
 }
 
 string getEnumName(GLenum value)
@@ -1566,5 +1580,14 @@ void get(const GLenum name, GLuint *value, GLuint i)    { glGetIntegeri_v(name, 
 void get(const GLenum name, GLint64 *value, GLuint i)   { glGetInteger64i_v(name, i, value); }
 void get(const GLenum name, GLfloat *value, GLuint i)   { glGetFloati_v(name, i, value); }
 void get(const GLenum name, GLdouble *value, GLuint i)  { glGetDoublei_v(name, i, value); }
+
+namespace
+{
+	const util::InitQAttacher attach{sys::initQ, []
+	{
+		gl::init();
+	}};
+}
+
 
 } // gl

@@ -3,8 +3,6 @@
 
 namespace cam {
 
-
-
 } // cam
 
 #endif

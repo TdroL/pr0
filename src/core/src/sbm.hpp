@@ -21,9 +21,9 @@ public:
 	std::vector<char> dataCache{};
 
 	Mesh(std::string &&fileName);
-	void use();
-	void release();
-	std::string name();
+	void use() override;
+	void release() override;
+	std::string name() override;
 };
 
 std::unique_ptr<src::Mesh> mesh(const std::string &fileName);

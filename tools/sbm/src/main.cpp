@@ -13,6 +13,12 @@ int main(int argc, char *argv[])
 	{
 		args::parse(argc, argv);
 
+		if (args::has('h'))
+		{
+			cout << "Usage: sbm -i input.obj [-o output.sbm]" << endl;
+			return EXIT_SUCCESS;
+		}
+
 		auto values = args::get('i');
 
 		if ( ! values.size())
@@ -70,13 +76,6 @@ int main(int argc, char *argv[])
 		outputFile.write(reinterpret_cast<char *>(&typeVertices), sizeof(typeVertices));
 		outputFile.write(reinterpret_cast<char *>(mesh->vertexData.data), mesh->vertexData.size);
 
-		// indices
-		size = sizeof(typeIndices) + mesh->indexData.size;
-		overall += size;
-		outputFile.write(reinterpret_cast<char *>(&size), sizeof(size));
-		outputFile.write(reinterpret_cast<char *>(&typeIndices), sizeof(typeIndices));
-		outputFile.write(reinterpret_cast<char *>(mesh->indexData.data), mesh->indexData.size);
-
 		// layouts
 		size = sizeof(typeLayouts) + mesh->layouts.size() * sizeof(decltype(mesh->layouts)::value_type);
 		overall += size;
@@ -88,15 +87,28 @@ int main(int argc, char *argv[])
 			outputFile.write(reinterpret_cast<char *>(&layout), sizeof(decltype(mesh->layouts)::value_type));
 		}
 
-		// arrays
-		size = sizeof(typeArrays) + mesh->layouts.size() * sizeof(decltype(mesh->arrays)::value_type);
-		overall += size;
-		outputFile.write(reinterpret_cast<char *>(&size), sizeof(size));
-		outputFile.write(reinterpret_cast<char *>(&typeArrays), sizeof(typeArrays));
-
-		for (auto &array : mesh->arrays)
+		// indices
+		if (mesh->indexData.size)
 		{
-			outputFile.write(reinterpret_cast<char *>(&array), sizeof(decltype(mesh->arrays)::value_type));
+			size = sizeof(typeIndices) + mesh->indexData.size;
+			overall += size;
+			outputFile.write(reinterpret_cast<char *>(&size), sizeof(size));
+			outputFile.write(reinterpret_cast<char *>(&typeIndices), sizeof(typeIndices));
+			outputFile.write(reinterpret_cast<char *>(mesh->indexData.data), mesh->indexData.size);
+		}
+
+		// arrays
+		if (mesh->arrays.size())
+		{
+			size = sizeof(typeArrays) + mesh->layouts.size() * sizeof(decltype(mesh->arrays)::value_type);
+			overall += size;
+			outputFile.write(reinterpret_cast<char *>(&size), sizeof(size));
+			outputFile.write(reinterpret_cast<char *>(&typeArrays), sizeof(typeArrays));
+
+			for (auto &array : mesh->arrays)
+			{
+				outputFile.write(reinterpret_cast<char *>(&array), sizeof(decltype(mesh->arrays)::value_type));
+			}
 		}
 
 		cout << "done [" << overall << " bytes]" << endl;

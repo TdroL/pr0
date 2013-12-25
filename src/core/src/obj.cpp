@@ -1,13 +1,13 @@
 #include "obj.hpp"
 #include "../gl.hpp"
 #include "../sys/fs.hpp"
+#include "../util/str.hpp"
 
 #include <array>
 #include <vector>
 #include <map>
 #include <fstream>
 #include <sstream>
-#include <algorithm>
 
 namespace src
 {
@@ -15,22 +15,10 @@ namespace src
 using namespace std;
 
 namespace fs = sys::fs;
+namespace str = util::str;
 
 namespace obj
 {
-
-void ltrim(string &s) {
-	s.erase(begin(s), find_if(begin(s), end(s), not1(ptr_fun<int, int>(isspace))));
-}
-
-void rtrim(string &s) {
-	s.erase(find_if(s.rbegin(), s.rend(), not1(ptr_fun<int, int>(isspace))).base(), end(s));
-}
-
-void trim(string &s) {
-	ltrim(s);
-	rtrim(s);
-}
 
 float normZero(float value)
 {
@@ -61,14 +49,13 @@ void Mesh::use()
 	{
 		string line;
 		getline(ifs, line);
-		trim(line);
+		str::trim(line);
 
 		if (line.empty())
 		{
 			continue;
 		}
 
-		// if (line.find("v ") == 0)
 		if (line.compare(0, 2, "v ") == 0)
 		{
 			glm::vec3 vert;
@@ -80,7 +67,6 @@ void Mesh::use()
 
 			inVertices.push_back(vert);
 		}
-		// else if (line.find("vt ") == 0)
 		else if (line.compare(0, 3, "vt ") == 0)
 		{
 			glm::vec2 vert;
@@ -91,7 +77,6 @@ void Mesh::use()
 
 			inUvs.push_back(vert);
 		}
-		// else if (line.find("vn ") == 0)
 		else if (line.compare(0, 3, "vn ") == 0)
 		{
 			glm::vec3 vert;
@@ -103,7 +88,6 @@ void Mesh::use()
 
 			inNormals.push_back(vert);
 		}
-		// else if (line.find("f ") == 0)
 		else if (line.compare(0, 2, "f ") == 0)
 		{
 			string part;

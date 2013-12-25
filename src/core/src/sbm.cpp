@@ -7,7 +7,6 @@
 #include <map>
 #include <fstream>
 #include <sstream>
-#include <algorithm>
 
 namespace src
 {
@@ -18,19 +17,6 @@ namespace fs = sys::fs;
 
 namespace sbm
 {
-
-void ltrim(string &s) {
-	s.erase(begin(s), find_if(begin(s), end(s), not1(ptr_fun<int, int>(isspace))));
-}
-
-void rtrim(string &s) {
-	s.erase(find_if(s.rbegin(), s.rend(), not1(ptr_fun<int, int>(isspace))).base(), end(s));
-}
-
-void trim(string &s) {
-	ltrim(s);
-	rtrim(s);
-}
 
 float normZero(float value)
 {
@@ -109,8 +95,8 @@ void Mesh::use()
 				indexData.data = reinterpret_cast<GLvoid *>(data + sizeof(header->type));
 				indexData.usage = GL_STATIC_DRAW;
 
-				indices.clear();
-				indices.shrink_to_fit();
+				decltype(indices) empty{};
+				indices.swap(empty);
 				indices.reserve(1);
 				indices.emplace_back(static_cast<GLenum>(GL_TRIANGLES), static_cast<GLsizeiptr>(size / sizeof(GLuint)), static_cast<GLenum>(GL_UNSIGNED_INT), static_cast<GLsizeiptr>(0));
 
@@ -121,17 +107,15 @@ void Mesh::use()
 				size_t size = header->size - sizeof(header->type);
 
 				const decltype(layouts)::value_type *layout = reinterpret_cast<decltype(layouts)::value_type *>(data + sizeof(header->type));
-				const size_t n = size / sizeof(*layout);
+				size_t n = size / sizeof(*layout);
 
-				layouts.clear();
-				layouts.shrink_to_fit();
+				decltype(layouts) empty{};
+				layouts.swap(empty);
 				layouts.reserve(n);
 
 				for (size_t i = 0; i < n; ++i)
 				{
-					layouts.push_back(*layout);
-
-					layout += 1;
+					layouts.push_back(layout[i]);
 				}
 
 				break;
@@ -141,17 +125,15 @@ void Mesh::use()
 				size_t size = header->size - sizeof(header->type);
 
 				const decltype(arrays)::value_type *array = reinterpret_cast<decltype(arrays)::value_type *>(data + sizeof(header->type));
-				const size_t n = size / sizeof(*array);
+				size_t n = size / sizeof(*array);
 
-				arrays.clear();
-				arrays.shrink_to_fit();
+				decltype(arrays) empty{};
+				arrays.swap(empty);
 				arrays.reserve(n);
 
 				for (size_t i = 0; i < n; ++i)
 				{
-					arrays.push_back(*array);
-
-					array += 1;
+					arrays.push_back(array[i]);
 				}
 
 				break;

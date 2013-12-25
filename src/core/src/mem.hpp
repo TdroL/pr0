@@ -21,7 +21,7 @@ public:
 	Mesh() = default;
 	Mesh(std::vector<GLfloat> &&vertices, std::vector<GLuint> &&indices = {});
 
-	std::string name();
+	std::string name() override;
 	void setName(std::string &&sourceName);
 
 	void setVertices(std::vector<GLfloat> &&vertices);

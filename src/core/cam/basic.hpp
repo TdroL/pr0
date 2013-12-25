@@ -22,7 +22,7 @@ public:
 	}
 
 	void update(const glm::vec3 &rotate, const glm::vec3 &translate);
-	void updateRecalc(const glm::vec3 &rotate, const glm::vec3 &translate);
+	void apply(const glm::vec3 &rotate, const glm::vec3 &translate);
 
 	void recalc();
 };

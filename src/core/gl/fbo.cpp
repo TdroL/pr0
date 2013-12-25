@@ -4,6 +4,7 @@
 #include "../src/mem.hpp"
 #include "mesh.hpp"
 #include "program.hpp"
+#include "../sys.hpp"
 #include "../sys/window.hpp"
 
 #include <string>
@@ -28,6 +29,21 @@ void FBO::reloadAll()
 		try
 		{
 			fbo->reload();
+		}
+		catch (const string &e)
+		{
+			clog << endl << e << endl;
+		}
+	}
+}
+
+void FBO::reloadSoftAll()
+{
+	for (FBO *fbo : FBO::collection)
+	{
+		try
+		{
+			fbo->reloadSoft();
 		}
 		catch (const string &e)
 		{
@@ -95,42 +111,32 @@ void FBO::reset()
 	if (id)
 	{
 		GL_CHECK(glDeleteFramebuffers(1, &id));
+		id = 0;
 	}
 
-	if (depth)
+	if (renderbuffer)
 	{
-		GL_CHECK(glDeleteRenderbuffers(1, &depth));
-	}
-
-	if (stencil)
-	{
-		GL_CHECK(glDeleteTextures(1, &stencil));
+		GL_CHECK(glDeleteRenderbuffers(1, &renderbuffer));
+		renderbuffer = 0;
 	}
 
 	if (colors.size())
 	{
 		GL_CHECK(glDeleteTextures(colors.size(), colors.data()));
+
+		decltype(colors) empty{};
+		colors.swap(empty);
 	}
-
-	id = depth = stencil = 0;
-
-	colors.clear();
-	colors.shrink_to_fit();
 }
 
 void FBO::reload()
 {
+	double timer = sys::time();
+
 	reset();
 
-	GL_CHECK(glGenFramebuffers(1, &id));
-	GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, id));
-
-	colors.clear();
-	colors.resize(colorAttachments, 0);
-	colors.shrink_to_fit();
-
-	vector<GLenum> drawBuffers;
-	drawBuffers.reserve(colorAttachments);
+	decltype(colors) empty(colorAttachments, 0);
+	colors.swap(empty);
 
 	GL_CHECK(glGenTextures(colorAttachments, colors.data()));
 
@@ -144,33 +150,99 @@ void FBO::reload()
 		GL_CHECK(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
 		GL_CHECK(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
 		GL_CHECK(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+		GL_CHECK(glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(glm::vec4{1.f})));
 
 		GL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr));
 
-		GL_CHECK(glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, color, 0));
-
 		GL_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
-
-		drawBuffers.push_back(GL_COLOR_ATTACHMENT0 + i);
 	}
 
-	GL_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
+	GLenum component = GL_NONE;
+	GLenum attachment = GL_NONE;
 
 	if (depthAttachment)
 	{
-		GLenum component = GL_DEPTH_COMPONENT;
-		GLenum attachment = GL_DEPTH_ATTACHMENT;
-
 		if (stencilAttachment)
 		{
 			component = GL_DEPTH24_STENCIL8;
 			attachment = GL_DEPTH_STENCIL_ATTACHMENT;
 		}
+		else
+		{
+			component = GL_DEPTH_COMPONENT;
+			attachment = GL_DEPTH_ATTACHMENT;
+		}
+	}
+	else if (stencilAttachment)
+	{
+		component = GL_STENCIL_INDEX8;
+		attachment = GL_STENCIL_ATTACHMENT;
+	}
 
-		GL_CHECK(glGenRenderbuffers(1, &depth));
-		GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, depth));
+	if (component != GL_NONE)
+	{
+		GL_CHECK(glGenRenderbuffers(1, &renderbuffer));
+		GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, renderbuffer));
 		GL_CHECK(glRenderbufferStorage(GL_RENDERBUFFER, component, width, height));
-		GL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, depth));
+	}
+
+	reloadSoft();
+
+	clog << fixed;
+	clog << "  [FBO: " <<  fboName << ":" << sys::time() - timer << "s]" << endl;
+	for (size_t i = 0; i < colors.size(); i++)
+	{
+		clog << "    " << gl::getEnumName(GL_COLOR_ATTACHMENT0 + i) << endl;
+	}
+
+	if (attachment != GL_NONE)
+	{
+		clog << "    " << gl::getEnumName(attachment) << endl;
+	}
+
+	GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+}
+
+void FBO::reloadSoft()
+{
+	GL_CHECK(glGenFramebuffers(1, &id));
+	GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, id));
+
+	vector<GLenum> drawBuffers;
+	drawBuffers.reserve(colors.size());
+
+	for (size_t i = 0; i < colors.size(); i++)
+	{
+		GL_CHECK(glBindTexture(GL_TEXTURE_2D, colors[i]));
+
+		GL_CHECK(glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, colors[i], 0));
+
+		drawBuffers.push_back(GL_COLOR_ATTACHMENT0 + i);
+
+		GL_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
+	}
+
+	GLenum attachment = GL_NONE;
+
+	if (depthAttachment)
+	{
+		if (stencilAttachment)
+		{
+			attachment = GL_DEPTH_STENCIL_ATTACHMENT;
+		}
+		else
+		{
+			attachment = GL_DEPTH_ATTACHMENT;
+		}
+	}
+	else if (stencilAttachment)
+	{
+		attachment = GL_STENCIL_ATTACHMENT;
+	}
+
+	if (attachment != GL_NONE)
+	{
+		GL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, renderbuffer));
 	}
 
 	GLenum status = GL_NONE;
@@ -178,15 +250,8 @@ void FBO::reload()
 
 	if (status != GL_FRAMEBUFFER_COMPLETE)
 	{
-		throw string{"gl::FBO{" + fboName + "}::init() - failed to verify framebuffer (" + gl::getEnumName(status) + ")"};
+		throw string{"gl::FBO{" + fboName + "}::reloadSoft() - failed to verify framebuffer (" + gl::getEnumName(status) + ")"};
 	}
-
-	for (size_t i = 0; i < drawBuffers.size(); i++)
-	{
-		cout << gl::getEnumName(*(drawBuffers.data() + i)) << endl;
-	}
-
-	GL_CHECK(glDrawBuffers(drawBuffers.size(), drawBuffers.data()));
 
 	GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 }
@@ -194,9 +259,6 @@ void FBO::reload()
 void FBO::render()
 {
 	prog.use();
-
-	// GL_CHECK(glDisable(GL_DEPTH_TEST));
-	// GL_CHECK(glDisable(GL_CULL_FACE));
 
 	for (GLint i = 0, c = colors.size(); i < c; i++)
 	{
@@ -206,18 +268,13 @@ void FBO::render()
 	}
 
 	mesh.render();
+}
 
-	// GL_CHECK(glEnable(GL_DEPTH_TEST));
-	// GL_CHECK(glEnable(GL_CULL_FACE));
-
-	// GL_CHECK(glBindVertexArray(vaoQuad));
-	// GL_CHECK(glDisable(GL_DEPTH_TEST));
-	// GL_CHECK(glUseProgram(screenShaderProgram));
-
-	// glActiveTexture(GL_TEXTURE0);
-	// glBindTexture(GL_TEXTURE_2D, texColorBuffer);
-
-	// glDrawArrays(GL_TRIANGLES, 0, 6);
+void FBO::clear()
+{
+	GL_CHECK(glClearColor(0.0f, 0.0f, 0.0f, 0.0f));
+	GL_CHECK(glClearDepth(1.0f));
+	GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 }
 
 void FBO::use()
@@ -228,6 +285,14 @@ void FBO::use()
 void FBO::release()
 {
 	GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+}
+
+namespace
+{
+	const util::InitQAttacher attach{gl::initQ, []
+	{
+		gl::FBO::init();
+	}};
 }
 
 }

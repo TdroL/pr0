@@ -4,12 +4,17 @@
 #include <string>
 #include <iostream>
 #include <GL/glew.h>
+#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "util/initq.hpp"
+
 namespace gl
 {
+
+extern util::InitQ initQ;
 
 enum Status
 {
@@ -29,6 +34,7 @@ extern Status status;
 void init();
 void reload();
 void reloadAll();
+void reloadSoftAll();
 
 std::string getEnumName(GLenum value);
 std::string getBasicInfo(std::string prefix = "");

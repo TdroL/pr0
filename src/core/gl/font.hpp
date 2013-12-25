@@ -34,14 +34,15 @@ class Font
 public:
 	static std::list<Font *> collection;
 	static void reloadAll();
+	static void reloadSoftAll();
 	static void init();
 
 	typedef src::Stream Source;
 
 	std::unique_ptr<Source> source{nullptr};
 
-	float atlas_width = 0.0f;
-	float atlas_height = 0.0f;
+	float atlasWidth = 0.0f;
+	float atlasHeight = 0.0f;
 
 	float sx = 0.0f;
 	float sy = 0.0f;
@@ -58,7 +59,10 @@ public:
 	int fontSize = 16;
 	int lineHeight = 20;
 
+	std::string fontName = "Unnamed font";
+
 	Font();
+	explicit Font(std::string &&name);
 	~Font();
 
 	Font(const Font&) = delete;
@@ -69,7 +73,10 @@ public:
 	void load(std::string &&source);
 	void load(Source *source);
 	void load(std::unique_ptr<Source> &&source);
+
 	void reload();
+	void reloadSoft();
+
 	void reset();
 
 	void render(const std::string &text);

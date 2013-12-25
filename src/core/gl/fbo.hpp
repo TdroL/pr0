@@ -18,13 +18,13 @@ class FBO
 public:
 	static std::list<FBO *> collection;
 	static void reloadAll();
+	static void reloadSoftAll();
 
 	static void init();
 
 	GLuint id = 0;
 	std::vector<GLuint> colors{};
-	GLuint depth = 0;
-	GLuint stencil = 0;
+	GLuint renderbuffer = 0;
 
 	unsigned int colorAttachments = 1;
 	bool depthAttachment = true;
@@ -36,15 +36,18 @@ public:
 	std::string fboName = "Unnamed FBO";
 
 	FBO();
-	FBO(std::string &&name);
+	explicit FBO(std::string &&name);
 	~FBO();
 
 	void create(unsigned int colorAttachments = 1, bool depthAttachment = true, bool stelcilAttachment = false);
 	void reset();
 
 	void reload();
+	void reloadSoft();
 
 	void render();
+
+	void clear();
 
 	void use();
 	void release();

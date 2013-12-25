@@ -25,6 +25,21 @@ void Mesh::reloadAll()
 	}
 }
 
+void Mesh::reloadSoftAll()
+{
+	for (Mesh *mesh : Mesh::collection)
+	{
+		try
+		{
+			mesh->reloadSoft();
+		}
+		catch (const string &e)
+		{
+			clog << endl << e << endl;
+		}
+	}
+}
+
 Mesh::Mesh()
 {
 	Mesh::collection.push_back(this);
@@ -71,15 +86,12 @@ void Mesh::reload()
 
 	SRC_MESH_USE(*source);
 
-	const auto &layouts = source->layouts;
 	const auto &vertexData = source->vertexData;
 	const auto &indexData = source->indexData;
 
+	layouts = source->layouts;
 	indices = source->indices;
 	arrays = source->arrays;
-
-	GL_CHECK(glGenVertexArrays(1, &vao));
-	GL_CHECK(glBindVertexArray(vao));
 
 	GL_CHECK(glGenBuffers(1, &vbo));
 	GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, vbo));
@@ -92,6 +104,20 @@ void Mesh::reload()
 		GL_CHECK(glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexData.size, indexData.data, indexData.usage));
 	}
 
+	reloadSoft();
+
+	clog << fixed;
+	clog << "  [Mesh:" << meshName << " {" << source->name() << "}:" << sys::time() - timer << "s]" << endl;
+	// clog << "    layouts=" << layouts.size() << endl;
+	// clog << "    indices=" << indices.size() << endl;
+	// clog << "    arrays=" << arrays.size() << endl;
+}
+
+void Mesh::reloadSoft()
+{
+	GL_CHECK(glGenVertexArrays(1, &vao));
+	GL_CHECK(glBindVertexArray(vao));
+
 	for (const auto & layout : layouts)
 	{
 		GL_CHECK(glEnableVertexAttribArray(layout.index));
@@ -101,20 +127,29 @@ void Mesh::reload()
 	}
 
 	GL_CHECK(glBindVertexArray(0));
-
-	clog << fixed;
-	clog << "  [" << meshName << "{" << source->name() << "}:" << sys::time() - timer << "s]" << endl;
 }
 
 void Mesh::reset()
 {
 	source.reset();
 
-	GL_CHECK(glDeleteBuffers(1, &vbo));
-	GL_CHECK(glDeleteBuffers(1, &ibo));
-	GL_CHECK(glDeleteVertexArrays(1, &vao));
+	if (vbo)
+	{
+		GL_CHECK(glDeleteBuffers(1, &vbo));
+		vbo = 0;
+	}
 
-	vbo = ibo = vao = 0;
+	if (ibo)
+	{
+		GL_CHECK(glDeleteBuffers(1, &ibo));
+		ibo = 0;
+	}
+
+	if (vao)
+	{
+		GL_CHECK(glDeleteVertexArrays(1, &vao));
+		vao = 0;
+	}
 }
 
 void Mesh::render()
@@ -129,7 +164,7 @@ void Mesh::render()
 
 	for (const auto &array : arrays)
 	{
-		GL_CHECK(glDrawArrays(array.mode, array.offset, array.count));
+		GL_CHECK_PARAM(glDrawArrays(array.mode, array.offset, array.count), array.mode << " " << gl::getEnumName(array.mode));
 		gl::stats.triangles += array.count;
 	}
 
