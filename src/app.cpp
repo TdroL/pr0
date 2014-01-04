@@ -3,7 +3,6 @@
 #include <iostream>
 
 #include "core/gl.hpp"
-
 #include "core/sys.hpp"
 #include "core/sys/key.hpp"
 #include "core/sys/window.hpp"
@@ -49,6 +48,7 @@ void App::init()
 	glm::mat4 projectionMatrix = glm::perspective(45.f, static_cast<float>(win::width) / static_cast<float>(win::height), 1.f/128.0f, 1000.0f);
 	prog.uniform("P", projectionMatrix);
 	simple.uniform("P", projectionMatrix);
+
 
 	suzanne.load(src::sbm::mesh("suzanne.sbm"));
 	venus.load(src::sbm::mesh("venus.sbm"));
@@ -97,10 +97,9 @@ void App::render()
 
 	{
 		GL_FBO_USE(fbo);
+		fbo.clear();
 
 		glm::mat4 &V = camera.viewMatrix;
-
-		fbo.clear();
 
 		prog.use();
 		prog.var("V", V);
