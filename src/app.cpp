@@ -499,9 +499,10 @@ void App::render()
 
 		for (auto &entity : ecs::findWith<DirectionalLight>())
 		{
-			auto &light = ecs::get<DirectionalLight>(entity);
-			auto lightDirection = V * glm::vec4{light.direction, 0.f};
+			const auto &light = ecs::get<DirectionalLight>(entity);
+			const auto lightDirection = glm::mat3{V} * light.direction;
 
+			// @TODO: shadows
 			{
 				GL_FBO_USE(shadowmap);
 
@@ -514,18 +515,18 @@ void App::render()
 			}
 
 			deferredDirectionalLight.var("lightColor", light.color);
-			deferredDirectionalLight.var("lightDirection", lightDirection.xyz());
+			deferredDirectionalLight.var("lightDirection", lightDirection);
 
 			gbuffer.render(deferredDirectionalLight);
 		}
 
 		for (auto &entity : ecs::findWith<Transform, Mesh, PointLight>())
 		{
-			auto &light = ecs::get<PointLight>(entity);
-			auto &lightTransform = ecs::get<Transform>(entity);
-			auto lightPosition = V * glm::vec4{lightTransform.translation, 1.f};
+			const auto &light = ecs::get<PointLight>(entity);
+			const auto &lightTransform = ecs::get<Transform>(entity);
+			const auto lightPosition = V * glm::vec4{lightTransform.translation, 1.f};
 
-			if (false)
+			// @TODO: shadows
 			{
 				GL_FBO_USE(shadowmap);
 
