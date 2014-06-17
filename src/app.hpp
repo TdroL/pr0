@@ -19,7 +19,6 @@ public:
 	gl::Program deferredGBuffer{};
 	gl::Program deferredPointLight{};
 	gl::Program deferredDirectionalLight{};
-	gl::Program prog{};
 	gl::Program simple{};
 	gl::Program fboPreview{};
 
