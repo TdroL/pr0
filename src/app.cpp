@@ -41,15 +41,6 @@ void App::init()
 
 	try
 	{
-		prog.load("lighting/specular.frag", "PN.vert");
-	}
-	catch (const string &e)
-	{
-		cerr << "Warning: " << e << endl;
-	}
-
-	try
-	{
 		simple.load("color.frag", "PN.vert");
 	}
 	catch (const string &e)
@@ -131,7 +122,6 @@ void App::init()
 
 		auto &projection = ecs::get<Projection>(cameraId);
 
-		prog.uniform("P", projection.getMatrix());
 		simple.uniform("P", projection.getMatrix());
 		deferredGBuffer.uniform("P", projection.getMatrix());
 
