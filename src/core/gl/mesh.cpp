@@ -1,7 +1,8 @@
 #include "mesh.hpp"
 #include "../gl.hpp"
-#include "../sys.hpp"
-#include "../sys/fs.hpp"
+#include "../util.hpp"
+#include "../ngn.hpp"
+#include "../ngn/fs.hpp"
 #include <iostream>
 
 namespace gl
@@ -45,6 +46,25 @@ Mesh::Mesh()
 	Mesh::collection.push_back(this);
 }
 
+Mesh::Mesh(Mesh &&rhs)
+	: Mesh{}
+{
+	vbo = rhs.vbo;
+	ibo = rhs.ibo;
+	vao = rhs.vao;
+	source = move(rhs.source);
+	layouts = move(rhs.layouts);
+	indices = move(rhs.indices);
+	arrays = move(rhs.arrays);
+	meshName = rhs.meshName; // copy
+
+	rhs.vbo = 0;
+	rhs.ibo = 0;
+	rhs.vao = 0;
+
+	rhs.source.reset();
+}
+
 Mesh::Mesh(string &&name)
 	: Mesh{}
 {
@@ -56,9 +76,26 @@ Mesh::~Mesh()
 	Mesh::collection.remove(this);
 }
 
-void Mesh::load(Source *source)
+Mesh & Mesh::operator=(Mesh &&rhs)
 {
-	load(unique_ptr<Source>{source});
+	reset();
+
+	vbo = rhs.vbo;
+	ibo = rhs.ibo;
+	vao = rhs.vao;
+	source = move(rhs.source);
+	layouts = move(rhs.layouts);
+	indices = move(rhs.indices);
+	arrays = move(rhs.arrays);
+	meshName = rhs.meshName; // copy
+
+	rhs.vbo = 0;
+	rhs.ibo = 0;
+	rhs.vao = 0;
+
+	rhs.source.reset();
+
+	return *this;
 }
 
 void Mesh::load(unique_ptr<Source> &&source)
@@ -82,7 +119,7 @@ void Mesh::reload()
 		throw string{"gl::Mesh{" + meshName + "}::reload() - empty source"};
 	}
 
-	double timer = sys::time();
+	double timer = ngn::time();
 
 	SRC_MESH_USE(*source);
 
@@ -106,27 +143,33 @@ void Mesh::reload()
 
 	reloadSoft();
 
-	clog << fixed;
-	clog << "  [Mesh:" << meshName << " {" << source->name() << "}:" << sys::time() - timer << "s]" << endl;
-	// clog << "    layouts=" << layouts.size() << endl;
-	// clog << "    indices=" << indices.size() << endl;
-	// clog << "    arrays=" << arrays.size() << endl;
+	UTIL_DEBUG
+	{
+		clog << fixed;
+		clog << "  [Mesh:" << meshName << " {" << source->name() << "}:" << ngn::time() - timer << "s]" << endl;
+		// clog << "    layouts=" << layouts.size() << endl;
+		// clog << "    indices=" << indices.size() << endl;
+		// clog << "    arrays=" << arrays.size() << endl;
+	}
 }
 
 void Mesh::reloadSoft()
 {
-	GL_CHECK(glGenVertexArrays(1, &vao));
-	GL_CHECK(glBindVertexArray(vao));
-
-	for (const auto & layout : layouts)
+	if (vbo)
 	{
-		GL_CHECK(glEnableVertexAttribArray(layout.index));
-		GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, vbo));
-		GL_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo));
-		GL_CHECK(glVertexAttribPointer(layout.index, layout.size, layout.type, GL_FALSE, layout.stride, layout.pointer));
-	}
+		GL_CHECK(glGenVertexArrays(1, &vao));
+		GL_CHECK(glBindVertexArray(vao));
 
-	GL_CHECK(glBindVertexArray(0));
+		for (const auto & layout : layouts)
+		{
+			GL_CHECK(glEnableVertexAttribArray(layout.index));
+			GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, vbo));
+			GL_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo));
+			GL_CHECK(glVertexAttribPointer(layout.index, layout.size, layout.type, GL_FALSE, layout.stride, layout.pointer));
+		}
+
+		GL_CHECK(glBindVertexArray(0));
+	}
 }
 
 void Mesh::reset()
@@ -154,21 +197,24 @@ void Mesh::reset()
 
 void Mesh::render()
 {
-	GL_CHECK(glBindVertexArray(vao));
-
-	for (const auto &index : indices)
+	if (vao)
 	{
-		GL_CHECK(glDrawElements(index.mode, index.count, index.type, reinterpret_cast<GLvoid *>(index.offset)));
-		gl::stats.triangles += index.count;
-	}
+		GL_CHECK(glBindVertexArray(vao));
 
-	for (const auto &array : arrays)
-	{
-		GL_CHECK_PARAM(glDrawArrays(array.mode, array.offset, array.count), array.mode << " " << gl::getEnumName(array.mode));
-		gl::stats.triangles += array.count;
-	}
+		for (const auto &index : indices)
+		{
+			GL_CHECK(glDrawElements(index.mode, index.count, index.type, reinterpret_cast<GLvoid *>(index.offset)));
+			gl::stats.triangles += index.count;
+		}
 
-	GL_CHECK(glBindVertexArray(0));
+		for (const auto &array : arrays)
+		{
+			GL_CHECK_PARAM(glDrawArrays(array.mode, array.offset, array.count), array.mode << " " << gl::getEnumName(array.mode));
+			gl::stats.triangles += array.count;
+		}
+
+		GL_CHECK(glBindVertexArray(0));
+	}
 }
 
 } // gl

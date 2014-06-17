@@ -98,4 +98,14 @@ vector<char *> get(char ch)
 	return values;
 }
 
+char * last()
+{
+	if (argc == 1)
+	{
+		return nullptr;
+	}
+
+	return argv[argc - 1];
+}
+
 }

@@ -265,6 +265,11 @@ void Program::use()
 	GL_CHECK(glUseProgram(id));
 }
 
+void Program::release()
+{
+	GL_CHECK(glUseProgram(0));
+}
+
 GLint Program::getName(const string &name)
 {
 	if (id)

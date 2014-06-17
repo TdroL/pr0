@@ -1,6 +1,6 @@
 #include "obj.hpp"
 #include "../gl.hpp"
-#include "../sys/fs.hpp"
+#include "../ngn/fs.hpp"
 #include "../util/str.hpp"
 
 #include <array>
@@ -14,7 +14,7 @@ namespace src
 
 using namespace std;
 
-namespace fs = sys::fs;
+namespace fs = ngn::fs;
 namespace str = util::str;
 
 namespace obj
@@ -174,14 +174,14 @@ void Mesh::use()
 				parser >> vertex;
 				if ( ! vertex)
 				{
-					throw string{"Incorrect face: \"" + item.first + "\". Expected: \"[vertex]\""};
+					throw string{"src::obj::Mesh::use() - incorrect face: \"" + item.first + "\". Expected: \"[vertex]\""};
 				}
 
 				vertex = vertex > 0 ? vertex - 1 : inVertices.size() + vertex;
 
 				if (static_cast<size_t>(vertex) >= inVertices.size())
 				{
-					throw string{"Illegal vertex index: \"" + to_string(vertex) + "\". Expected number of range from 1 to " + to_string(inVertices.size())};
+					throw string{"src::obj::Mesh::use() - illegal vertex index: \"" + to_string(vertex) + "\". Expected number of range from 1 to " + to_string(inVertices.size())};
 				}
 
 				vertexBuffer.push_back(inVertices[vertex].x);
@@ -196,7 +196,7 @@ void Mesh::use()
 
 				if ( ! vertex || ! uv)
 				{
-					throw string{"Incorrect face: \"" + item.first + "\". Expected: \"[vertex]/[uv]\""};
+					throw string{"src::obj::Mesh::use() - incorrect face: \"" + item.first + "\". Expected: \"[vertex]/[uv]\""};
 				}
 
 				vertex = vertex > 0 ? vertex - 1 : inVertices.size() + vertex;
@@ -204,12 +204,12 @@ void Mesh::use()
 
 				if (static_cast<size_t>(vertex) >= inVertices.size())
 				{
-					throw string{"Illegal vertex index: \"" + to_string(vertex) + "\". Expected number of range from 1 to " + to_string(inVertices.size())};
+					throw string{"src::obj::Mesh::use() - illegal vertex index: \"" + to_string(vertex) + "\". Expected number of range from 1 to " + to_string(inVertices.size())};
 				}
 
 				if (static_cast<size_t>(uv) >= inUvs.size())
 				{
-					throw string{"Illegal uv index: \"" + to_string(uv) + "\". Expected number of range from 1 to " + to_string(inUvs.size())};
+					throw string{"src::obj::Mesh::use() - illegal uv index: \"" + to_string(uv) + "\". Expected number of range from 1 to " + to_string(inUvs.size())};
 				}
 
 				vertexBuffer.push_back(inVertices[vertex].x);
@@ -227,7 +227,7 @@ void Mesh::use()
 
 				if ( ! vertex || ! normal)
 				{
-					throw string{"Incorrect face: \"" + item.first + "\". Expected: \"[vertex]//[normal]\""};
+					throw string{"src::obj::Mesh::use() - incorrect face: \"" + item.first + "\". Expected: \"[vertex]//[normal]\""};
 				}
 
 				vertex = vertex > 0 ? vertex - 1 : inVertices.size() + vertex;
@@ -235,12 +235,12 @@ void Mesh::use()
 
 				if (static_cast<size_t>(vertex) >= inVertices.size())
 				{
-					throw string{"Illegal vertex index: \"" + to_string(vertex) + "\". Expected number of range from 1 to " + to_string(inVertices.size())};
+					throw string{"src::obj::Mesh::use() - illegal vertex index: \"" + to_string(vertex) + "\". Expected number of range from 1 to " + to_string(inVertices.size())};
 				}
 
 				if (static_cast<size_t>(normal) >= inNormals.size())
 				{
-					throw string{"Illegal normal index: \"" + to_string(normal) + "\". Expected number of range from 1 to " + to_string(inNormals.size())};
+					throw string{"src::obj::Mesh::use() - illegal normal index: \"" + to_string(normal) + "\". Expected number of range from 1 to " + to_string(inNormals.size())};
 				}
 
 				vertexBuffer.push_back(inVertices[vertex].x);
@@ -258,7 +258,7 @@ void Mesh::use()
 
 				if ( ! vertex || ! uv || ! normal)
 				{
-					throw string{"Incorrect face: \"" + item.first + "\". Expected: \"[vertex]/[uv]/[normal]\""};
+					throw string{"src::obj::Mesh::use() - incorrect face: \"" + item.first + "\". Expected: \"[vertex]/[uv]/[normal]\""};
 				}
 
 				vertex = vertex > 0 ? vertex - 1 : inVertices.size() + vertex;
@@ -267,17 +267,17 @@ void Mesh::use()
 
 				if (static_cast<size_t>(vertex) >= inVertices.size())
 				{
-					throw string{"Illegal vertex index: \"" + to_string(vertex) + "\". Expected number of range from 1 to " + to_string(inVertices.size())};
+					throw string{"src::obj::Mesh::use() - illegal vertex index: \"" + to_string(vertex) + "\". Expected number of range from 1 to " + to_string(inVertices.size())};
 				}
 
 				if (static_cast<size_t>(uv) >= inUvs.size())
 				{
-					throw string{"Illegal uv index: \"" + to_string(uv) + "\". Expected number of range from 1 to " + to_string(inUvs.size())};
+					throw string{"src::obj::Mesh::use() - illegal uv index: \"" + to_string(uv) + "\". Expected number of range from 1 to " + to_string(inUvs.size())};
 				}
 
 				if (static_cast<size_t>(normal) >= inNormals.size())
 				{
-					throw string{"Illegal normal index: \"" + to_string(normal) + "\". Expected number of range from 1 to "+ to_string(inNormals.size())};
+					throw string{"src::obj::Mesh::use() - illegal normal index: \"" + to_string(normal) + "\". Expected number of range from 1 to "+ to_string(inNormals.size())};
 				}
 
 				vertexBuffer.push_back(inVertices[vertex].x);

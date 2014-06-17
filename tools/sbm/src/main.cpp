@@ -15,22 +15,22 @@ int main(int argc, char *argv[])
 
 		if (args::has('h'))
 		{
-			cout << "Usage: sbm -i input.obj [-o output.sbm]" << endl;
+			cout << "Usage: sbm [-o output.sbm] input.obj" << endl;
 			return EXIT_SUCCESS;
 		}
 
-		auto values = args::get('i');
+		char * last = args::last();
 
-		if ( ! values.size())
+		if ( ! last)
 		{
 			cout << "Invalid input file" << endl;
 			return EXIT_SUCCESS;
 		}
 
-		string input{values[0]};
+		string input{last};
 		string output;
 
-		values = args::get('o');
+		auto values = args::get('o');
 
 		if ( ! values.size())
 		{

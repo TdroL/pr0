@@ -16,6 +16,8 @@ bool hasAny(char *ch);
 
 std::vector<char *> get(char ch);
 
+char * last();
+
 }
 
 #endif

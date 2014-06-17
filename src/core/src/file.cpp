@@ -1,5 +1,5 @@
 #include "file.hpp"
-#include "../sys/fs.hpp"
+#include "../ngn/fs.hpp"
 
 #include <vector>
 #include <iostream>
@@ -12,7 +12,7 @@ namespace file
 
 using namespace std;
 
-namespace fs = sys::fs;
+namespace fs = ngn::fs;
 
 Stream::Stream()
 	: fileName{""}

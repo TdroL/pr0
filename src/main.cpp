@@ -10,14 +10,15 @@
 // #include "core/gl/mesh.hpp"
 // #include "core/gl/program.hpp"
 // #include "core/util.hpp"
+#include "core/util/align.hpp"
 #include "core/util/count.hpp"
 #include "core/util/scope.hpp"
 // #include "core/util/initq.hpp"
-#include "core/sys.hpp"
-#include "core/sys/fs.hpp"
-#include "core/sys/key.hpp"
-#include "core/sys/loop.hpp"
-#include "core/sys/window.hpp"
+#include "core/ngn.hpp"
+#include "core/ngn/fs.hpp"
+#include "core/ngn/key.hpp"
+#include "core/ngn/loop.hpp"
+#include "core/ngn/window.hpp"
 // #include "core/src/mem.hpp"
 // #include "core/src/sbm.hpp"
 
@@ -25,18 +26,18 @@
 
 using namespace std;
 
-namespace fs = sys::fs;
-namespace key = sys::key;
-namespace win = sys::window;
+namespace fs = ngn::fs;
+namespace key = ngn::key;
+namespace win = ngn::window;
 
 int main(int argc, char const* argv[])
 {
 	try
 	{
-		sys::init();
+		ngn::init();
 
 		UTIL_SCOPE_EXIT([] () {
-			sys::deinit();
+			ngn::deinit();
 		});
 
 		UTIL_DEBUG
@@ -58,27 +59,43 @@ int main(int argc, char const* argv[])
 		gl::Font font{"DejaVuSansMono"};
 		font.load("DejaVu/DejaVuSansMono.ttf");
 
-		/* Test: switch to window mode */
-		UTIL_DEBUG
-		{
-			win::switchMode(win::Mode::windowed);
-			gl::reloadSoftAll();
-		}
-
-		/* Refresh system */
-
-		sys::update();
-
 		const win::Mode modes[] {
 			win::Mode::windowed,
 			win::Mode::borderless,
 			win::Mode::fullscreen
 		};
-		int currentMode = 0;
+		size_t currentMode = 0;
+
+		const int vsyncs[] {
+			-1, // progressive
+			 0, // off
+			 1, // on
+		};
+		const string vsyncNames[] {
+			"progressive",
+			"off",
+			"on",
+		};
+		size_t currentVsync = 0;
+
+		/* Test: switch to window mode */
+		UTIL_DEBUG
+		{
+			currentMode = 0;
+			currentVsync = 0;
+
+			win::switchMode(modes[currentMode]);
+			win::vsync(vsyncs[currentVsync]);
+			gl::reloadSoftAll();
+		}
+
+		/* Refresh system */
+
+		ngn::update();
 
 		while ( ! win::shouldClose())
 		{
-			SYS_LOOP;
+			NGN_LOOP;
 
 			if (key::hit(KEY_ESC))
 			{
@@ -120,15 +137,27 @@ int main(int argc, char const* argv[])
 				cout << "done" << endl;
 			}
 
+			if (key::hit(KEY_F10))
+			{
+				currentVsync = (currentVsync + 1) % util::countOf(vsyncs);
+
+				cout << "Switching vsync mode to \"" << vsyncNames[currentVsync] << "\" (" << vsyncs[currentVsync] << ") ..." << endl;
+				win::switchMode(modes[currentMode]);
+				win::vsync(vsyncs[currentVsync]);
+				gl::reloadSoftAll();
+				cout << "done" << endl;
+			}
+
 			if (key::hit(KEY_F11))
 			{
 				cout << "Switching window mode..." << endl;
 				currentMode = (currentMode + 1) % util::countOf(modes);
 				win::switchMode(modes[currentMode]);
+				win::vsync(vsyncs[currentVsync]);
 				cout << "done" << endl;
 
 				cout << "Soft-reloading GL..." << endl;
-				gl::reloadAll();
+				gl::reloadSoftAll();
 				cout << "done" << endl;
 			}
 
@@ -143,40 +172,32 @@ int main(int argc, char const* argv[])
 			app.render();
 
 			{
-				double ft = sys::time() - sys::ct;
+				double ft = ngn::time() - ngn::ct;
 
 				{
 					ostringstream oss;
 					oss << setprecision(4) << fixed;
-					oss << "dt=" << sys::dt * 1000.0 << " ms\n";
+					oss << "dt=" << ngn::dt * 1000.0 << " ms\n";
 					oss << "ft=" << ft * 1000.0 << " ms\n";
-					oss << "fps=" << 1.0/sys::dt << "\n";
-					oss << "fps=" << 1.0/ft << " (real)\n";
-					oss << "\n"; // triangles=
-					oss << "\n";
+					oss << "fps=" << 1.0/ngn::dt << "\n";
+					oss << "fps=" << 1.0/ft << " (frame)\n";
+					oss << "triangles=" << gl::stats.triangles << "\n";
 					oss << "\n";
 					oss << "F5 - reload shaders\n";
 					oss << "F6 - reload meshes\n";
 					oss << "F7 - reload fonts\n";
 					oss << "F8 - reload FBOs\n";
 					oss << "\n";
+					oss << "F10 - change vsync mode (current: " << vsyncNames[currentVsync] << ")\n";
 					oss << "F11 - change window mode\n";
-					font.render(oss.str());
-				}
-
-				{
-					ostringstream oss;
 					oss << "\n";
-					oss << "\n";
-					oss << "\n";
-					oss << "\n";
-					oss << "triangles=" << gl::stats.triangles << "\n";
+					oss << "Movement: W, A, S, D\n";
+					oss << "Camera: arrows\n";
+					oss << "Point Light: Keypad 8, 4, 5, 6\n";
 					font.render(oss.str());
 				}
 			}
 		}
-
-		/**/
 	}
 	catch (const exception &e)
 	{

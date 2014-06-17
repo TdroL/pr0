@@ -2,7 +2,7 @@
 #include "gl/font.hpp"
 #include "gl/fbo.hpp"
 #include "gl/mesh.hpp"
-#include "sys.hpp"
+#include "ngn.hpp"
 #include <GL/glew.h>
 #include <ranges>
 #include <sstream>
@@ -18,46 +18,49 @@ util::InitQ initQ{};
 Stats stats = {0, 0};
 Status status = Status::uninited;
 
-void debugHandler(GLenum source, GLenum type, GLuint, GLenum severity, GLsizei, const GLchar *message, GLvoid *userParams)
+namespace
 {
-	(userParams = userParams);
-
-	string source_name;
-	switch(source)
+	void debugHandler(GLenum source, GLenum type, GLuint, GLenum severity, GLsizei, const GLchar *message, GLvoid *)
 	{
-		case GL_DEBUG_SOURCE_API_ARB: source_name = "API"; break;
-		case GL_DEBUG_SOURCE_WINDOW_SYSTEM_ARB: source_name = "Window System"; break;
-		case GL_DEBUG_SOURCE_SHADER_COMPILER_ARB: source_name = "Shader Compiler"; break;
-		case GL_DEBUG_SOURCE_THIRD_PARTY_ARB: source_name = "Third Party"; break;
-		case GL_DEBUG_SOURCE_APPLICATION_ARB: source_name = "Application"; break;
-		case GL_DEBUG_SOURCE_OTHER_ARB: source_name = "Other"; break;
-	}
+		string source_name;
+		switch(source)
+		{
+			case GL_DEBUG_SOURCE_API_ARB: source_name = "API"; break;
+			case GL_DEBUG_SOURCE_WINDOW_SYSTEM_ARB: source_name = "Window System"; break;
+			case GL_DEBUG_SOURCE_SHADER_COMPILER_ARB: source_name = "Shader Compiler"; break;
+			case GL_DEBUG_SOURCE_THIRD_PARTY_ARB: source_name = "Third Party"; break;
+			case GL_DEBUG_SOURCE_APPLICATION_ARB: source_name = "Application"; break;
+			case GL_DEBUG_SOURCE_OTHER_ARB: source_name = "Other"; break;
+		}
 
-	string error_type;
-	switch(type)
-	{
-		case GL_DEBUG_TYPE_ERROR_ARB: error_type = "Error"; break;
-		case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR_ARB: error_type = "Deprecated Functionality"; break;
-		case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR_ARB: error_type = "Undefined Behavior"; break;
-		case GL_DEBUG_TYPE_PORTABILITY_ARB: error_type = "Portability"; break;
-		case GL_DEBUG_TYPE_PERFORMANCE_ARB: error_type = "Performance"; break;
-		case GL_DEBUG_TYPE_OTHER_ARB: error_type = "Other"; break;
-	}
+		string error_type;
+		switch(type)
+		{
+			case GL_DEBUG_TYPE_ERROR_ARB:               error_type = "Error"; break;
+			case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR_ARB: error_type = "Deprecated Functionality"; break;
+			case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR_ARB:  error_type = "Undefined Behavior"; break;
+			case GL_DEBUG_TYPE_PORTABILITY_ARB:         error_type = "Portability"; break;
+			case GL_DEBUG_TYPE_PERFORMANCE_ARB:         error_type = "Performance"; break;
+			case GL_DEBUG_TYPE_OTHER_ARB:               error_type = "Other"; break;
+		}
 
-	string type_severity;
-	switch(severity)
-	{
-		case GL_DEBUG_SEVERITY_HIGH_ARB: type_severity = "High"; break;
-		case GL_DEBUG_SEVERITY_MEDIUM_ARB: type_severity = "Medium"; break;
-		case GL_DEBUG_SEVERITY_LOW_ARB: type_severity = "Low"; break;
-	}
+		string type_severity;
+		switch(severity)
+		{
+			case GL_DEBUG_SEVERITY_HIGH_ARB:   type_severity = "High"; break;
+			case GL_DEBUG_SEVERITY_MEDIUM_ARB: type_severity = "Medium"; break;
+			case GL_DEBUG_SEVERITY_LOW_ARB:    type_severity = "Low"; break;
+		}
 
-	cerr << "[GL debug]: " << error_type << " from " << source_name << ",\t" << type_severity << " priority" << endl;
-	cerr << "Message: " << message << endl;
+		cerr << "[GL debug]: " << error_type << " from " << source_name << ",\t" << type_severity << " priority" << endl;
+		cerr << "Message: " << message << endl;
+		cerr << flush;
+	}
 }
 
 void init()
 {
+	GL_VALIDATE(gl::init());
 	reload();
 
 	status = Status::inited;
@@ -67,35 +70,37 @@ void init()
 
 void reload()
 {
+	GL_VALIDATE(gl::reload());
+
 	GL_CHECK(glEnable(GL_CULL_FACE));
 	GL_CHECK(glCullFace(GL_BACK));
 	GL_CHECK(glFrontFace(GL_CCW));
 
 	GL_CHECK(glEnable(GL_DEPTH_TEST));
-	GL_CHECK(glEnable(GL_DEPTH_CLAMP));
+	// GL_CHECK(glEnable(GL_DEPTH_CLAMP));
 	GL_CHECK(glDepthMask(GL_TRUE));
 	GL_CHECK(glDepthFunc(GL_LEQUAL));
 	GL_CHECK(glDepthRange(0.0, 1.0));
-
-	GL_CHECK(glEnable(GL_ALPHA_TEST));
 
 	GL_CHECK(glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST));
 
 	// glEnable(GL_MULTISAMPLE);
 
 	GL_CHECK(glEnable(GL_BLEND));
+	GL_CHECK(glEnable(GL_ALPHA_TEST));
 	GL_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
 	if (GLEW_ARB_debug_output)
 	{
-		GL_CHECK(glDebugMessageCallbackARB(debugHandler, reinterpret_cast<void*>(15)));
-
 		GL_CHECK(glEnable(GL_DEBUG_OUTPUT));
 		GL_CHECK(glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB));
+
+		GL_CHECK(glDebugMessageCallbackARB(debugHandler, reinterpret_cast<void*>(15)));
 	}
 	else
 	{
 		clog << "gl::reload() - ARB_debug_output not avaible" << endl;
+		clog << flush;
 	}
 }
 
@@ -1581,13 +1586,25 @@ void get(const GLenum name, GLint64 *value, GLuint i)   { glGetInteger64i_v(name
 void get(const GLenum name, GLfloat *value, GLuint i)   { glGetFloati_v(name, i, value); }
 void get(const GLenum name, GLdouble *value, GLuint i)  { glGetDoublei_v(name, i, value); }
 
+void flushErrors()
+{
+	GLenum err;
+
+	do
+	{
+		err = glGetError();
+	}
+	while (err != GL_NO_ERROR);
+}
+
 namespace
 {
-	const util::InitQAttacher attach{sys::initQ, []
+	const util::InitQAttacher attach{ngn::initQ, []
 	{
+		gl::flushErrors();
+
 		gl::init();
 	}};
 }
-
 
 } // gl

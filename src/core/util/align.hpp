@@ -1,17 +1,25 @@
 #ifndef UTIL_ALIGN_HPP
 #define UTIL_ALIGN_HPP
 
+#include <cstddef>
+
 namespace util
 {
 
-size_t align(size_t size, size_t alignTo)
-{
-	return (size + (alignTo - 1)) & ~(alignTo - 1);
-}
+std::size_t align(std::size_t size, std::size_t alignTo);
+std::size_t align(std::size_t size);
 
-size_t align(size_t size)
+template<typename T>
+T nextPowerOf2(T n)
 {
-	return util::align(size, sizeof(void *));
+	T k = 1;
+
+	while (k < n)
+	{
+		k *= 2;
+	}
+
+	return k;
 }
 
 }

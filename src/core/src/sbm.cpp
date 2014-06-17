@@ -1,6 +1,6 @@
 #include "sbm.hpp"
 #include "../gl.hpp"
-#include "../sys/fs.hpp"
+#include "../ngn/fs.hpp"
 
 #include <array>
 #include <vector>
@@ -13,7 +13,7 @@ namespace src
 
 using namespace std;
 
-namespace fs = sys::fs;
+namespace fs = ngn::fs;
 
 namespace sbm
 {

@@ -138,6 +138,19 @@ struct UniformValue
 	UniformValue(UniformValue::Type type, GLint id, glm::mat4 m4) : type{type}, id{id}, m4{m4} {}
 };
 
+struct TexParams
+{
+	GLint internalFormat = GL_RGBA;
+	GLenum format = GL_RGBA;
+	GLenum type = GL_UNSIGNED_BYTE;
+
+	TexParams() = default;
+
+	TexParams(GLint internalFormat, GLenum format, GLenum type)
+		: internalFormat{internalFormat}, format{format}, type{type}
+	{}
+};
+
 } // gl
 
 #endif

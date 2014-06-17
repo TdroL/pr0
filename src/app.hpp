@@ -1,59 +1,31 @@
 #ifndef APP_HPP
 #define APP_HPP
 
-#include "core/cam/basic.hpp"
-#include "core/gl.hpp"
-#include "core/gl/fbo.hpp"
+#include <vector>
 
-#include "core/gl/mesh.hpp"
-#include "core/gl/program.hpp"
+#include <core/gl/fbo.hpp>
+
+#include <core/gl/mesh.hpp>
+#include <core/gl/program.hpp>
+
+#include <core/ecs/entity.hpp>
 
 class App
 {
 public:
+	ecs::Entity cameraId{};
+	ecs::Entity lightIds[10];
 
-	struct Material
-	{
-		glm::vec4 ambient{0.2f, 0.2f, 0.2f, 1.f};
-		glm::vec4 diffuse{0.8f, 0.8f, 0.8f, 1.f};
-		glm::vec4 specular{0.f, 0.f, 0.f, 1.f};
-		glm::vec4 emission{0.f, 0.f, 0.f, 1.f};
-		GLfloat shininess = 0.f;
-		GLfloat padding[3];
-	};
-
-	struct Light
-	{
-		glm::vec4 ambient{0.f, 0.f, 0.f, 1.f};
-		glm::vec4 diffuse{1.f, 1.f, 1.f, 1.f};
-		glm::vec4 specular{1.f, 1.f, 1.f, 1.f};
-		glm::vec4 position{0.f, 0.f, 1.f, 0.f};
-		// glm::vec3 spotDirection{0.f, 0.f, -1.f};
-		// GLfloat spotExponent = 0.f;
-		// GLfloat spotCutoff = 180.f;
-		// GLfloat constantAttenuation = 1.f;
-		GLfloat linearAttenuation = 0.f;
-		GLfloat quadraticAttenuation = 0.f;
-		GLfloat padding[2];
-	};
-
-	glm::vec4 lightPositionDelta{0.f};
-
-	Material material{};
-	Light light{};
-
-	cam::Basic camera{glm::vec3{0.f, 0.f, 8.f}};
-
+	gl::Program deferredGBuffer{};
+	gl::Program deferredPointLight{};
+	gl::Program deferredDirectionalLight{};
 	gl::Program prog{};
 	gl::Program simple{};
+	gl::Program fboPreview{};
 
-	gl::Mesh suzanne{"suzanne"};
-	gl::Mesh venus{"venus"};
-	gl::Mesh sphere{"sphere"};
-	gl::Mesh plane{"plane"};
-	// gl::Mesh stargate{"stargate"};
-
-	gl::FBO fbo{"screen"};
+	gl::FBO gbuffer{"gbuffer"};
+	gl::FBO shadowmap{"shadowmap"};
+	gl::FBO shadowcubemap{"shadowcubemap"};
 
 	App() {};
 	~App() {};

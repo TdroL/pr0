@@ -3,16 +3,12 @@
 #include <cmath>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <glm/gtc/constants.hpp>
 
 namespace cam
 {
 
 using namespace std;
-
-const double PI = 3.141592653589793238462643383279;
-const double TAU = 2.0 * PI;
-const double RAD = TAU / 360.0;
-const double DEG = 1.0 / TAU;
 
 void Basic::update(const glm::vec3 &rotate, const glm::vec3 &translate)
 {
@@ -23,7 +19,7 @@ void Basic::update(const glm::vec3 &rotate, const glm::vec3 &translate)
 	rotation.z = fmod(rotation.z, 360.f);
 
 	glm::vec3 translateRotate{rotation};
-	translateRotate *= RAD * 0.5;
+	translateRotate *= glm::radians(0.5);
 
 	float sinX = sin(translateRotate.x);
 	float cosX = cos(translateRotate.x);
@@ -56,7 +52,7 @@ void Basic::apply(const glm::vec3 &rotate, const glm::vec3 &translate)
 void Basic::recalc()
 {
 	glm::vec3 viewRotation = rotation;
-	viewRotation *= -RAD * 0.5;
+	viewRotation *= -glm::radians(0.5);
 
 	float sinX = sin(viewRotation.x);
 	float cosX = cos(viewRotation.x);

@@ -33,10 +33,14 @@ public:
 	std::string meshName = "Unnamed mesh";
 
 	Mesh();
+	Mesh(Mesh &&rhs);
 	Mesh(std::string &&name);
 	~Mesh();
 
-	void load(Source *source);
+	Mesh(const Mesh &) = delete;
+
+	Mesh & operator=(Mesh &&rhs);
+
 	void load(std::unique_ptr<Source> &&source);
 	void reload();
 	void reloadSoft();

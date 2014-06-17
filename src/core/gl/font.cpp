@@ -1,12 +1,12 @@
 #include "font.hpp"
-#include "../util.hpp"
 #include "../gl.hpp"
+#include "../util.hpp"
 #include "program.hpp"
 #include "mesh.hpp"
 #include "program.hpp"
 #include "../src/file.hpp"
-#include "../sys.hpp"
-#include "../sys/window.hpp"
+#include "../ngn.hpp"
+#include "../ngn/window.hpp"
 
 #include <algorithm>
 #include <glm/glm.hpp>
@@ -109,7 +109,7 @@ void Font::reload()
 {
 	reset();
 
-	double timer = sys::time();
+	double timer = ngn::time();
 
 	if ( ! source)
 	{
@@ -135,10 +135,12 @@ void Font::reload()
 		throw string{"gl::Font::init() - OpenGL not initialized"};
 	}
 
+	FT_Select_Charmap(face, FT_ENCODING_UNICODE);
+
 	FT_Set_Pixel_Sizes(face, 0, fontSize);
 
-	sx = sx ? sx : 2.0f / sys::window::width;
-	sy = sy ? sy : 2.0f / sys::window::height;
+	sx = sx ? sx : 2.0f / ngn::window::width;
+	sy = sy ? sy : 2.0f / ngn::window::height;
 
 	GL_CHECK(glGenVertexArrays(1, &vao));
 	GL_CHECK(glGenBuffers(1, &vbo));
@@ -165,7 +167,7 @@ void Font::reload()
 		if (FT_Load_Char(face, i, FT_LOAD_RENDER))
 		{
 			throw string{"gl::Font::reload() - loading character " + to_string(static_cast<char>(i)) + " failed"};
-			continue;
+			// continue;
 		}
 
 		if (roww + g->bitmap.width + 1 >= MAXWIDTH)
@@ -228,8 +230,11 @@ void Font::reload()
 
 	GL_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
 
-	clog << fixed;
-	clog << "  [Font:" << fontName << " {" << source->name() << "}:" << sys::time() - timer << "s]" << endl;
+	UTIL_DEBUG
+	{
+		clog << fixed;
+		clog << "  [Font:" << fontName << " {" << source->name() << "}:" << ngn::time() - timer << "s]" << endl;
+	}
 }
 
 void Font::reloadSoft()

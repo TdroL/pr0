@@ -10,7 +10,6 @@ INCLUDES += \
 	-I$(GLFW)/include \
 	-I$(GLEW)/include \
 
-VENDORS := $(shell find $(VNDDIR) -maxdepth 3 -type d -name include)
 INCLUDES := $(INCLUDES) $(patsubst $(VNDDIR)/%,-I$(VNDDIR)/%,$(VENDORS))
 
 LDIR += \

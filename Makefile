@@ -18,21 +18,27 @@ DEFINES = \
 	-DGLEW_NO_GLU \
 
 ifeq ($(MAKECMDGOALS),release)
-	CXXFLAGS += $(CXXFLAGS_RELEASE)
+	CXXFLAGS += $(CXXFLAGS_RELEASE) \
+		-DGLM_FORCE_RADIANS \
+		-DGLM_FORCE_CXX11 \
 
 else
 	CXXFLAGS += $(CXXFLAGS_DEBUG)
 	DEFINES += \
 		-DDEBUG \
 		-D_DEBUG \
+		-DGLM_FORCE_RADIANS \
+		-DGLM_FORCE_CXX11 \
 
 endif
+
+VENDORS := $(shell find $(VNDDIR) -maxdepth 3 -type d -name include)
 
 ifneq (,$(findstring Windows,$(OS)))
 	include Makefile.windows
 endif
 
-CXXFLAGS += $(DEFINES) $(INCLUDES)
+CXXFLAGS += $(DEFINES) $(INCLUDES) -I$(SRCDIR)
 LFLAGS += $(LDIR)
 
 SOURCES  := $(shell find $(SRCDIR) -type f -name "*.cpp")
@@ -69,18 +75,23 @@ force: clean all
 run: all
 	./$(PROGRAM)
 
+run-gdb: all
+	gdb $(PROGRAM)
+
 clean-dep:
 	@echo "Cleaning dep files..."
 	@find $(BUILDDIR) -name '*.d' -type f | xargs $(RM) -v
 
-clean: clean-dep
-	@echo "Cleaning..."
+clean-obj:
+	@echo "Cleaning obj files..."
 	@$(RM) -r ./$(PROGRAM)
 	@find $(BUILDDIR) -name '*.o' -type f | xargs $(RM) -v
+
+clean: clean-dep clean-obj
 
 archive:
 	@echo "Creating archive..."
 	@mkdir -p $(ARDIR)
-	@ar cr $(ARDIR)/libcore.a `find $(BUILDDIR) -name '*.o' -type f`
+	@ar cr $(ARDIR)/libpr0.a `find $(BUILDDIR) -name '*.o' -type f`
 
-.PHONY: all release force run clean clean-dep archive
+.PHONY: all release force run run-gdb clean clean-dep clean-obj archive
