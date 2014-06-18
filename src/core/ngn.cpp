@@ -37,12 +37,18 @@ void init()
 	window::create(1600, 900);
 
 	{
-		// glewExperimental = GL_TRUE;
+		glewExperimental = GL_TRUE;
 		auto err = glewInit();
 		if (err != GLEW_OK)
 		{
 			throw string{"ngn::init() - glewInit() - "} + reinterpret_cast<const char *>(glewGetErrorString(err));
 		}
+	}
+
+	UTIL_DEBUG
+	{
+		clog << "OpenGL info:" << endl;
+		clog << gl::getBasicInfo("  ") << endl;
 	}
 
 	window::vsync(1);

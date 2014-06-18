@@ -24,6 +24,7 @@ int main(int argc, char *argv[])
 		if ( ! last)
 		{
 			cout << "Invalid input file" << endl;
+			cout << "Usage: sbm [-o output.sbm] input.obj" << endl;
 			return EXIT_SUCCESS;
 		}
 

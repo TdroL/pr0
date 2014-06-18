@@ -2,20 +2,25 @@ CC := $(CXX)
 RM ?= rm -f
 
 SRCDIR = src
+BASEVNDDIR = ../../vendor
 VNDDIR = vendor
 BUILDDIR = tmp
-PROGRAM = main
+PROGRAM = sbm
 CXXFLAGS = -Wall -Winline -Wextra -std=c++11 -m64 -march=native
 CXXFLAGS_DEBUG = -g -Og -Weffc++ -Wfatal-errors -DDEBUG
 CXXFLAGS_RELEASE = -O3 -Wfatal-errors -funroll-loops -msse -msse2 -msse3 -mfpmath=sse
 LFLAGS =
-LDIR =
-LIBS = -static -lgcc
+LDIR = -L../../lib
+LIBS = -static -lgcc -lcore
 
-DEFINES =
+DEFINES = \
+	-DGLEW_STATIC \
+	-DGLEW_NO_GLU \
+	-DGLM_FORCE_RADIANS \
+	-DGLM_FORCE_CXX11 \
 
 ifeq ($(MAKECMDGOALS),release)
-	CXXFLAGS += $(CXXFLAGS_RELEASE)
+	CXXFLAGS += $(CXXFLAGS_RELEASE) \
 
 else
 	CXXFLAGS += $(CXXFLAGS_DEBUG)
@@ -24,6 +29,8 @@ else
 		-D_DEBUG \
 
 endif
+
+INCLUDES += -I../../src
 
 ifneq (,$(findstring Windows,$(OS)))
 	include Makefile.windows
@@ -70,9 +77,11 @@ clean-dep:
 	@echo "Cleaning dep files..."
 	@find $(BUILDDIR) -name '*.d' -type f | xargs $(RM) -v
 
-clean: clean-dep
-	@echo "Cleaning..."
+clean-obj:
+	@echo "Cleaning obj files..."
 	@$(RM) -r ./$(PROGRAM)
 	@find $(BUILDDIR) -name '*.o' -type f | xargs $(RM) -v
+
+clean: clean-dep clean-obj
 
 .PHONY: all release force run clean clean-dep

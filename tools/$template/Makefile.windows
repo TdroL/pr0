@@ -1,15 +1,16 @@
-BOOST := $(HOME)/lib/boost
-
 INCLUDES += \
-	-I/local/include \
-	-I$(BOOST)
+	-I/local/include
+
+VENDORS := $(shell find $(BASEVNDDIR) -maxdepth 3 -type d -name include)
+INCLUDES := $(INCLUDES) $(patsubst $(BASEVNDDIR)/%,-I$(BASEVNDDIR)/%,$(VENDORS))
 
 VENDORS := $(shell find $(VNDDIR) -maxdepth 3 -type d -name include)
 INCLUDES := $(INCLUDES) $(patsubst $(VNDDIR)/%,-I$(VNDDIR)/%,$(VENDORS))
 
-LDIR +=
+LDIR += \
+	-L/local/lib
 
-VENDORS := $(shell find $(VNDDIR) -maxdepth 3 -type d -name lib)
+VENDORS := $(shell find $(VNDDIR) -maxdepth 3 -type d -name "lib*")
 LDIR += $(patsubst $(VNDDIR)/%,-L$(VNDDIR)/%,$(VENDORS))
 
 LFLAGS += -mwindows -mconsole

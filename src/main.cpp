@@ -42,10 +42,6 @@ int main(int argc, char const* argv[])
 
 		UTIL_DEBUG
 		{
-			gl::getBasicInfo();
-			clog << "OpenGL info:" << endl;
-			clog << gl::getBasicInfo("  ") << endl;
-
 			if (argc > 1 && argv[1] == string{"--print-exts"})
 			{
 				clog << "  Extensions:" << endl;

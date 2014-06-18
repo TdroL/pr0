@@ -2,6 +2,7 @@ CC := $(CXX)
 RM ?= rm -f
 
 SRCDIR = src
+BASEVNDDIR = ../../vendor
 VNDDIR = vendor
 BUILDDIR = tmp
 PROGRAM = sbm
@@ -12,10 +13,14 @@ LFLAGS =
 LDIR = -L../../lib
 LIBS = -static -lgcc -lcore
 
-DEFINES =
+DEFINES = \
+	-DGLEW_STATIC \
+	-DGLEW_NO_GLU \
+	-DGLM_FORCE_RADIANS \
+	-DGLM_FORCE_CXX11 \
 
 ifeq ($(MAKECMDGOALS),release)
-	CXXFLAGS += $(CXXFLAGS_RELEASE)
+	CXXFLAGS += $(CXXFLAGS_RELEASE) \
 
 else
 	CXXFLAGS += $(CXXFLAGS_DEBUG)
@@ -72,9 +77,11 @@ clean-dep:
 	@echo "Cleaning dep files..."
 	@find $(BUILDDIR) -name '*.d' -type f | xargs $(RM) -v
 
-clean: clean-dep
-	@echo "Cleaning..."
+clean-obj:
+	@echo "Cleaning obj files..."
 	@$(RM) -r ./$(PROGRAM)
 	@find $(BUILDDIR) -name '*.o' -type f | xargs $(RM) -v
+
+clean: clean-dep clean-obj
 
 .PHONY: all release force run clean clean-dep

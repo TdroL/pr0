@@ -1,23 +1,13 @@
-BOOST := $(HOME)/lib/boost
-GLFW  := $(HOME)/lib/glfw3
-GLEW  := $(HOME)/lib/glew
-GLM   := $(HOME)/lib/glm
-
 INCLUDES += \
-	-I/local/include \
-	-I$(BOOST) \
-	-I$(GLM) \
-	-I$(GLFW)/include \
-	-I$(GLEW)/include \
+	-I/local/include
 
+VENDORS := $(shell find $(VNDDIR) -maxdepth 3 -type d -name include)
 INCLUDES := $(INCLUDES) $(patsubst $(VNDDIR)/%,-I$(VNDDIR)/%,$(VENDORS))
 
 LDIR += \
-	-L/local/lib \
-	-L$(GLFW)/lib-mingw \
-	-L$(GLEW)/lib \
+	-L/local/lib
 
-VENDORS := $(shell find $(VNDDIR) -maxdepth 3 -type d -name lib)
+VENDORS := $(shell find $(VNDDIR) -maxdepth 3 -type d -name "lib*")
 LDIR += $(patsubst $(VNDDIR)/%,-L$(VNDDIR)/%,$(VENDORS))
 
 LFLAGS += -mwindows -mconsole

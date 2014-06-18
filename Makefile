@@ -16,19 +16,17 @@ LIBS = -static -lgcc -lglfw3 -lglew32 -lopengl32 -lstb_image -lfreetype
 DEFINES = \
 	-DGLEW_STATIC \
 	-DGLEW_NO_GLU \
+	-DGLM_FORCE_RADIANS \
+	-DGLM_FORCE_CXX11 \
 
 ifeq ($(MAKECMDGOALS),release)
 	CXXFLAGS += $(CXXFLAGS_RELEASE) \
-		-DGLM_FORCE_RADIANS \
-		-DGLM_FORCE_CXX11 \
 
 else
 	CXXFLAGS += $(CXXFLAGS_DEBUG)
 	DEFINES += \
 		-DDEBUG \
 		-D_DEBUG \
-		-DGLM_FORCE_RADIANS \
-		-DGLM_FORCE_CXX11 \
 
 endif
 
