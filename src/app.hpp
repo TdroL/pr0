@@ -14,7 +14,7 @@ class App
 {
 public:
 	ecs::Entity cameraId{};
-	ecs::Entity lightIds[10];
+	ecs::Entity lightIds[10]{};
 
 	gl::Program deferredGBuffer{};
 	gl::Program deferredPointLight{};
