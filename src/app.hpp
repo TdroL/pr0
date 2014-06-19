@@ -4,6 +4,7 @@
 #include <vector>
 
 #include <core/gl/fbo.hpp>
+#include <core/gl/fbocube.hpp>
 
 #include <core/gl/mesh.hpp>
 #include <core/gl/program.hpp>
@@ -17,14 +18,15 @@ public:
 	ecs::Entity lightIds[10]{};
 
 	gl::Program deferredGBuffer{};
+	gl::Program deferredShadowMap{};
 	gl::Program deferredPointLight{};
 	gl::Program deferredDirectionalLight{};
 	gl::Program simple{};
-	gl::Program fboPreview{};
+	gl::Program shadowmapPreview{};
 
 	gl::FBO gbuffer{"gbuffer"};
 	gl::FBO shadowmap{"shadowmap"};
-	gl::FBO shadowcubemap{"shadowcubemap"};
+	gl::FBOCube shadowcubemap{"shadowcubemap"};
 
 	App() {};
 	~App() {};
@@ -34,6 +36,10 @@ public:
 	void update();
 
 	void render();
+
+	void gbufferPass();
+	void directionalLightsPass();
+	void pointLightsPass();
 };
 
 #endif

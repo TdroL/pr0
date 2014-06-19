@@ -15,18 +15,18 @@
 namespace gl
 {
 
-enum class DSType
-{
-	None,
-	Buffer,
-	Texture,
-};
-
 class FBO
 {
 public:
+	enum DepthStencilType
+	{
+		None,
+		RenderBuffer,
+		Texture,
+	};
+
 	static std::list<FBO *> collection;
-	static std::vector<GLuint> activeStack;
+	static std::vector<FBO *> activeStack;
 	static void reloadAll();
 	static void reloadSoftAll();
 
@@ -40,7 +40,7 @@ public:
 	std::vector<gl::TexParams> texParams{};
 
 	GLuint depthStencil = 0;
-	gl::DSType depthStencilType = gl::DSType::None;
+	DepthStencilType depthStencilType = None;
 	gl::TexParams depthStencilParams{
 		/* .internalFormat= */ GL_DEPTH24_STENCIL8,
 		/* .format= */ GL_DEPTH_STENCIL,
@@ -59,13 +59,16 @@ public:
 	void setTexParams(size_t id, GLint internalFormat, GLenum format, GLenum type);
 	void setDSParams(GLint internalFormat, GLenum format, GLenum type);
 
-	void create(unsigned int colorAttachments = 1, gl::DSType depthStencilType = gl::DSType::Buffer);
-	void create(std::vector<std::string> &&colorNames, gl::DSType depthStencilType = gl::DSType::Buffer);
+	void create(unsigned int colorAttachments = 1, DepthStencilType depthStencilType = RenderBuffer);
+	void create(std::vector<std::string> &&colorNames, DepthStencilType depthStencilType = RenderBuffer);
 	void reset();
 	void resetStorages();
 
 	void reload();
 	void reloadSoft();
+
+	GLint getTexturesCount();
+	GLint bindTextures(GLint offset = 0);
 
 	void render();
 	void render(gl::Program &prog);

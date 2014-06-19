@@ -5,6 +5,7 @@ layout(location = 0) out vec4 outColor;
 in vec2 uv;
 
 uniform mat4 invP;
+uniform mat4 invV;
 
 uniform float near;
 uniform float far;
@@ -12,6 +13,9 @@ uniform float far;
 uniform sampler2D texNormal;
 uniform sampler2D texColor;
 uniform sampler2D texDS;
+uniform sampler2D texSM;
+
+uniform mat4 shadowmapMVP;
 
 uniform vec3 lightDirection;
 uniform vec4 lightColor;
@@ -41,6 +45,8 @@ void main()
 	vec3 normal = decodeNormal(encodedNormal);
 	vec3 position = reconstructPosition(depth);
 
+	vec4 shadowCoord = shadowmapMVP * invV * vec4(position, 1.0) * 0.5 + 0.5;
+
 	vec3 n = normalize(normal);
 	vec3 l = normalize(lightDirection);
 	vec3 v = normalize(-position.xyz);
@@ -55,6 +61,27 @@ void main()
 	vec3 diffuse  = lightColor.rgb * diffuseShininess.rgb * theta;
 	vec3 specular = lightColor.rgb * gauss;
 
-	outColor.rgb = ambient + diffuse + specular;
+	float shadowZBias = clamp(0.0005 * tan((theta)), 0.0, 0.01);
+	float visibility = 1.0;
+	shadowCoord.z += shadowZBias;
+
+	if (shadowCoord.x >= 0.0 && shadowCoord.x <= 1.0 && shadowCoord.y >= 0.0 && shadowCoord.y <= 1.0)
+	{
+		float shadow = 0.0;
+
+		shadow += step(shadowCoord.z, textureOffset(texSM, shadowCoord.xy, ivec2(-1,  1)).z);
+		shadow += step(shadowCoord.z, textureOffset(texSM, shadowCoord.xy, ivec2( 1,  1)).z);
+		shadow += step(shadowCoord.z, textureOffset(texSM, shadowCoord.xy, ivec2(-1, -1)).z);
+		shadow += step(shadowCoord.z, textureOffset(texSM, shadowCoord.xy, ivec2( 1, -1)).z);
+
+		visibility = shadow / 4.0;
+
+		// if (texture(texSM, shadowCoord.xy).z < shadowCoord.z)
+		// {
+		// 	visibility = 0.0;
+		// }
+	}
+
+	outColor.rgb = ambient + (diffuse + specular) * visibility;
 	outColor.a = 1.0;
 }

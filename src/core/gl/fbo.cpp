@@ -10,6 +10,7 @@
 #include "../ngn.hpp"
 #include "../ngn/window.hpp"
 
+#include <limits>
 #include <string>
 #include <cassert>
 #include <iostream>
@@ -26,7 +27,7 @@ namespace {
 }
 
 list<FBO *> FBO::collection{};
-vector<GLuint> FBO::activeStack{};
+vector<FBO *> FBO::activeStack{};
 
 void FBO::reloadAll()
 {
@@ -93,6 +94,8 @@ FBO::FBO(string &&name)
 FBO::~FBO()
 {
 	FBO::collection.remove(this);
+
+	FBO::activeStack.erase(remove(begin(FBO::activeStack), end(FBO::activeStack), this), end(FBO::activeStack));
 }
 
 void FBO::setTexParams(size_t id, GLint internalFormat, GLenum format, GLenum type)
@@ -114,7 +117,7 @@ void FBO::setDSParams(GLint internalFormat, GLenum format, GLenum type)
 	depthStencilParams.type = type;
 }
 
-void FBO::create(unsigned int colorAttachments, DSType depthStencilType)
+void FBO::create(unsigned int colorAttachments, DepthStencilType depthStencilType)
 {
 	if ( ! width)
 	{
@@ -132,7 +135,7 @@ void FBO::create(unsigned int colorAttachments, DSType depthStencilType)
 	reload();
 }
 
-void FBO::create(vector<string> &&colorNames, DSType depthStencilType)
+void FBO::create(vector<string> &&colorNames, DepthStencilType depthStencilType)
 {
 	this->colorNames = move(colorNames);
 
@@ -146,7 +149,7 @@ void FBO::reset()
 	resetStorages();
 
 	colorAttachments = 0;
-	depthStencilType = DSType::None;
+	depthStencilType = None;
 
 	colors.clear();
 	colorNames.clear();
@@ -161,12 +164,12 @@ void FBO::resetStorages()
 		id = 0;
 	}
 
-	if (depthStencilType == DSType::Buffer)
+	if (depthStencilType == RenderBuffer)
 	{
 		GL_CHECK(glDeleteRenderbuffers(1, &depthStencil));
 		depthStencil = 0;
 	}
-	else if (depthStencilType == DSType::Texture)
+	else if (depthStencilType == Texture)
 	{
 		GL_CHECK(glDeleteTextures(1, &depthStencil));
 		depthStencil = 0;
@@ -203,7 +206,6 @@ void FBO::reload()
 			GL_CHECK(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
 			GL_CHECK(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
 			GL_CHECK(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
-			GL_CHECK(glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(glm::vec4{1.f})));
 
 			if (texParams.size() > i)
 			{
@@ -218,23 +220,22 @@ void FBO::reload()
 		}
 	}
 
-	if (depthStencilType == DSType::Buffer)
+	if (depthStencilType == RenderBuffer)
 	{
 		GL_CHECK(glGenRenderbuffers(1, &depthStencil));
 		GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, depthStencil));
 		GL_CHECK(glRenderbufferStorage(GL_RENDERBUFFER, depthStencilParams.internalFormat, width, height));
 	}
-	else if (depthStencilType == DSType::Texture)
+	else if (depthStencilType == Texture)
 	{
 		GL_CHECK(glGenTextures(1, &depthStencil));
 
 		GL_CHECK(glBindTexture(GL_TEXTURE_2D, depthStencil));
 
-		GL_CHECK(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
-		GL_CHECK(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+		GL_CHECK(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+		GL_CHECK(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
 		GL_CHECK(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
 		GL_CHECK(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
-		GL_CHECK(glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(glm::vec4{1.f, 1.f, 1.f, 0.f})));
 
 		GL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, depthStencilParams.internalFormat, width, height, 0, depthStencilParams.format, depthStencilParams.type, nullptr));
 
@@ -258,7 +259,7 @@ void FBO::reload()
 
 void FBO::reloadSoft()
 {
-	if ( ! (colorAttachments > 0 || depthStencilType != DSType::None))
+	if ( ! (colorAttachments > 0 || depthStencilType != None))
 	{
 		return;
 	}
@@ -280,9 +281,17 @@ void FBO::reloadSoft()
 		GL_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
 	}
 
-	GL_CHECK(glDrawBuffers(drawBuffers.size(), drawBuffers.data()));
+	if (colorAttachments > 0)
+	{
+		GL_CHECK(glDrawBuffers(drawBuffers.size(), drawBuffers.data()));
+	}
+	else
+	{
+		GL_CHECK(glDrawBuffer(GL_NONE));
+		GL_CHECK(glReadBuffer(GL_NONE));
+	}
 
-	if (depthStencilType == DSType::Buffer)
+	if (depthStencilType == RenderBuffer)
 	{
 		GLenum attachment = GL_DEPTH_STENCIL_ATTACHMENT;
 		if (depthStencilParams.format == GL_DEPTH_COMPONENT)
@@ -292,7 +301,7 @@ void FBO::reloadSoft()
 
 		GL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, depthStencil));
 	}
-	else if (depthStencilType == DSType::Texture)
+	else if (depthStencilType == Texture)
 	{
 		GLenum attachment = GL_DEPTH_STENCIL_ATTACHMENT;
 		if (depthStencilParams.format == GL_DEPTH_COMPONENT)
@@ -314,6 +323,28 @@ void FBO::reloadSoft()
 	GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 }
 
+GLint FBO::getTexturesCount()
+{
+	return colors.size() + (depthStencilType == Texture);
+}
+
+GLint FBO::bindTextures(GLint offset)
+{
+	for (size_t i = 0; i < colors.size(); i++)
+	{
+		GL_CHECK(glActiveTexture(GL_TEXTURE0 + i + offset));
+		GL_CHECK(glBindTexture(GL_TEXTURE_2D, colors[i]));
+	}
+
+	if (depthStencilType == Texture)
+	{
+		GL_CHECK(glActiveTexture(GL_TEXTURE0 + colors.size() + offset));
+		GL_CHECK(glBindTexture(GL_TEXTURE_2D, depthStencil));
+	}
+
+	return offset + getTexturesCount();
+}
+
 void FBO::render()
 {
 	render(prog);
@@ -322,6 +353,8 @@ void FBO::render()
 void FBO::render(gl::Program &prog)
 {
 	prog.use();
+
+	bindTextures();
 
 	for (size_t i = 0; i < colors.size(); i++)
 	{
@@ -333,16 +366,11 @@ void FBO::render(gl::Program &prog)
 		{
 			prog.var("tex" + to_string(i), static_cast<GLint>(i));
 		}
-
-		GL_CHECK(glActiveTexture(GL_TEXTURE0 + i));
-		GL_CHECK(glBindTexture(GL_TEXTURE_2D, colors[i]));
 	}
 
-	if (depthStencilType == DSType::Texture)
+	if (depthStencilType == Texture)
 	{
 		prog.var("texDS", static_cast<GLint>(colors.size()));
-		GL_CHECK(glActiveTexture(GL_TEXTURE0 + colors.size()));
-		GL_CHECK(glBindTexture(GL_TEXTURE_2D, depthStencil));
 	}
 
 	mesh.render();
@@ -367,9 +395,9 @@ void FBO::clear()
 		mask |= GL_COLOR_BUFFER_BIT;
 	}
 
-	if (depthStencilType != DSType::None)
+	if (depthStencilType != None)
 	{
-		GL_CHECK(glClearDepth(1.0f));
+		GL_CHECK(glClearDepth(numeric_limits<GLfloat>::max()));
 
 		mask |= GL_DEPTH_BUFFER_BIT;
 
@@ -386,8 +414,9 @@ void FBO::clear()
 
 void FBO::use()
 {
+	GL_CHECK(glViewport(0, 0, width, height));
 	GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, id));
-	FBO::activeStack.push_back(id);
+	FBO::activeStack.push_back(this);
 }
 
 void FBO::release()
@@ -396,10 +425,13 @@ void FBO::release()
 
 	if ( ! FBO::activeStack.empty())
 	{
-		GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, FBO::activeStack.back()));
+		FBO *fbo = FBO::activeStack.back();
+		GL_CHECK(glViewport(0, 0, fbo->width, fbo->height));
+		GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, fbo->id));
 	}
 	else
 	{
+		GL_CHECK(glViewport(0, 0, ngn::window::width, ngn::window::height));
 		GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 	}
 }

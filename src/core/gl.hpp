@@ -101,18 +101,44 @@ class EnableScoper
 {
 public:
 	GLenum name;
+	GLboolean wasEnabled;
 
-	EnableScoper(GLenum name) : name{name} { GL_CHECK(glEnable(name)); }
-	~EnableScoper() { GL_CHECK(glDisable(name)); }
+	EnableScoper(GLenum name)
+		: name{name}, wasEnabled{glIsEnabled(name)}
+	{
+		GL_VALIDATE_PARAM(glIsEnabled(name), gl::getEnumName(name));
+
+		GL_CHECK(glEnable(name));
+	}
+	~EnableScoper()
+	{
+		if ( ! wasEnabled)
+		{
+			GL_CHECK(glDisable(name));
+		}
+	}
 };
 
 class DisableScoper
 {
 public:
 	GLenum name;
+	GLboolean wasEnabled;
 
-	DisableScoper(GLenum name) : name{name} { GL_CHECK(glDisable(name)); }
-	~DisableScoper() { GL_CHECK(glEnable(name)); }
+	DisableScoper(GLenum name)
+		: name{name}, wasEnabled{glIsEnabled(name)}
+	{
+		GL_VALIDATE_PARAM(glIsEnabled(name), gl::getEnumName(name));
+
+		GL_CHECK(glDisable(name));
+	}
+	~DisableScoper()
+	{
+		if (wasEnabled)
+		{
+			GL_CHECK(glEnable(name));
+		}
+	}
 };
 
 #define GL_SCOPE_ENABLE(name) gl::EnableScoper UTIL_CONCAT2(glEnableScoper, __COUNTER__)(name)

@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <cmath>
+#include <limits>
 
 #include <core/gl.hpp>
 #include <core/ngn.hpp>
@@ -52,7 +53,7 @@ void App::init()
 
 	try
 	{
-		fboPreview.load("lighting/fboPreview.frag", "gl/fbo.vert");
+		shadowmapPreview.load("lighting/shadows/preview.frag", "gl/fboM.vert");
 	}
 	catch (const string &e)
 	{
@@ -62,6 +63,15 @@ void App::init()
 	try
 	{
 		deferredGBuffer.load("lighting/deferred/gbuffer.frag", "PN.vert");
+	}
+	catch (const string &e)
+	{
+		cerr << "Warning: " << e << endl;
+	}
+
+	try
+	{
+		deferredShadowMap.load("color.frag", "P.vert");
 	}
 	catch (const string &e)
 	{
@@ -87,17 +97,15 @@ void App::init()
 	}
 
 	gbuffer.setTexParams(1, GL_RG16F, GL_RG, GL_HALF_FLOAT);
-	gbuffer.setTexParams(2, GL_RGB32F, GL_RGB, GL_FLOAT);
-
 	gbuffer.create({
 		"texColor",
 		"texNormal",
-		"texPosition",
-	}, gl::DSType::Texture);
+	}, gl::FBO::Texture);
 
+	shadowmap.width = 1024;
+	shadowmap.height = 1024;
 	shadowmap.setDSParams(GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT);
-
-	shadowmap.create(0, gl::DSType::Texture);
+	shadowmap.create(0, gl::FBO::Texture);
 
 	/* Scene creation */
 
@@ -128,6 +136,14 @@ void App::init()
 		const auto intP = projection.getInverseMatrix();
 		deferredPointLight.uniform("invP", intP);
 		deferredDirectionalLight.uniform("invP", intP);
+
+		float winRatio = static_cast<float>(win::width) / static_cast<float>(win::height);
+		glm::mat4 previewM{1.f};
+		previewM = glm::translate(previewM, glm::vec3{.75f, .75f, 0.f});
+		previewM = glm::scale(previewM, glm::vec3{.25f / winRatio, .25f, 0.f});
+		// previewM = glm::scale(previewM, glm::vec3{.25f});
+
+		shadowmapPreview.uniform("M", previewM);
 	}
 
 	// create models
@@ -422,13 +438,12 @@ void App::update()
 
 void App::render()
 {
-	GL_CHECK(glClearColor(0.f, 0.3125f, 1.f, 1.f));
 	GL_CHECK(glClearColor(0.f, 0.f, 0.f, 0.f));
-	GL_CHECK(glClearDepth(1.f));
+	GL_CHECK(glClearDepth(numeric_limits<GLfloat>::max()));
 	GL_CHECK(glClearStencil(0));
 	GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
-	glm::mat4 &V = ecs::get<View>(cameraId).matrix;
+	gbufferPass();
 
 	{
 		GL_SCOPE_ENABLE(GL_STENCIL_TEST);
@@ -442,17 +457,7 @@ void App::render()
 
 		GL_FBO_USE(gbuffer);
 
-		gbuffer.clear();
-
-		deferredGBuffer.use();
-		deferredGBuffer.var("V", V);
-
-		for (auto &entity : ecs::findWith<Transform, Mesh, Material>())
-		{
-			proc::MeshRenderer::render(entity, deferredGBuffer, V);
-		}
-
-		deferredGBuffer.release();
+		glm::mat4 &V = ecs::get<View>(cameraId).matrix;
 
 		simple.use();
 		simple.var("V", V);
@@ -470,63 +475,147 @@ void App::render()
 			simple.var("color", glm::vec3(ecs::get<DirectionalLight>(entity).color));
 			proc::MeshRenderer::render(entity, simple, V);
 		}
+	}
 
-		simple.release();
+	gbuffer.blit(0, GL_STENCIL_BUFFER_BIT);
+
+	directionalLightsPass();
+	pointLightsPass();
+
+	{
+		GL_SCOPE_ENABLE(GL_STENCIL_TEST);
+
+		GL_CHECK(glStencilFunc(GL_EQUAL, 2, 0xFF));
+		GL_CHECK(glStencilMask(0x0));
+
+		gbuffer.render();
 	}
 
 	{
-		gbuffer.blit(0, GL_STENCIL_BUFFER_BIT);
+		shadowmap.render(shadowmapPreview);
+	}
+}
 
-		GL_SCOPE_ENABLE(GL_STENCIL_TEST);
+void App::gbufferPass()
+{
+	GL_SCOPE_ENABLE(GL_STENCIL_TEST);
 
-		GL_CHECK(glStencilFunc(GL_EQUAL, 1, 0xF));
-		GL_CHECK(glStencilMask(0x0));
+	GL_CHECK(glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE));
+	GL_CHECK(glStencilMask(0xF));
 
-		GL_SCOPE_DISABLE(GL_DEPTH_TEST);
+	GL_SCOPE_DISABLE(GL_BLEND);
 
-		GL_CHECK(glBlendEquation(GL_FUNC_ADD));
-		GL_CHECK(glBlendFunc(GL_ONE, GL_ONE));
+	GL_CHECK(glStencilFunc(GL_ALWAYS, 1, 0xF));
 
-		for (auto &entity : ecs::findWith<DirectionalLight>())
+	GL_FBO_USE(gbuffer);
+
+	gbuffer.clear();
+
+	glm::mat4 &V = ecs::get<View>(cameraId).matrix;
+
+	deferredGBuffer.use();
+	deferredGBuffer.var("V", V);
+
+	for (auto &entity : ecs::findWith<Transform, Mesh, Material>())
+	{
+		proc::MeshRenderer::render(entity, deferredGBuffer, V);
+	}
+}
+
+void App::directionalLightsPass()
+{
+	glm::mat4 &V = ecs::get<View>(cameraId).matrix;
+
+	deferredDirectionalLight.var("invV", glm::inverse(V));
+
+	for (auto &entity : ecs::findWith<DirectionalLight>())
+	{
+		const auto &light = ecs::get<DirectionalLight>(entity);
+		const auto lightDirection = glm::mat3{V} * light.direction;
+
+		glm::vec3 lightInvDirection = light.direction;
+		// lightInvDirection.z = -lightInvDirection.z;
+
+		glm::mat4 P = glm::ortho(-10.f, 10.f, -10.f, 10.f, -10.f, 50.f);
+		glm::mat4 V = glm::lookAt(glm::normalize(lightInvDirection), glm::vec3{0.f, 0.f, 0.f}, glm::vec3{0.f, 1.f, 0.f});
+		glm::mat4 M{1.f};
+		glm::mat4 shadowmapMVP = P * V * M;
+
 		{
-			const auto &light = ecs::get<DirectionalLight>(entity);
-			const auto lightDirection = glm::mat3{V} * light.direction;
+			GL_FBO_USE(shadowmap);
 
-			// @TODO: shadows
+			GL_CHECK(glCullFace(GL_FRONT));
+
+			shadowmap.clear();
+
+			deferredShadowMap.use();
+			deferredShadowMap.var("P", P);
+			deferredShadowMap.var("V", V);
+
+			for (auto &entity : ecs::findWith<Transform, Mesh, Occluder>())
 			{
-				GL_FBO_USE(shadowmap);
-
-				shadowmap.clear();
-
-				for (auto &entity : ecs::findWith<Transform, Mesh, Occluder>())
-				{
-					proc::MeshRenderer::render(entity, deferredGBuffer, V);
-				}
+				proc::MeshRenderer::render(entity, deferredShadowMap, V);
 			}
+
+
+			GL_CHECK(glCullFace(GL_BACK));
+		}
+
+		{
+			GL_SCOPE_ENABLE(GL_STENCIL_TEST);
+
+			GL_CHECK(glStencilFunc(GL_EQUAL, 1, 0xF));
+			GL_CHECK(glStencilMask(0x0));
+
+			GL_CHECK(glBlendFunc(GL_ONE, GL_ONE));
+
+			GLint offset = gbuffer.getTexturesCount();
+			shadowmap.bindTextures(offset);
 
 			deferredDirectionalLight.var("lightColor", light.color);
 			deferredDirectionalLight.var("lightDirection", lightDirection);
+			deferredDirectionalLight.var("texSM", offset);
+			deferredDirectionalLight.var("shadowmapMVP", shadowmapMVP);
 
 			gbuffer.render(deferredDirectionalLight);
+
+			GL_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 		}
+	}
+}
 
-		for (auto &entity : ecs::findWith<Transform, Mesh, PointLight>())
+void App::pointLightsPass()
+{
+	glm::mat4 &V = ecs::get<View>(cameraId).matrix;
+
+	for (auto &entity : ecs::findWith<Transform, Mesh, PointLight>())
+	{
+		const auto &light = ecs::get<PointLight>(entity);
+		const auto &lightTransform = ecs::get<Transform>(entity);
+		const auto lightPosition = V * glm::vec4{lightTransform.translation, 1.f};
+
+		// @TODO: shadows
+		// {
+		// 	GL_FBO_USE(shadowmap);
+
+		// 	shadowmap.clear();
+
+		// 	deferredShadowMap.use();
+		// 	deferredShadowMap.var("V", V);
+
+		// 	for (auto &entity : ecs::findWith<Transform, Mesh, Occluder>())
+		// 	{
+		// 		proc::MeshRenderer::render(entity, deferredShadowMap, V);
+		// 	}
+		// }
+
 		{
-			const auto &light = ecs::get<PointLight>(entity);
-			const auto &lightTransform = ecs::get<Transform>(entity);
-			const auto lightPosition = V * glm::vec4{lightTransform.translation, 1.f};
+			GL_SCOPE_ENABLE(GL_STENCIL_TEST);
 
-			// @TODO: shadows
-			{
-				GL_FBO_USE(shadowmap);
+			GL_CHECK(glStencilFunc(GL_EQUAL, 1, 0xF));
+			GL_CHECK(glStencilMask(0x0));
 
-				shadowmap.clear();
-
-				for (auto &entity : ecs::findWith<Transform, Mesh, Occluder>())
-				{
-					proc::MeshRenderer::render(entity, deferredGBuffer, V);
-				}
-			}
+			GL_CHECK(glBlendFunc(GL_ONE, GL_ONE));
 
 			deferredPointLight.var("lightPosition", lightPosition);
 			deferredPointLight.var("lightColor", light.color);
@@ -534,12 +623,8 @@ void App::render()
 			deferredPointLight.var("lightQuadraticAttenuation", light.quadraticAttenuation);
 
 			gbuffer.render(deferredPointLight);
+
+			GL_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 		}
-
-		GL_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-
-		GL_CHECK(glStencilFunc(GL_EQUAL, 2, 0xFF));
-
-		gbuffer.render(fboPreview);
 	}
 }
