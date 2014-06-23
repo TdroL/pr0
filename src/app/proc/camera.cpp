@@ -15,15 +15,13 @@ using namespace comp;
 
 void Camera::update(const ecs::Entity &entity, const glm::vec3 &translate, const glm::vec3 &rotate)
 {
-	Rotation &rotation = ecs::get<Rotation>(entity);
-	Position &position = ecs::get<Position>(entity);
-	View &view = ecs::get<View>(entity);
+	auto &rotation = ecs::get<Rotation>(entity).rotation;
+	auto &position = ecs::get<Position>(entity).position;
+	auto &view = ecs::get<View>(entity);
 
 	// translate and rotate camera (fps style)
 	{
-		rotation.x += rotate.x;
-		rotation.y += rotate.y;
-		rotation.z += rotate.z;
+		rotation += rotate;
 
 		rotation.x = glm::clamp(rotation.x, -90.f, 90.f);
 		rotation.y = std::fmod(rotation.y, 360.f);
@@ -31,7 +29,7 @@ void Camera::update(const ecs::Entity &entity, const glm::vec3 &translate, const
 
 		if (translate.x != 0 || translate.y != 0 || translate.z != 0)
 		{
-			glm::vec3 translateRotate{rotation.x, rotation.y, rotation.z};
+			glm::vec3 translateRotate{rotation};
 			translateRotate *= glm::radians(0.5);
 
 			float sinX = std::sin(translateRotate.x);
@@ -59,7 +57,7 @@ void Camera::update(const ecs::Entity &entity, const glm::vec3 &translate, const
 
 	// update view matrix
 	{
-		glm::vec3 viewRotation{rotation.x, rotation.y, rotation.z};
+		glm::vec3 viewRotation{rotation};
 		viewRotation *= -glm::radians(0.5);
 
 		float sinX = std::sin(viewRotation.x);
@@ -77,7 +75,7 @@ void Camera::update(const ecs::Entity &entity, const glm::vec3 &translate, const
 
 		glm::quat orientation = glm::normalize(orientX * orientY * orientZ);
 
-		view.matrix = glm::translate(glm::mat4_cast(orientation), -glm::vec3{position.x, position.y, position.z});
+		view.matrix = glm::translate(glm::mat4_cast(orientation), -position);
 	}
 }
 

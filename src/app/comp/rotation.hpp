@@ -2,15 +2,14 @@
 #define APP_COMP_ROTATION_HPP
 
 #include <core/ecs/component.hpp>
+#include <glm/glm.hpp>
 
 namespace comp
 {
 
 struct Rotation : public ecs::Component<Rotation>
 {
-	float x = 0.f;
-	float y = 0.f;
-	float z = 0.f;
+	glm::vec3 rotation{0.f};
 };
 
 } // comp

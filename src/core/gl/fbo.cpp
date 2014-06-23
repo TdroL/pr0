@@ -328,18 +328,29 @@ GLint FBO::getTexturesCount()
 	return colors.size() + (depthStencilType == Texture);
 }
 
-GLint FBO::bindTextures(GLint offset)
+GLint FBO::bindTextures(gl::Program &prog, const std::string &prefix, GLint offset)
 {
 	for (size_t i = 0; i < colors.size(); i++)
 	{
 		GL_CHECK(glActiveTexture(GL_TEXTURE0 + i + offset));
 		GL_CHECK(glBindTexture(GL_TEXTURE_2D, colors[i]));
+
+		if (colorNames.size() > i && ! colorNames[i].empty())
+		{
+			prog.var(prefix + colorNames[i], offset + static_cast<GLint>(i));
+		}
+		else
+		{
+			prog.var(prefix + "tex" + to_string(i), offset + static_cast<GLint>(i));
+		}
 	}
 
 	if (depthStencilType == Texture)
 	{
 		GL_CHECK(glActiveTexture(GL_TEXTURE0 + colors.size() + offset));
 		GL_CHECK(glBindTexture(GL_TEXTURE_2D, depthStencil));
+
+		prog.var(prefix + "texDS", offset + static_cast<GLint>(colors.size()));
 	}
 
 	return offset + getTexturesCount();
@@ -354,24 +365,7 @@ void FBO::render(gl::Program &prog)
 {
 	prog.use();
 
-	bindTextures();
-
-	for (size_t i = 0; i < colors.size(); i++)
-	{
-		if (colorNames.size() > i && ! colorNames[i].empty())
-		{
-			prog.var(colorNames[i], static_cast<GLint>(i));
-		}
-		else
-		{
-			prog.var("tex" + to_string(i), static_cast<GLint>(i));
-		}
-	}
-
-	if (depthStencilType == Texture)
-	{
-		prog.var("texDS", static_cast<GLint>(colors.size()));
-	}
+	bindTextures(prog);
 
 	mesh.render();
 }
@@ -390,7 +384,7 @@ void FBO::clear()
 
 	if (colorAttachments)
 	{
-		GL_CHECK(glClearColor(0.0f, 0.0f, 0.0f, 0.0f));
+		GL_CHECK(glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a));
 
 		mask |= GL_COLOR_BUFFER_BIT;
 	}

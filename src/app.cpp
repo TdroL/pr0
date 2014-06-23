@@ -53,6 +53,15 @@ void App::init()
 
 	try
 	{
+		blurPreview.load("gl/blurPreview.frag", "gl/fboM.vert");
+	}
+	catch (const string &e)
+	{
+		cerr << "Warning: " << e << endl;
+	}
+
+	try
+	{
 		shadowmapPreview.load("lighting/shadows/preview.frag", "gl/fboM.vert");
 	}
 	catch (const string &e)
@@ -71,7 +80,16 @@ void App::init()
 
 	try
 	{
-		deferredShadowMap.load("color.frag", "P.vert");
+		blur.load("gl/blur.frag", "P.vert");
+	}
+	catch (const string &e)
+	{
+		cerr << "Warning: " << e << endl;
+	}
+
+	try
+	{
+		deferredShadowMap.load("lighting/shadows/depth-vsm.frag", "P.vert");
 	}
 	catch (const string &e)
 	{
@@ -102,10 +120,20 @@ void App::init()
 		"texNormal",
 	}, gl::FBO::Texture);
 
+	blurfilter.width = 1024;
+	blurfilter.height = 1024;
+	blurfilter.create({
+		"texTarget",
+	}, gl::FBO::None);
+
 	shadowmap.width = 1024;
 	shadowmap.height = 1024;
+	shadowmap.clearColor = glm::vec4{numeric_limits<float>::max()};
+	shadowmap.setTexParams(0, GL_RG32F, GL_RG, GL_FLOAT);
 	shadowmap.setDSParams(GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT);
-	shadowmap.create(0, gl::FBO::Texture);
+	shadowmap.create({
+		"texMoments",
+	}, gl::FBO::Texture);
 
 	/* Scene creation */
 
@@ -118,12 +146,12 @@ void App::init()
 		auto &name = ecs::get<Name>(cameraId);
 		name.name = "Camera";
 
-		auto &position = ecs::get<Position>(cameraId);
+		auto &position = ecs::get<Position>(cameraId).position;
 		position.x = 0.f;
 		position.y = 0.125f;
 		position.z = 10.f;
 
-		auto &rotation = ecs::get<Rotation>(cameraId);
+		auto &rotation = ecs::get<Rotation>(cameraId).rotation;
 		rotation.x = 0.f;
 		rotation.y = 0.f;
 		rotation.z = 0.f;
@@ -144,6 +172,7 @@ void App::init()
 		// previewM = glm::scale(previewM, glm::vec3{.25f});
 
 		shadowmapPreview.uniform("M", previewM);
+		blurPreview.uniform("M", previewM);
 	}
 
 	// create models
@@ -245,7 +274,7 @@ void App::init()
 		// quadriatic attenuation; distance at which three-quarters of the light intensity is lost
 		light.quadraticAttenuation = 1.0 / pow(6.0, 2); // r_q = 6.0;
 
-		auto &position = ecs::get<Position>(lightIds[0]);
+		auto &position = ecs::get<Position>(lightIds[0]).position;
 		position.x = 0.f;
 		position.y = 1.f;
 		position.z = 0.f;
@@ -273,7 +302,7 @@ void App::init()
 		// quadriatic attenuation; distance at which three-quarters of the light intensity is lost
 		light.quadraticAttenuation = 1.0 / pow(1.0, 2); // r_q = 6.0;
 
-		auto &position = ecs::get<Position>(lightIds[1]);
+		auto &position = ecs::get<Position>(lightIds[1]).position;
 		position.x = 0.f;
 		position.y = 1.f;
 		position.z = 0.f;
@@ -301,7 +330,7 @@ void App::init()
 		// quadriatic attenuation; distance at which three-quarters of the light intensity is lost
 		light.quadraticAttenuation = 1.0 / pow(4.0, 2); // r_q = 6.0;
 
-		auto &position = ecs::get<Position>(lightIds[2]);
+		auto &position = ecs::get<Position>(lightIds[2]).position;
 		position.x = 2.f;
 		position.y = .5f;
 		position.z = -4.f;
@@ -329,7 +358,7 @@ void App::init()
 		// quadriatic attenuation; distance at which three-quarters of the light intensity is lost
 		light.quadraticAttenuation = 1.0 / pow(4.0, 2); // r_q = 6.0;
 
-		auto &position = ecs::get<Position>(lightIds[3]);
+		auto &position = ecs::get<Position>(lightIds[3]).position;
 		position.x = -3.f;
 		position.y = .25f;
 		position.z = -.35f;
@@ -386,42 +415,33 @@ void App::update()
 		translate *= 20.0 * ngn::dt;
 		rotate *= 90.0 * ngn::dt;
 
-		for (auto &entity : ecs::findWith<Position, Rotation, Projection, View>())
-		{
-			proc::Camera::update(entity, translate, rotate);
-		}
+		proc::Camera::update(cameraId, translate, rotate);
 	}
 
 	{
 		glm::vec3 lightPositionDelta{static_cast<float>(5.0 * ngn::dt)};
 
-		lightPositionDelta.x *= (ngn::key::pressed(KEY_KP_6) - ngn::key::pressed(KEY_KP_4));
+		lightPositionDelta.x *= (ngn::key::pressed(KEY_KP_6)   - ngn::key::pressed(KEY_KP_4));
 		lightPositionDelta.y *= (ngn::key::pressed(KEY_KP_ADD) - ngn::key::pressed(KEY_KP_ENTER));
-		lightPositionDelta.z *= (ngn::key::pressed(KEY_KP_5) - ngn::key::pressed(KEY_KP_8));
+		lightPositionDelta.z *= (ngn::key::pressed(KEY_KP_5)   - ngn::key::pressed(KEY_KP_8));
 
-		auto &position = ecs::get<Position>(lightIds[0]);
-		position.x += lightPositionDelta.x;
-		position.y += lightPositionDelta.y;
-		position.z += lightPositionDelta.z;
+		auto &position = ecs::get<Position>(lightIds[0]).position;
+		position += lightPositionDelta;
 
 		auto &transform = ecs::get<Transform>(lightIds[0]);
-		transform.translation.x = position.x;
-		transform.translation.y = position.y;
-		transform.translation.z = position.z;
+		transform.translation = position;
 	}
 
 	{
 		glm::vec3 lightPositionDelta{3.f, 1.f, 3.f};
 
-		auto &position = ecs::get<Position>(lightIds[1]);
-		position.x = lightPositionDelta.x * sin(ngn::ct);
-		position.y = lightPositionDelta.y * sin(ngn::ct * 2.f);
-		position.z = lightPositionDelta.z * cos(ngn::ct);
+		auto &position = ecs::get<Position>(lightIds[1]).position;
+		position.x = lightPositionDelta.x * sin(ngn::ct * .5f);
+		position.y = lightPositionDelta.y * sin(ngn::ct);
+		position.z = lightPositionDelta.z * cos(ngn::ct * .5f);
 
 		auto &transform = ecs::get<Transform>(lightIds[1]);
-		transform.translation.x = position.x;
-		transform.translation.y = position.y;
-		transform.translation.z = position.z;
+		transform.translation = position;
 	}
 
 	{
@@ -432,7 +452,8 @@ void App::update()
 		directionalLight.direction.z = lightPositionDelta.z * cos(ngn::ct);
 
 		auto &transform = ecs::get<Transform>(lightIds[4]);
-		transform.translation = directionalLight.direction * 100.f;
+		const auto &camPosition = ecs::get<Position>(cameraId).position;
+		transform.translation = camPosition + directionalLight.direction * 100.f;
 	}
 }
 
@@ -445,6 +466,7 @@ void App::render()
 
 	gbufferPass();
 
+	// draw light meshes
 	{
 		GL_SCOPE_ENABLE(GL_STENCIL_TEST);
 
@@ -452,8 +474,6 @@ void App::render()
 		GL_CHECK(glStencilMask(0xF));
 
 		GL_SCOPE_DISABLE(GL_BLEND);
-
-		GL_CHECK(glStencilFunc(GL_ALWAYS, 1, 0xF));
 
 		GL_FBO_USE(gbuffer);
 
@@ -467,13 +487,13 @@ void App::render()
 		for (auto &entity : ecs::findWith<Transform, Mesh, PointLight>())
 		{
 			simple.var("color", glm::vec3(ecs::get<PointLight>(entity).color));
-			proc::MeshRenderer::render(entity, simple, V);
+			proc::MeshRenderer::render(entity, simple);
 		}
 
 		for (auto &entity : ecs::findWith<Transform, Mesh, DirectionalLight>())
 		{
 			simple.var("color", glm::vec3(ecs::get<DirectionalLight>(entity).color));
-			proc::MeshRenderer::render(entity, simple, V);
+			proc::MeshRenderer::render(entity, simple);
 		}
 	}
 
@@ -492,7 +512,19 @@ void App::render()
 	}
 
 	{
+		GL_FBO_USE(blurfilter);
+
+		auto offset = blurfilter.getTexturesCount();
+
+		shadowmap.bindTextures(blur, "", offset);
+
+		blur.var("texSource", offset);
+		shadowmap.render(blur);
+	}
+
+	{
 		shadowmap.render(shadowmapPreview);
+		// blurfilter.render(blurPreview);
 	}
 }
 
@@ -518,7 +550,7 @@ void App::gbufferPass()
 
 	for (auto &entity : ecs::findWith<Transform, Mesh, Material>())
 	{
-		proc::MeshRenderer::render(entity, deferredGBuffer, V);
+		proc::MeshRenderer::render(entity, deferredGBuffer);
 	}
 }
 
@@ -536,13 +568,15 @@ void App::directionalLightsPass()
 		glm::vec3 lightInvDirection = light.direction;
 		// lightInvDirection.z = -lightInvDirection.z;
 
-		glm::mat4 P = glm::ortho(-10.f, 10.f, -10.f, 10.f, -10.f, 50.f);
+		glm::mat4 P = glm::ortho(-10.f, 10.f, -10.f, 10.f, -10.f, 20.f);
 		glm::mat4 V = glm::lookAt(glm::normalize(lightInvDirection), glm::vec3{0.f, 0.f, 0.f}, glm::vec3{0.f, 1.f, 0.f});
 		glm::mat4 M{1.f};
 		glm::mat4 shadowmapMVP = P * V * M;
 
 		{
 			GL_FBO_USE(shadowmap);
+
+			GL_SCOPE_DISABLE(GL_BLEND);
 
 			GL_CHECK(glCullFace(GL_FRONT));
 
@@ -554,7 +588,7 @@ void App::directionalLightsPass()
 
 			for (auto &entity : ecs::findWith<Transform, Mesh, Occluder>())
 			{
-				proc::MeshRenderer::render(entity, deferredShadowMap, V);
+				proc::MeshRenderer::render(entity, deferredShadowMap);
 			}
 
 
@@ -570,11 +604,10 @@ void App::directionalLightsPass()
 			GL_CHECK(glBlendFunc(GL_ONE, GL_ONE));
 
 			GLint offset = gbuffer.getTexturesCount();
-			shadowmap.bindTextures(offset);
+			shadowmap.bindTextures(deferredDirectionalLight, "sm", offset);
 
 			deferredDirectionalLight.var("lightColor", light.color);
 			deferredDirectionalLight.var("lightDirection", lightDirection);
-			deferredDirectionalLight.var("texSM", offset);
 			deferredDirectionalLight.var("shadowmapMVP", shadowmapMVP);
 
 			gbuffer.render(deferredDirectionalLight);
@@ -605,7 +638,7 @@ void App::pointLightsPass()
 
 		// 	for (auto &entity : ecs::findWith<Transform, Mesh, Occluder>())
 		// 	{
-		// 		proc::MeshRenderer::render(entity, deferredShadowMap, V);
+		// 		proc::MeshRenderer::render(entity, deferredShadowMap);
 		// 	}
 		// }
 

@@ -10,7 +10,7 @@ namespace proc
 
 using namespace comp;
 
-void MeshRenderer::render(const ecs::Entity &entity, gl::Program &prog, const glm::mat4 &V)
+void MeshRenderer::render(const ecs::Entity &entity, gl::Program &prog)
 {
 	if (ecs::has<Material>(entity))
 	{
@@ -31,9 +31,7 @@ void MeshRenderer::render(const ecs::Entity &entity, gl::Program &prog, const gl
 
 	M = glm::scale(M, transform.scale);
 
-	glm::mat3 N{V * M};
 	prog.var("M", M);
-	prog.var("N", N);
 
 	auto &mesh = asset::mesh::get(ecs::get<Mesh>(entity).id);
 	mesh.render();

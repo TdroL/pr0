@@ -1,6 +1,6 @@
 #version 330
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec2 outColor;
 
 in vec4 position;
 
@@ -16,5 +16,5 @@ void main()
 
 	moment2 += dot(d, d) * 0.25;
 
-	outColor = vec4(moment1, moment2, 0.0, 0.0);
+	outColor = vec2(moment1, moment2);
 }

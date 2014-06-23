@@ -39,6 +39,8 @@ public:
 	std::vector<std::string> colorNames{};
 	std::vector<gl::TexParams> texParams{};
 
+	glm::vec4 clearColor{0.f, 0.f, 0.f, 0.f};
+
 	GLuint depthStencil = 0;
 	DepthStencilType depthStencilType = None;
 	gl::TexParams depthStencilParams{
@@ -68,7 +70,7 @@ public:
 	void reloadSoft();
 
 	GLint getTexturesCount();
-	GLint bindTextures(GLint offset = 0);
+	GLint bindTextures(gl::Program &prog, const std::string &prefix = "", GLint offset = 0);
 
 	void render();
 	void render(gl::Program &prog);

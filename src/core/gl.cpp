@@ -25,12 +25,13 @@ namespace
 		string source_name;
 		switch(source)
 		{
-			case GL_DEBUG_SOURCE_API_ARB: source_name = "API"; break;
-			case GL_DEBUG_SOURCE_WINDOW_SYSTEM_ARB: source_name = "Window System"; break;
-			case GL_DEBUG_SOURCE_SHADER_COMPILER_ARB: source_name = "Shader Compiler"; break;
-			case GL_DEBUG_SOURCE_THIRD_PARTY_ARB: source_name = "Third Party"; break;
-			case GL_DEBUG_SOURCE_APPLICATION_ARB: source_name = "Application"; break;
-			case GL_DEBUG_SOURCE_OTHER_ARB: source_name = "Other"; break;
+			case GL_DEBUG_SOURCE_API_ARB:              source_name = "API"; break;
+			case GL_DEBUG_SOURCE_WINDOW_SYSTEM_ARB:    source_name = "Window System"; break;
+			case GL_DEBUG_SOURCE_SHADER_COMPILER_ARB:  source_name = "Shader Compiler"; break;
+			case GL_DEBUG_SOURCE_THIRD_PARTY_ARB:      source_name = "Third Party"; break;
+			case GL_DEBUG_SOURCE_APPLICATION_ARB:      source_name = "Application"; break;
+			case GL_DEBUG_SOURCE_OTHER_ARB:            source_name = "Other"; break;
+			default:                                   source_name = "Unknown"; break;
 		}
 
 		string error_type;
@@ -42,14 +43,17 @@ namespace
 			case GL_DEBUG_TYPE_PORTABILITY_ARB:         error_type = "Portability"; break;
 			case GL_DEBUG_TYPE_PERFORMANCE_ARB:         error_type = "Performance"; break;
 			case GL_DEBUG_TYPE_OTHER_ARB:               error_type = "Other"; break;
+			default:                                    error_type = "Unknown"; break;
 		}
 
 		string type_severity;
 		switch(severity)
 		{
-			case GL_DEBUG_SEVERITY_HIGH_ARB:   type_severity = "High"; break;
-			case GL_DEBUG_SEVERITY_MEDIUM_ARB: type_severity = "Medium"; break;
-			case GL_DEBUG_SEVERITY_LOW_ARB:    type_severity = "Low"; break;
+			case GL_DEBUG_SEVERITY_HIGH_ARB:         type_severity = "High"; break;
+			case GL_DEBUG_SEVERITY_MEDIUM_ARB:       type_severity = "Medium"; break;
+			case GL_DEBUG_SEVERITY_LOW_ARB:          type_severity = "Low"; break;
+			case GL_DEBUG_SEVERITY_NOTIFICATION:     type_severity = "No"; break;
+			default:                                 type_severity = "Unknown"; break;
 		}
 
 		cerr << "[GL debug]: " << error_type << " from " << source_name << ",\t" << type_severity << " priority" << endl;
@@ -87,7 +91,6 @@ void reload()
 	// glEnable(GL_MULTISAMPLE);
 
 	GL_CHECK(glEnable(GL_BLEND));
-	GL_CHECK(glEnable(GL_ALPHA_TEST));
 	GL_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
 	if (GLEW_ARB_debug_output)

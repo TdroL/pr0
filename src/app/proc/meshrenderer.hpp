@@ -11,7 +11,7 @@ namespace proc
 class MeshRenderer
 {
 public:
-	static void render(const ecs::Entity &entity, gl::Program &prog, const glm::mat4 &V);
+	static void render(const ecs::Entity &entity, gl::Program &prog);
 };
 
 } // proc
