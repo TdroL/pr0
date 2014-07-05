@@ -22,6 +22,15 @@ namespace
 {
 	void debugHandler(GLenum source, GLenum type, GLuint, GLenum severity, GLsizei, const GLchar *message, GLvoid *)
 	{
+		string type_severity;
+		switch(severity)
+		{
+			case GL_DEBUG_SEVERITY_HIGH_ARB:         type_severity = "High priority"; break;
+			case GL_DEBUG_SEVERITY_MEDIUM_ARB:       type_severity = "Medium priority"; break;
+			case GL_DEBUG_SEVERITY_LOW_ARB:          type_severity = "Low priority"; break;
+			default: return;
+		}
+
 		string source_name;
 		switch(source)
 		{
@@ -46,17 +55,7 @@ namespace
 			default:                                    error_type = "Unknown"; break;
 		}
 
-		string type_severity;
-		switch(severity)
-		{
-			case GL_DEBUG_SEVERITY_HIGH_ARB:         type_severity = "High"; break;
-			case GL_DEBUG_SEVERITY_MEDIUM_ARB:       type_severity = "Medium"; break;
-			case GL_DEBUG_SEVERITY_LOW_ARB:          type_severity = "Low"; break;
-			case GL_DEBUG_SEVERITY_NOTIFICATION:     type_severity = "No"; break;
-			default:                                 type_severity = "Unknown"; break;
-		}
-
-		cerr << "[GL debug]: " << error_type << " from " << source_name << ",\t" << type_severity << " priority" << endl;
+		cerr << "[GL debug]: " << error_type << " from " << source_name << ",\t" << type_severity << endl;
 		cerr << "Message: " << message << endl;
 		cerr << flush;
 	}
@@ -95,7 +94,6 @@ void reload()
 
 	if (GLEW_ARB_debug_output)
 	{
-		GL_CHECK(glEnable(GL_DEBUG_OUTPUT));
 		GL_CHECK(glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB));
 
 		GL_CHECK(glDebugMessageCallbackARB(debugHandler, reinterpret_cast<void*>(15)));

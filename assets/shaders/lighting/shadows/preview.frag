@@ -2,13 +2,12 @@
 
 in vec2 uv;
 
-uniform sampler2D texMoments;
-uniform sampler2D texDS;
+uniform sampler2D texSource;
 
 out vec4 outColor;
 
 void main()
 {
-	outColor.rgb = texture(texMoments, uv).rrr;
+	outColor.rgb = texture(texSource, uv).rgb;
 	outColor.a = 1.0;
 }

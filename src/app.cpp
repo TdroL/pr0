@@ -35,6 +35,11 @@ namespace win = ngn::window;
 using namespace comp;
 using namespace std;
 
+GLuint blurFBO;
+GLuint blurTex;
+
+bool toggleAnimateSun = true;
+
 void App::init()
 {
 	/* Init scene objects */
@@ -53,7 +58,7 @@ void App::init()
 
 	try
 	{
-		blurPreview.load("gl/blurPreview.frag", "gl/fboM.vert");
+		blurPreview.load("gl/blurPreview.frag", "gl/fbo.vert");
 	}
 	catch (const string &e)
 	{
@@ -62,7 +67,7 @@ void App::init()
 
 	try
 	{
-		shadowmapPreview.load("lighting/shadows/preview.frag", "gl/fboM.vert");
+		shadowMapPreview.load("lighting/shadows/preview.frag", "gl/fboM.vert");
 	}
 	catch (const string &e)
 	{
@@ -80,7 +85,7 @@ void App::init()
 
 	try
 	{
-		blur.load("gl/blur.frag", "P.vert");
+		blurFilter.load("gl/blur.frag", "gl/fbo.vert");
 	}
 	catch (const string &e)
 	{
@@ -89,7 +94,7 @@ void App::init()
 
 	try
 	{
-		deferredShadowMap.load("lighting/shadows/depth-vsm.frag", "P.vert");
+		deferredShadowMap.load("lighting/shadows/depthVSM.frag", "P.vert");
 	}
 	catch (const string &e)
 	{
@@ -114,26 +119,24 @@ void App::init()
 		cerr << "Warning: " << e << endl;
 	}
 
-	gbuffer.setTexParams(1, GL_RG16F, GL_RG, GL_HALF_FLOAT);
-	gbuffer.create({
-		"texColor",
-		"texNormal",
-	}, gl::FBO::Texture);
+	gBuffer.setTex(0, gl::Tex2D{});
+	gBuffer.setTex(1, gl::Tex2D{GL_RG16F, GL_RG, GL_HALF_FLOAT});
+	gBuffer.setDepth(gl::Tex2D{GL_DEPTH24_STENCIL8, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8});
+	gBuffer.create();
 
-	blurfilter.width = 1024;
-	blurfilter.height = 1024;
-	blurfilter.create({
-		"texTarget",
-	}, gl::FBO::None);
+	blurBuffer.width = 1024;
+	blurBuffer.height = 1024;
+	blurBuffer.clearColor = glm::vec4{1.f, 1.f, 1.f, 1.f};
+	blurBuffer.setTex(0, gl::Tex2D{GL_RG16F, GL_RG, GL_HALF_FLOAT});
+	blurBuffer.setDepth(gl::Renderbuffer{GL_DEPTH_COMPONENT32F});
+	blurBuffer.create();
 
-	shadowmap.width = 1024;
-	shadowmap.height = 1024;
-	shadowmap.clearColor = glm::vec4{numeric_limits<float>::max()};
-	shadowmap.setTexParams(0, GL_RG32F, GL_RG, GL_FLOAT);
-	shadowmap.setDSParams(GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT);
-	shadowmap.create({
-		"texMoments",
-	}, gl::FBO::Texture);
+	shadowMapBuffer.width = 1024;
+	shadowMapBuffer.height = 1024;
+	shadowMapBuffer.clearColor = glm::vec4{1.f, 1.f, 1.f, 1.f};
+	shadowMapBuffer.setTex(0, gl::Tex2D{GL_RG32F, GL_RG, GL_FLOAT});
+	shadowMapBuffer.setDepth(gl::Tex2D{GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT});
+	shadowMapBuffer.create();
 
 	/* Scene creation */
 
@@ -171,7 +174,7 @@ void App::init()
 		previewM = glm::scale(previewM, glm::vec3{.25f / winRatio, .25f, 0.f});
 		// previewM = glm::scale(previewM, glm::vec3{.25f});
 
-		shadowmapPreview.uniform("M", previewM);
+		shadowMapPreview.uniform("M", previewM);
 		blurPreview.uniform("M", previewM);
 	}
 
@@ -372,7 +375,7 @@ void App::init()
 		ecs::get<Mesh>(lightIds[3]).id = asset::mesh::load("sphere.sbm");
 	}
 
-	// directional light
+	// directional light #1
 	{
 		ecs::enable<Name, DirectionalLight, Transform, Mesh>(lightIds[4]);
 
@@ -380,7 +383,7 @@ void App::init()
 		name.name = "DirectionalLight";
 
 		auto &light = ecs::get<DirectionalLight>(lightIds[4]);
-		light.direction = glm::vec3{1.f, .25f, 1.f};
+		light.direction = glm::vec3{.5f, .25f, 1.f};
 		light.color = glm::vec4{.8f, .8f, .8f, 1.f};
 
 		auto &transform = ecs::get<Transform>(lightIds[4]);
@@ -418,6 +421,11 @@ void App::update()
 		proc::Camera::update(cameraId, translate, rotate);
 	}
 
+	if (key::hit('t'))
+	{
+		toggleAnimateSun = ! toggleAnimateSun;
+	}
+
 	{
 		glm::vec3 lightPositionDelta{static_cast<float>(5.0 * ngn::dt)};
 
@@ -448,8 +456,8 @@ void App::update()
 		glm::vec3 lightPositionDelta{1.f, .25f, 1.f};
 
 		auto &directionalLight = ecs::get<DirectionalLight>(lightIds[4]);
-		directionalLight.direction.x = lightPositionDelta.x * sin(ngn::ct);
-		directionalLight.direction.z = lightPositionDelta.z * cos(ngn::ct);
+		directionalLight.direction.x = lightPositionDelta.x * sin(ngn::ct * toggleAnimateSun);
+		directionalLight.direction.z = lightPositionDelta.z * cos(ngn::ct * toggleAnimateSun);
 
 		auto &transform = ecs::get<Transform>(lightIds[4]);
 		const auto &camPosition = ecs::get<Position>(cameraId).position;
@@ -464,10 +472,14 @@ void App::render()
 	GL_CHECK(glClearStencil(0));
 	GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
+	const auto &V = ecs::get<View>(cameraId).matrix;
+
 	gbufferPass();
 
 	// draw light meshes
 	{
+		GL_FBO_USE(gBuffer);
+
 		GL_SCOPE_ENABLE(GL_STENCIL_TEST);
 
 		GL_CHECK(glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE));
@@ -475,14 +487,9 @@ void App::render()
 
 		GL_SCOPE_DISABLE(GL_BLEND);
 
-		GL_FBO_USE(gbuffer);
-
-		glm::mat4 &V = ecs::get<View>(cameraId).matrix;
-
+		GL_CHECK(glStencilFunc(GL_ALWAYS, 2, 0xF));
 		simple.use();
 		simple.var("V", V);
-
-		GL_CHECK(glStencilFunc(GL_ALWAYS, 2, 0xF));
 
 		for (auto &entity : ecs::findWith<Transform, Mesh, PointLight>())
 		{
@@ -497,10 +504,10 @@ void App::render()
 		}
 	}
 
-	gbuffer.blit(0, GL_STENCIL_BUFFER_BIT);
+	gBuffer.blit(0, GL_STENCIL_BUFFER_BIT);
 
 	directionalLightsPass();
-	pointLightsPass();
+	// pointLightsPass();
 
 	{
 		GL_SCOPE_ENABLE(GL_STENCIL_TEST);
@@ -508,23 +515,22 @@ void App::render()
 		GL_CHECK(glStencilFunc(GL_EQUAL, 2, 0xFF));
 		GL_CHECK(glStencilMask(0x0));
 
-		gbuffer.render();
+		gl::FBO::prog.use();
+
+		gBuffer.colors[0].bind(0);
+
+		gl::FBO::prog.var("tex0", 0);
+
+		gl::FBO::mesh.render();
 	}
 
 	{
-		GL_FBO_USE(blurfilter);
+		shadowMapPreview.use();
 
-		auto offset = blurfilter.getTexturesCount();
+		shadowMapBuffer.colors[0].bind(0);
+		shadowMapPreview.var("texSource", 0);
 
-		shadowmap.bindTextures(blur, "", offset);
-
-		blur.var("texSource", offset);
-		shadowmap.render(blur);
-	}
-
-	{
-		shadowmap.render(shadowmapPreview);
-		// blurfilter.render(blurPreview);
+		gl::FBO::mesh.render();
 	}
 }
 
@@ -534,14 +540,12 @@ void App::gbufferPass()
 
 	GL_CHECK(glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE));
 	GL_CHECK(glStencilMask(0xF));
+	GL_CHECK(glStencilFunc(GL_ALWAYS, 1, 0xF));
 
 	GL_SCOPE_DISABLE(GL_BLEND);
 
-	GL_CHECK(glStencilFunc(GL_ALWAYS, 1, 0xF));
-
-	GL_FBO_USE(gbuffer);
-
-	gbuffer.clear();
+	GL_FBO_USE(gBuffer);
+	gBuffer.clear();
 
 	glm::mat4 &V = ecs::get<View>(cameraId).matrix;
 
@@ -563,36 +567,63 @@ void App::directionalLightsPass()
 	for (auto &entity : ecs::findWith<DirectionalLight>())
 	{
 		const auto &light = ecs::get<DirectionalLight>(entity);
-		const auto lightDirection = glm::mat3{V} * light.direction;
 
-		glm::vec3 lightInvDirection = light.direction;
-		// lightInvDirection.z = -lightInvDirection.z;
-
-		glm::mat4 P = glm::ortho(-10.f, 10.f, -10.f, 10.f, -10.f, 20.f);
-		glm::mat4 V = glm::lookAt(glm::normalize(lightInvDirection), glm::vec3{0.f, 0.f, 0.f}, glm::vec3{0.f, 1.f, 0.f});
-		glm::mat4 M{1.f};
-		glm::mat4 shadowmapMVP = P * V * M;
+		glm::mat4 shadowMapP = glm::ortho(-10.f, 10.f, -10.f, 10.f, -10.f, 20.f);
+		glm::mat4 shadowMapV = glm::lookAt(glm::normalize(light.direction), glm::vec3{0.f, 0.f, 0.f}, glm::vec3{0.f, 1.f, 0.f});
+		glm::mat4 shadowMapM{1.f};
+		glm::mat4 shadowMapMVP = shadowMapP * shadowMapV * shadowMapM;
 
 		{
-			GL_FBO_USE(shadowmap);
+			GL_FBO_USE(shadowMapBuffer);
 
 			GL_SCOPE_DISABLE(GL_BLEND);
 
 			GL_CHECK(glCullFace(GL_FRONT));
 
-			shadowmap.clear();
+			shadowMapBuffer.clear();
 
 			deferredShadowMap.use();
-			deferredShadowMap.var("P", P);
-			deferredShadowMap.var("V", V);
+			deferredShadowMap.var("P", shadowMapP);
+			deferredShadowMap.var("V", shadowMapV);
 
 			for (auto &entity : ecs::findWith<Transform, Mesh, Occluder>())
 			{
 				proc::MeshRenderer::render(entity, deferredShadowMap);
 			}
 
-
 			GL_CHECK(glCullFace(GL_BACK));
+		}
+
+		// blur shadowmap: x pass
+		{
+			GL_FBO_USE(blurBuffer);
+
+			GL_SCOPE_DISABLE(GL_DEPTH_TEST);
+
+			blurFilter.use();
+
+			shadowMapBuffer.colors[0].bind(0);
+
+			blurFilter.var("texSource", 0);
+			blurFilter.var("scale", glm::vec2{1.f / blurBuffer.width, 0.0f /* blurBuffer.height */});
+
+			gl::FBO::mesh.render();
+		}
+
+		// blur shadowmap: y pass
+		{
+			GL_FBO_USE(shadowMapBuffer);
+
+			GL_SCOPE_DISABLE(GL_DEPTH_TEST);
+
+			blurFilter.use();
+
+			blurBuffer.colors[0].bind(0);
+
+			blurFilter.var("texSource", 0);
+			blurFilter.var("scale", glm::vec2{0.f /* blurBuffer.width */, 1.0f / blurBuffer.height});
+
+			gl::FBO::mesh.render();
 		}
 
 		{
@@ -603,14 +634,25 @@ void App::directionalLightsPass()
 
 			GL_CHECK(glBlendFunc(GL_ONE, GL_ONE));
 
-			GLint offset = gbuffer.getTexturesCount();
-			shadowmap.bindTextures(deferredDirectionalLight, "sm", offset);
+			deferredDirectionalLight.use();
 
 			deferredDirectionalLight.var("lightColor", light.color);
-			deferredDirectionalLight.var("lightDirection", lightDirection);
-			deferredDirectionalLight.var("shadowmapMVP", shadowmapMVP);
+			deferredDirectionalLight.var("lightDirection", glm::mat3{V} * light.direction);
+			deferredDirectionalLight.var("shadowmapMVP", shadowMapMVP);
 
-			gbuffer.render(deferredDirectionalLight);
+			gBuffer.colors[0].bind(0);
+			gBuffer.colors[1].bind(1);
+			gBuffer.depth.tex.bind(2);
+			shadowMapBuffer.colors[0].bind(3);
+			shadowMapBuffer.depth.tex.bind(4);
+
+			deferredDirectionalLight.var("texColor", 0);
+			deferredDirectionalLight.var("texNormal", 1);
+			deferredDirectionalLight.var("texDepth", 2);
+			deferredDirectionalLight.var("shadowMoments", 3);
+			deferredDirectionalLight.var("shadowDepth", 4);
+
+			gl::FBO::mesh.render();
 
 			GL_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 		}
@@ -650,12 +692,21 @@ void App::pointLightsPass()
 
 			GL_CHECK(glBlendFunc(GL_ONE, GL_ONE));
 
+			deferredPointLight.use();
 			deferredPointLight.var("lightPosition", lightPosition);
 			deferredPointLight.var("lightColor", light.color);
 			deferredPointLight.var("lightLinearAttenuation", light.linearAttenuation);
 			deferredPointLight.var("lightQuadraticAttenuation", light.quadraticAttenuation);
 
-			gbuffer.render(deferredPointLight);
+			gBuffer.colors[0].bind(0);
+			gBuffer.colors[1].bind(1);
+			gBuffer.depth.tex.bind(2);
+
+			deferredDirectionalLight.var("texColor", 0);
+			deferredDirectionalLight.var("texNormal", 1);
+			deferredDirectionalLight.var("texDepth", 2);
+
+			gl::FBO::mesh.render();
 
 			GL_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 		}

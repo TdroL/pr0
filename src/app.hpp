@@ -22,14 +22,14 @@ public:
 	gl::Program deferredPointLight{};
 	gl::Program deferredDirectionalLight{};
 	gl::Program simple{};
-	gl::Program blur{};
+	gl::Program blurFilter{};
 	gl::Program blurPreview{};
-	gl::Program shadowmapPreview{};
+	gl::Program shadowMapPreview{};
 
-	gl::FBO gbuffer{"gbuffer"};
-	gl::FBO blurfilter{"blurfilter"};
-	gl::FBO shadowmap{"shadowmap"};
-	gl::FBOCube shadowcubemap{"shadowcubemap"};
+	gl::FBO gBuffer{"gBuffer"};
+	gl::FBO blurBuffer{"blurBuffer"};
+	gl::FBO shadowMapBuffer{"shadowMapBuffer"};
+	// gl::FBOCube shadowCubeMapBuffer{"shadowCubeMapBuffer"};
 
 	App() {};
 	~App() {};

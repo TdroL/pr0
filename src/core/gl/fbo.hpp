@@ -5,6 +5,9 @@
 
 #include "../util.hpp"
 #include "types.hpp"
+#include "mesh.hpp"
+#include "tex2d.hpp"
+#include "renderbuffer.hpp"
 #include "program.hpp"
 
 #include <list>
@@ -18,36 +21,64 @@ namespace gl
 class FBO
 {
 public:
-	enum DepthStencilType
+	enum DepthType
 	{
-		None,
-		RenderBuffer,
+		Renderbuffer,
 		Texture,
+	};
+
+	struct TexContainer
+	{
+		bool enabled{false};
+		gl::Tex2D tex{};
+
+		void bind(GLsizei unit)
+		{
+			tex.bind(unit);
+		}
+	};
+
+	struct DepthContainer
+	{
+		DepthType type{Renderbuffer};
+
+		gl::Renderbuffer buf{
+			/* .internalFormat= */ GL_DEPTH24_STENCIL8,
+		};
+		gl::Tex2D tex{
+			/* .internalFormat= */ GL_DEPTH24_STENCIL8,
+			/* .format= */ GL_DEPTH_STENCIL,
+			/* .type= */ GL_UNSIGNED_INT_24_8
+		};
+
+		GLenum getAttachmentType()
+		{
+			if (type == Renderbuffer)
+			{
+				return buf.getAttachmentType();
+			}
+			else
+			{
+				return tex.getAttachmentType();
+			}
+		}
 	};
 
 	static std::list<FBO *> collection;
 	static std::vector<FBO *> activeStack;
+	static gl::Mesh mesh;
+	static gl::Program prog;
 	static void reloadAll();
 	static void reloadSoftAll();
 
 	static void init();
 
 	GLuint id = 0;
-	std::vector<GLuint> colors{};
 
-	unsigned int colorAttachments = 0;
-	std::vector<std::string> colorNames{};
-	std::vector<gl::TexParams> texParams{};
+	std::vector<TexContainer> colors{};
+	DepthContainer depth{};
 
 	glm::vec4 clearColor{0.f, 0.f, 0.f, 0.f};
-
-	GLuint depthStencil = 0;
-	DepthStencilType depthStencilType = None;
-	gl::TexParams depthStencilParams{
-		/* .internalFormat= */ GL_DEPTH24_STENCIL8,
-		/* .format= */ GL_DEPTH_STENCIL,
-		/* .type= */ GL_UNSIGNED_INT_24_8
-	};
 
 	int width = 0;
 	int height = 0;
@@ -58,22 +89,16 @@ public:
 	explicit FBO(std::string &&name);
 	~FBO();
 
-	void setTexParams(size_t id, GLint internalFormat, GLenum format, GLenum type);
-	void setDSParams(GLint internalFormat, GLenum format, GLenum type);
+	void setTex(size_t id, gl::Tex2D &&tex);
+	void setDepth(gl::Tex2D &&tex);
+	void setDepth(gl::Renderbuffer &&buf);
 
-	void create(unsigned int colorAttachments = 1, DepthStencilType depthStencilType = RenderBuffer);
-	void create(std::vector<std::string> &&colorNames, DepthStencilType depthStencilType = RenderBuffer);
+	void create();
 	void reset();
 	void resetStorages();
 
 	void reload();
 	void reloadSoft();
-
-	GLint getTexturesCount();
-	GLint bindTextures(gl::Program &prog, const std::string &prefix = "", GLint offset = 0);
-
-	void render();
-	void render(gl::Program &prog);
 
 	void blit(GLuint target, GLbitfield mask);
 
