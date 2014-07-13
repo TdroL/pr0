@@ -10,6 +10,7 @@
 #include <core/ngn/window.hpp>
 #include <core/src/sbm.hpp>
 #include <core/event.hpp>
+#include <core/util/timer.hpp>
 
 #include <core/asset/mesh.hpp>
 
@@ -38,7 +39,7 @@ using namespace std;
 GLuint blurFBO;
 GLuint blurTex;
 
-bool toggleAnimateSun = true;
+util::Timer sunTimer{};
 
 void App::init()
 {
@@ -423,7 +424,7 @@ void App::update()
 
 	if (key::hit('t'))
 	{
-		toggleAnimateSun = ! toggleAnimateSun;
+		sunTimer.togglePause();
 	}
 
 	{
@@ -456,13 +457,15 @@ void App::update()
 		glm::vec3 lightPositionDelta{1.f, .25f, 1.f};
 
 		auto &directionalLight = ecs::get<DirectionalLight>(lightIds[4]);
-		directionalLight.direction.x = lightPositionDelta.x * sin(ngn::ct * toggleAnimateSun);
-		directionalLight.direction.z = lightPositionDelta.z * cos(ngn::ct * toggleAnimateSun);
+		directionalLight.direction.x = lightPositionDelta.x * sin(sunTimer.timed);
+		directionalLight.direction.z = lightPositionDelta.z * cos(sunTimer.timed);
 
 		auto &transform = ecs::get<Transform>(lightIds[4]);
 		const auto &camPosition = ecs::get<Position>(cameraId).position;
 		transform.translation = camPosition + directionalLight.direction * 100.f;
 	}
+
+	sunTimer.update();
 }
 
 void App::render()
