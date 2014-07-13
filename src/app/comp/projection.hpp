@@ -9,14 +9,15 @@ namespace comp
 
 struct Projection : public ecs::Component<Projection>
 {
-	glm::mat4 matrix{1.f};
 
 	float fovy = 45.f;
 	float aspect = 16.f / 9.f;
-	float near = 1.f / 128.f;
-	float far = 1.f * 128.f;
+	float zNear = 1.f / 128.f;
+	float zFar = 1.f * 128.f;
 
 	bool dirty = false;
+
+	glm::mat4 matrix{1.f};
 
 	Projection()
 	{
@@ -35,21 +36,21 @@ struct Projection : public ecs::Component<Projection>
 		dirty = true;
 	}
 
-	void setNear(float near)
+	void setNear(float zNear)
 	{
-		this->near = near;
+		this->zNear = zNear;
 		dirty = true;
 	}
 
-	void setFar(float far)
+	void setFar(float zFar)
 	{
-		this->far = far;
+		this->zFar = zFar;
 		dirty = true;
 	}
 
 	void createMatrix()
 	{
-		matrix = glm::perspective(fovy, aspect, near, far);
+		matrix = glm::perspective(fovy, aspect, zNear, zFar);
 		dirty = false;
 	}
 

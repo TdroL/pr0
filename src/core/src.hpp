@@ -4,9 +4,10 @@
 #include <vector>
 #include <memory>
 #include <string>
-#include <GL/glew.h>
-#include "util.hpp"
+
+#include "gl.hpp"
 #include "gl/types.hpp"
+#include "util.hpp"
 
 namespace src
 {

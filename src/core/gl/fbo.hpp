@@ -1,19 +1,18 @@
 #ifndef GL_FBO_HPP
 #define GL_FBO_HPP
 
-#include <GL/glew.h>
+#include <list>
+#include <vector>
+#include <string>
+#include <initializer_list>
 
+#include "../gl.hpp"
 #include "../util.hpp"
 #include "types.hpp"
 #include "mesh.hpp"
 #include "tex2d.hpp"
 #include "renderbuffer.hpp"
 #include "program.hpp"
-
-#include <list>
-#include <vector>
-#include <string>
-#include <initializer_list>
 
 namespace gl
 {

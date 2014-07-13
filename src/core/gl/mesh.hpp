@@ -5,9 +5,10 @@
 #include <memory>
 #include <list>
 #include <vector>
-#include <GL/glew.h>
-#include "types.hpp"
+
+#include "../gl.hpp"
 #include "../src.hpp"
+#include "types.hpp"
 
 namespace gl
 {

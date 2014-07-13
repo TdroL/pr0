@@ -14,6 +14,8 @@ string title{"pr0"};
 GLFWwindow *handler = nullptr;
 int width = -1;
 int height = -1;
+const int contextMajor = 3;
+const int contextMinor = 2;
 
 namespace
 {
@@ -82,11 +84,15 @@ void resetHints()
 {
 	glfwDefaultWindowHints();
 
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, contextMajor);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, contextMinor);
+
+#ifdef NGN_USE_GLEW
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE); // GLEW in core profile throws GL_INVALID_ENUMs
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-	// glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // GLEW in core profile throws GL_INVALID_ENUMs
+#else
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#endif
 
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 }

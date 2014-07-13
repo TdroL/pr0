@@ -1,14 +1,13 @@
 #ifndef GL_FONT_HPP
 #define GL_FONT_HPP
 
-#include <GL/glew.h>
-#include <glm/glm.hpp>
 #include <string>
 #include <memory>
 #include <vector>
 #include <list>
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include "../gl.hpp"
 #include "../src.hpp"
 
 namespace gl

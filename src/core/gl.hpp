@@ -5,8 +5,15 @@
 
 #include <string>
 #include <iostream>
-#include <GL/glew.h>
+
+#ifdef NGN_USE_GLEW
+	#include <GL/glew.h>
+#else
+	#include <GL/gl3w.h>
+#endif
+
 #include <GLFW/glfw3.h>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>

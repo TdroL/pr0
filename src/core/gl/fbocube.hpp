@@ -1,16 +1,15 @@
 #ifndef GL_FBOCUBE_HPP
 #define GL_FBOCUBE_HPP
 
-#include <GL/glew.h>
-
-#include "../util.hpp"
-#include "types.hpp"
-#include "program.hpp"
-
 #include <list>
 #include <vector>
 #include <string>
 #include <initializer_list>
+
+#include "../gl.hpp"
+#include "../util.hpp"
+#include "types.hpp"
+#include "program.hpp"
 
 namespace gl
 {

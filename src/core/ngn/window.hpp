@@ -15,6 +15,8 @@ extern GLFWwindow *handler;
 extern GLFWwindow *initial;
 extern int width;
 extern int height;
+extern const int contextMajor;
+extern const int contextMinor;
 
 enum Mode
 {
