@@ -24,6 +24,7 @@
 #include <app/comp/position.hpp>
 #include <app/comp/projection.hpp>
 #include <app/comp/rotation.hpp>
+#include <app/comp/stencil.hpp>
 #include <app/comp/transform.hpp>
 #include <app/comp/view.hpp>
 
@@ -187,7 +188,7 @@ void App::init()
 
 	// monkey
 	{
-		ecs::enable<Name, Transform, Mesh, Material, Occluder>(suzanneId);
+		ecs::enable<Name, Transform, Mesh, Material, Occluder, Stencil>(suzanneId);
 
 		auto &name = ecs::get<Name>(suzanneId);
 		name.name = "Monkey";
@@ -196,8 +197,11 @@ void App::init()
 		transform.translation = glm::vec3{2.f, 0.f, 0.f};
 
 		auto &material = ecs::get<Material>(suzanneId);
-		material.diffuse = glm::vec4{0.2f, 0.8f, 0.8f, 1.f};
+		material.diffuse = glm::vec4{248.f/255.f, 185.f/255.f, 142.f/255.f, 1.f};
 		material.shininess = 1.f/2.f;
+
+		auto stencil = ecs::get<Stencil>(suzanneId);
+		stencil.ref = 4 | 1;
 
 		ecs::get<Mesh>(suzanneId).id = asset::mesh::load("suzanne.sbm");
 	}
@@ -543,7 +547,6 @@ void App::gbufferPass()
 
 	GL_CHECK(glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE));
 	GL_CHECK(glStencilMask(0xF));
-	GL_CHECK(glStencilFunc(GL_ALWAYS, 1, 0xF));
 
 	GL_SCOPE_DISABLE(GL_BLEND);
 
@@ -557,6 +560,10 @@ void App::gbufferPass()
 
 	for (auto &entity : ecs::findWith<Transform, Mesh, Material>())
 	{
+		GLint ref = ecs::has<Stencil>(entity) ? ecs::get<Stencil>(entity).ref : 1;
+
+		GL_CHECK(glStencilFunc(GL_ALWAYS, ref, 0xF));
+
 		proc::MeshRenderer::render(entity, deferredGBuffer);
 	}
 }

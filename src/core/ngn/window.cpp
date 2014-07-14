@@ -15,7 +15,7 @@ GLFWwindow *handler = nullptr;
 int width = -1;
 int height = -1;
 const int contextMajor = 3;
-const int contextMinor = 2;
+const int contextMinor = 3;
 
 namespace
 {

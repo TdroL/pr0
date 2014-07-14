@@ -12,8 +12,8 @@ struct Projection : public ecs::Component<Projection>
 
 	float fovy = 45.f;
 	float aspect = 16.f / 9.f;
-	float zNear = 1.f / 128.f;
-	float zFar = 1.f * 128.f;
+	float near = 1.f / 128.f;
+	float far = 1.f * 128.f;
 
 	bool dirty = false;
 
@@ -36,21 +36,21 @@ struct Projection : public ecs::Component<Projection>
 		dirty = true;
 	}
 
-	void setNear(float zNear)
+	void setNear(float near)
 	{
-		this->zNear = zNear;
+		this->near = near;
 		dirty = true;
 	}
 
-	void setFar(float zFar)
+	void setFar(float far)
 	{
-		this->zFar = zFar;
+		this->far = far;
 		dirty = true;
 	}
 
 	void createMatrix()
 	{
-		matrix = glm::perspective(fovy, aspect, zNear, zFar);
+		matrix = glm::perspective(fovy, aspect, near, far);
 		dirty = false;
 	}
 
