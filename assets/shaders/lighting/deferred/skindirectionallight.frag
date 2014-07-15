@@ -44,7 +44,7 @@ float chebyshevUpperBound(float dist, vec2 moments)
 	// The fragment is either in shadow or penumbra. We now use chebyshev's upperBound to check
 	// How likely this pixel is to be lit (p_max)
 	float variance = moments.y - (moments.x * moments.x);
-	variance = max(variance, 0.00002);
+	variance = max(variance, 0.0002);
 
 	float d = dist - moments.x;
 	float pMax = variance / (variance + d * d);
@@ -75,9 +75,12 @@ void main()
 	vec3 v = normalize(-position.xyz);
 	vec3 h = normalize(l + v);
 
-	float theta = max(dot(n, l), 0.0);
+	float n_l = dot(n, l);
+	float n_h = dot(n, h);
 
-	float exponent = acos(dot(h, n)) / (shininess);
+	float theta = max(n_l, 0.0);
+
+	float exponent = acos(n_h) / (shininess);
 	float gauss = (theta != 0.0) ? exp(-(exponent * exponent) * inversesqrt(theta)) : 0.0;
 
 	vec3 ambient  = lightColor.rgb / 32.0;
@@ -90,5 +93,9 @@ void main()
 	visibility = chebyshevUpperBound(min(shadowCoord.z, 1.0), moments);
 
 	outColor.rgb = ambient + (diffuse + specular) * visibility;
+	// outColor.rgb = albedo * vec3(theta);
+	outColor.r = albedo.r * (theta + 0.2) / (1.0 + 0.2);
+	outColor.g = albedo.g * (theta + 0.05) / (1.0 + 0.05);
+	outColor.b = albedo.b * (theta + 0.0) / (1.0 + 0.0);
 	outColor.a = 1.0;
 }

@@ -2,6 +2,7 @@
 #define APP_COMP_STENCIL_HPP
 
 #include <core/ecs/component.hpp>
+#include <core/gl.hpp>
 
 namespace comp
 {

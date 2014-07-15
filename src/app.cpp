@@ -37,10 +37,14 @@ namespace win = ngn::window;
 using namespace comp;
 using namespace std;
 
-GLuint blurFBO;
-GLuint blurTex;
-
 util::Timer sunTimer{};
+
+enum Shader {
+	global = 1,
+	skin = 2,
+	flat = 3,
+	MASK = 1 | 2 | 3,
+};
 
 void App::init()
 {
@@ -105,7 +109,7 @@ void App::init()
 
 	try
 	{
-		deferredPointLight.load("lighting/deferred/pointlight.frag", "gl/fbo.vert");
+		deferredDirectionalLight.load("lighting/deferred/directionallight.frag", "gl/fbo.vert");
 	}
 	catch (const string &e)
 	{
@@ -114,7 +118,16 @@ void App::init()
 
 	try
 	{
-		deferredDirectionalLight.load("lighting/deferred/directionallight.frag", "gl/fbo.vert");
+		deferredSkinDirectionalLight.load("lighting/deferred/skindirectionallight.frag", "gl/fbo.vert");
+	}
+	catch (const string &e)
+	{
+		cerr << "Warning: " << e << endl;
+	}
+
+	try
+	{
+		deferredPointLight.load("lighting/deferred/pointlight.frag", "gl/fbo.vert");
 	}
 	catch (const string &e)
 	{
@@ -133,8 +146,8 @@ void App::init()
 	blurBuffer.setDepth(gl::Renderbuffer{GL_DEPTH_COMPONENT32F});
 	blurBuffer.create();
 
-	shadowMapBuffer.width = 1024;
-	shadowMapBuffer.height = 1024;
+	shadowMapBuffer.width = blurBuffer.width;
+	shadowMapBuffer.height = blurBuffer.height;
 	shadowMapBuffer.clearColor = glm::vec4{1.f, 1.f, 1.f, 1.f};
 	shadowMapBuffer.setTex(0, gl::Tex2D{GL_RG32F, GL_RG, GL_FLOAT});
 	shadowMapBuffer.setDepth(gl::Tex2D{GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT});
@@ -166,9 +179,10 @@ void App::init()
 		simple.uniform("P", projection.getMatrix());
 		deferredGBuffer.uniform("P", projection.getMatrix());
 
-		const auto intP = projection.getInverseMatrix();
+		const auto intP = glm::inverse(projection.getMatrix());
 		deferredPointLight.uniform("invP", intP);
 		deferredDirectionalLight.uniform("invP", intP);
+		deferredSkinDirectionalLight.uniform("invP", intP);
 
 		float winRatio = static_cast<float>(win::width) / static_cast<float>(win::height);
 		glm::mat4 previewM{1.f};
@@ -200,15 +214,15 @@ void App::init()
 		material.diffuse = glm::vec4{248.f/255.f, 185.f/255.f, 142.f/255.f, 1.f};
 		material.shininess = 1.f/2.f;
 
-		auto stencil = ecs::get<Stencil>(suzanneId);
-		stencil.ref = 4 | 1;
+		auto &stencil = ecs::get<Stencil>(suzanneId);
+		stencil.ref = Shader::skin;
 
 		ecs::get<Mesh>(suzanneId).id = asset::mesh::load("suzanne.sbm");
 	}
 
 	// statue
 	{
-		ecs::enable<Name, Transform, Mesh, Material, Occluder>(venusId);
+		ecs::enable<Name, Transform, Mesh, Material, Occluder, Stencil>(venusId);
 
 		auto &name = ecs::get<Name>(venusId);
 		name.name = "Venus";
@@ -220,12 +234,15 @@ void App::init()
 		material.diffuse = glm::vec4{0.8f, 0.2f, 0.8f, 1.f};
 		material.shininess = 1.f/4.f;
 
+		auto &stencil = ecs::get<Stencil>(venusId);
+		stencil.ref = Shader::global; // global, skin, flat
+
 		ecs::get<Mesh>(venusId).id = asset::mesh::load("venus.sbm");
 	}
 
 	// dragon
 	{
-		ecs::enable<Name, Transform, Mesh, Material, Occluder>(dragonId);
+		ecs::enable<Name, Transform, Mesh, Material, Occluder, Stencil>(dragonId);
 
 		auto &name = ecs::get<Name>(dragonId);
 		name.name = "Dragon";
@@ -238,12 +255,15 @@ void App::init()
 		material.diffuse = glm::vec4{0.8f, 0.8f, 0.2f, 1.f};
 		material.shininess = 1.f/8.f;
 
+		auto &stencil = ecs::get<Stencil>(dragonId);
+		stencil.ref = Shader::global; // global, skin, flat
+
 		ecs::get<Mesh>(dragonId).id = asset::mesh::load("dragon.sbm");
 	}
 
 	// floor
 	{
-		ecs::enable<Name, Transform, Mesh, Material, Occluder>(planeId);
+		ecs::enable<Name, Transform, Mesh, Material, Occluder, Stencil>(planeId);
 
 		auto &name = ecs::get<Name>(planeId);
 		name.name = "Plane";
@@ -255,6 +275,9 @@ void App::init()
 		auto &material = ecs::get<Material>(planeId);
 		material.diffuse = glm::vec4{0.2f, 0.8f, 0.2f, 1.f};
 		material.shininess = 1.f/16.f;
+
+		auto &stencil = ecs::get<Stencil>(planeId);
+		stencil.ref = Shader::global; // global, skin, flat
 
 		ecs::get<Mesh>(planeId).id = asset::mesh::load("plane.sbm");
 	}
@@ -479,57 +502,13 @@ void App::render()
 	GL_CHECK(glClearStencil(0));
 	GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
-	const auto &V = ecs::get<View>(cameraId).matrix;
-
-	gbufferPass();
-
-	// draw light meshes
-	{
-		GL_FBO_USE(gBuffer);
-
-		GL_SCOPE_ENABLE(GL_STENCIL_TEST);
-
-		GL_CHECK(glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE));
-		GL_CHECK(glStencilMask(0xF));
-
-		GL_SCOPE_DISABLE(GL_BLEND);
-
-		GL_CHECK(glStencilFunc(GL_ALWAYS, 2, 0xF));
-		simple.use();
-		simple.var("V", V);
-
-		for (auto &entity : ecs::findWith<Transform, Mesh, PointLight>())
-		{
-			simple.var("color", glm::vec3(ecs::get<PointLight>(entity).color));
-			proc::MeshRenderer::render(entity, simple);
-		}
-
-		for (auto &entity : ecs::findWith<Transform, Mesh, DirectionalLight>())
-		{
-			simple.var("color", glm::vec3(ecs::get<DirectionalLight>(entity).color));
-			proc::MeshRenderer::render(entity, simple);
-		}
-	}
+	gBufferPass();
 
 	gBuffer.blit(0, GL_STENCIL_BUFFER_BIT);
 
 	directionalLightsPass();
 	// pointLightsPass();
-
-	{
-		GL_SCOPE_ENABLE(GL_STENCIL_TEST);
-
-		GL_CHECK(glStencilFunc(GL_EQUAL, 2, 0xFF));
-		GL_CHECK(glStencilMask(0x0));
-
-		gl::FBO::prog.use();
-
-		gBuffer.colors[0].bind(0);
-
-		gl::FBO::prog.var("tex0", 0);
-
-		gl::FBO::mesh.render();
-	}
+	flatLightPass();
 
 	{
 		shadowMapPreview.use();
@@ -541,7 +520,7 @@ void App::render()
 	}
 }
 
-void App::gbufferPass()
+void App::gBufferPass()
 {
 	GL_SCOPE_ENABLE(GL_STENCIL_TEST);
 
@@ -560,11 +539,29 @@ void App::gbufferPass()
 
 	for (auto &entity : ecs::findWith<Transform, Mesh, Material>())
 	{
-		GLint ref = ecs::has<Stencil>(entity) ? ecs::get<Stencil>(entity).ref : 1;
+		GLint ref = ecs::has<Stencil>(entity) ? ecs::get<Stencil>(entity).ref : 0;
 
 		GL_CHECK(glStencilFunc(GL_ALWAYS, ref, 0xF));
 
 		proc::MeshRenderer::render(entity, deferredGBuffer);
+	}
+
+	// draw light meshes
+	simple.use();
+	simple.var("V", V);
+
+	GL_CHECK(glStencilFunc(GL_ALWAYS, Shader::flat, 0xF));
+
+	for (auto &entity : ecs::findWith<Transform, Mesh, PointLight>())
+	{
+		simple.var("color", glm::vec3(ecs::get<PointLight>(entity).color));
+		proc::MeshRenderer::render(entity, simple);
+	}
+
+	for (auto &entity : ecs::findWith<Transform, Mesh, DirectionalLight>())
+	{
+		simple.var("color", glm::vec3(ecs::get<DirectionalLight>(entity).color));
+		proc::MeshRenderer::render(entity, simple);
 	}
 }
 
@@ -573,88 +570,33 @@ void App::directionalLightsPass()
 	glm::mat4 &V = ecs::get<View>(cameraId).matrix;
 
 	deferredDirectionalLight.var("invV", glm::inverse(V));
+	deferredSkinDirectionalLight.var("invV", glm::inverse(V));
 
 	for (auto &entity : ecs::findWith<DirectionalLight>())
 	{
+		glm::mat4 shadowMapMVP = genShadowMap(entity);
+
 		const auto &light = ecs::get<DirectionalLight>(entity);
 
-		glm::mat4 shadowMapP = glm::ortho(-10.f, 10.f, -10.f, 10.f, -10.f, 20.f);
-		glm::mat4 shadowMapV = glm::lookAt(glm::normalize(light.direction), glm::vec3{0.f, 0.f, 0.f}, glm::vec3{0.f, 1.f, 0.f});
-		glm::mat4 shadowMapM{1.f};
-		glm::mat4 shadowMapMVP = shadowMapP * shadowMapV * shadowMapM;
+		GL_CHECK(glBlendFunc(GL_ONE, GL_ONE));
+		GL_SCOPE_ENABLE(GL_STENCIL_TEST);
+		GL_CHECK(glStencilMask(0x0));
 
+		gBuffer.colors[0].bind(0);
+		gBuffer.colors[1].bind(1);
+		gBuffer.depth.tex.bind(2);
+		shadowMapBuffer.colors[0].bind(3);
+		shadowMapBuffer.depth.tex.bind(4);
+
+		// global lighting
 		{
-			GL_FBO_USE(shadowMapBuffer);
-
-			GL_SCOPE_DISABLE(GL_BLEND);
-
-			GL_CHECK(glCullFace(GL_FRONT));
-
-			shadowMapBuffer.clear();
-
-			deferredShadowMap.use();
-			deferredShadowMap.var("P", shadowMapP);
-			deferredShadowMap.var("V", shadowMapV);
-
-			for (auto &entity : ecs::findWith<Transform, Mesh, Occluder>())
-			{
-				proc::MeshRenderer::render(entity, deferredShadowMap);
-			}
-
-			GL_CHECK(glCullFace(GL_BACK));
-		}
-
-		// blur shadowmap: x pass
-		{
-			GL_FBO_USE(blurBuffer);
-
-			GL_SCOPE_DISABLE(GL_DEPTH_TEST);
-
-			blurFilter.use();
-
-			shadowMapBuffer.colors[0].bind(0);
-
-			blurFilter.var("texSource", 0);
-			blurFilter.var("scale", glm::vec2{1.f / blurBuffer.width, 0.0f /* blurBuffer.height */});
-
-			gl::FBO::mesh.render();
-		}
-
-		// blur shadowmap: y pass
-		{
-			GL_FBO_USE(shadowMapBuffer);
-
-			GL_SCOPE_DISABLE(GL_DEPTH_TEST);
-
-			blurFilter.use();
-
-			blurBuffer.colors[0].bind(0);
-
-			blurFilter.var("texSource", 0);
-			blurFilter.var("scale", glm::vec2{0.f /* blurBuffer.width */, 1.0f / blurBuffer.height});
-
-			gl::FBO::mesh.render();
-		}
-
-		{
-			GL_SCOPE_ENABLE(GL_STENCIL_TEST);
-
-			GL_CHECK(glStencilFunc(GL_EQUAL, 1, 0xF));
-			GL_CHECK(glStencilMask(0x0));
-
-			GL_CHECK(glBlendFunc(GL_ONE, GL_ONE));
+			GL_CHECK(glStencilFunc(GL_EQUAL, Shader::global, Shader::MASK));
 
 			deferredDirectionalLight.use();
 
 			deferredDirectionalLight.var("lightColor", light.color);
 			deferredDirectionalLight.var("lightDirection", glm::mat3{V} * light.direction);
 			deferredDirectionalLight.var("shadowmapMVP", shadowMapMVP);
-
-			gBuffer.colors[0].bind(0);
-			gBuffer.colors[1].bind(1);
-			gBuffer.depth.tex.bind(2);
-			shadowMapBuffer.colors[0].bind(3);
-			shadowMapBuffer.depth.tex.bind(4);
 
 			deferredDirectionalLight.var("texColor", 0);
 			deferredDirectionalLight.var("texNormal", 1);
@@ -663,9 +605,28 @@ void App::directionalLightsPass()
 			deferredDirectionalLight.var("shadowDepth", 4);
 
 			gl::FBO::mesh.render();
-
-			GL_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 		}
+
+		// skin lighting
+		{
+			GL_CHECK(glStencilFunc(GL_EQUAL, Shader::skin, Shader::MASK));
+
+			deferredSkinDirectionalLight.use();
+
+			deferredSkinDirectionalLight.var("lightColor", light.color);
+			deferredSkinDirectionalLight.var("lightDirection", glm::mat3{V} * light.direction);
+			deferredSkinDirectionalLight.var("shadowmapMVP", shadowMapMVP);
+
+			deferredSkinDirectionalLight.var("texColor", 0);
+			deferredSkinDirectionalLight.var("texNormal", 1);
+			deferredSkinDirectionalLight.var("texDepth", 2);
+			deferredSkinDirectionalLight.var("shadowMoments", 3);
+			deferredSkinDirectionalLight.var("shadowDepth", 4);
+
+			gl::FBO::mesh.render();
+		}
+
+		GL_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 	}
 }
 
@@ -697,7 +658,7 @@ void App::pointLightsPass()
 		{
 			GL_SCOPE_ENABLE(GL_STENCIL_TEST);
 
-			GL_CHECK(glStencilFunc(GL_EQUAL, 1, 0xF));
+			GL_CHECK(glStencilFunc(GL_EQUAL, Shader::global, Shader::MASK));
 			GL_CHECK(glStencilMask(0x0));
 
 			GL_CHECK(glBlendFunc(GL_ONE, GL_ONE));
@@ -721,4 +682,85 @@ void App::pointLightsPass()
 			GL_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 		}
 	}
+}
+
+void App::flatLightPass()
+{
+	GL_SCOPE_ENABLE(GL_STENCIL_TEST);
+
+	GL_CHECK(glStencilFunc(GL_EQUAL, Shader::flat, Shader::MASK));
+	GL_CHECK(glStencilMask(0x0));
+
+	gl::FBO::prog.use();
+
+	gBuffer.colors[0].bind(0);
+
+	gl::FBO::prog.var("tex0", 0);
+
+	gl::FBO::mesh.render();
+}
+
+glm::mat4 App::genShadowMap(ecs::Entity lightId)
+{
+	const auto &light = ecs::get<DirectionalLight>(lightId);
+
+	glm::mat4 shadowMapP = glm::ortho(-10.f, 10.f, -10.f, 10.f, -10.f, 20.f);
+	glm::mat4 shadowMapV = glm::lookAt(glm::normalize(light.direction), glm::vec3{0.f, 0.f, 0.f}, glm::vec3{0.f, 1.f, 0.f});
+	glm::mat4 shadowMapM{1.f};
+	glm::mat4 shadowMapMVP = shadowMapP * shadowMapV * shadowMapM;
+
+	{
+		GL_FBO_USE(shadowMapBuffer);
+
+		GL_SCOPE_DISABLE(GL_BLEND);
+
+		// GL_CHECK(glCullFace(GL_FRONT));
+
+		shadowMapBuffer.clear();
+
+		deferredShadowMap.use();
+		deferredShadowMap.var("P", shadowMapP);
+		deferredShadowMap.var("V", shadowMapV);
+
+		for (auto &entity : ecs::findWith<Transform, Mesh, Occluder>())
+		{
+			proc::MeshRenderer::render(entity, deferredShadowMap);
+		}
+
+		// GL_CHECK(glCullFace(GL_BACK));
+	}
+
+	// blur shadowmap: x pass
+	{
+		GL_FBO_USE(blurBuffer);
+
+		GL_SCOPE_DISABLE(GL_DEPTH_TEST);
+
+		blurFilter.use();
+
+		shadowMapBuffer.colors[0].bind(0);
+
+		blurFilter.var("texSource", 0);
+		blurFilter.var("scale", glm::vec2{1.f / blurBuffer.width, 0.0f /* blurBuffer.height */});
+
+		gl::FBO::mesh.render();
+	}
+
+	// blur shadowmap: y pass
+	{
+		GL_FBO_USE(shadowMapBuffer);
+
+		GL_SCOPE_DISABLE(GL_DEPTH_TEST);
+
+		blurFilter.use();
+
+		blurBuffer.colors[0].bind(0);
+
+		blurFilter.var("texSource", 0);
+		blurFilter.var("scale", glm::vec2{0.f /* blurBuffer.width */, 1.0f / blurBuffer.height});
+
+		gl::FBO::mesh.render();
+	}
+
+	return shadowMapMVP;
 }

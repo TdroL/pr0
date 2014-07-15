@@ -19,8 +19,9 @@ public:
 
 	gl::Program deferredGBuffer{};
 	gl::Program deferredShadowMap{};
-	gl::Program deferredPointLight{};
 	gl::Program deferredDirectionalLight{};
+	gl::Program deferredSkinDirectionalLight{};
+	gl::Program deferredPointLight{};
 	gl::Program simple{};
 	gl::Program blurFilter{};
 	gl::Program blurPreview{};
@@ -40,9 +41,12 @@ public:
 
 	void render();
 
-	void gbufferPass();
+	void gBufferPass();
 	void directionalLightsPass();
 	void pointLightsPass();
+	void flatLightPass();
+
+	glm::mat4 genShadowMap(ecs::Entity lightId);
 };
 
 #endif
