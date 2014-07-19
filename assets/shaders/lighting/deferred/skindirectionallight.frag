@@ -21,39 +21,9 @@ uniform mat4 shadowmapMVP;
 uniform vec3 lightDirection;
 uniform vec4 lightColor;
 
-vec3 decodeNormal(vec2 enc)
-{
-	float scale = 1.7777;
-	vec3 nn = vec3(enc.xy * 2.0 * scale - scale, 1.0);
-	float g = 2.0 / dot(nn, nn);
-	vec3 n = vec3(g * nn.xy, g - 1.0);
-
-	return n;
-}
-
-vec3 reconstructPosition(float z)
-{
-	vec4 position = invP * vec4(uv * 2.0 - 1.0, z, 1.0);
-	return (position.xyz / position.w);
-}
-
-float chebyshevUpperBound(float dist, vec2 moments)
-{
-	dist = max(dist, moments.x);
-
-	// The fragment is either in shadow or penumbra. We now use chebyshev's upperBound to check
-	// How likely this pixel is to be lit (p_max)
-	float variance = moments.y - (moments.x * moments.x);
-	variance = max(variance, 0.0002);
-
-	float d = dist - moments.x;
-	float pMax = variance / (variance + d * d);
-
-	// Reduce light bleeding
-	pMax = smoothstep(0.75, 1.0, pMax);
-
-	return pMax;
-}
+vec3 decodeNormal(vec2 enc);
+vec3 reconstructPosition(float z, vec2 uv);
+float chebyshevUpperBound(float dist, vec2 moments);
 
 void main()
 {
@@ -65,7 +35,7 @@ void main()
 	float shininess = diffuseShininess.a;
 
 	vec3 normal = decodeNormal(encodedNormal);
-	vec3 position = reconstructPosition(depth);
+	vec3 position = reconstructPosition(depth, uv);
 
 	vec4 shadowCoord = shadowmapMVP * invV * vec4(position, 1.0) * 0.5 + 0.5;
 	shadowCoord /= shadowCoord.w;
@@ -92,10 +62,11 @@ void main()
 	vec2 moments = texture(shadowMoments, shadowCoord.xy).rg;
 	visibility = chebyshevUpperBound(min(shadowCoord.z, 1.0), moments);
 
-	outColor.rgb = ambient + (diffuse + specular) * visibility;
-	// outColor.rgb = albedo * vec3(theta);
-	outColor.r = albedo.r * (theta + 0.2) / (1.0 + 0.2);
-	outColor.g = albedo.g * (theta + 0.05) / (1.0 + 0.05);
-	outColor.b = albedo.b * (theta + 0.0) / (1.0 + 0.0);
+	// outColor.rgb = ambient + (diffuse + specular) * visibility;
+	outColor.rgb = albedo * vec3(theta);
+	outColor.r = albedo.r * pow(theta, 2.0/3.0);
+	// outColor.g = albedo.g * ((theta + 0.05) / (1.0 + 0.05));
+	// outColor.b = albedo.b * ((theta + 0.0) / (1.0 + 0.0));
+	// outColor.rgb *= visibility;
 	outColor.a = 1.0;
 }

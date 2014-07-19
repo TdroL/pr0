@@ -8,6 +8,6 @@ out vec4 outColor;
 
 void main()
 {
-	outColor.rgb = texture(texSource, uv).rgb;
+	outColor.rgb = texture(texSource, uv).rrr;
 	outColor.a = 1.0;
 }

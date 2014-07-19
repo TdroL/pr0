@@ -9,13 +9,7 @@ in vec3 normal;
 uniform float matShininess;
 uniform vec4 matDiffuse;
 
-vec2 encodeNormal(vec3 n)
-{
-	float scale = 1.0/1.7777;
-	vec2 enc = n.xy / (n.z+1);
-	enc = enc * scale * 0.5 + 0.5;
-	return enc;
-}
+vec2 encodeNormal(vec3 n);
 
 void main()
 {

@@ -1,6 +1,7 @@
 #include "program.hpp"
 #include "../gl.hpp"
 #include "../src/file.hpp"
+#include "../util/initq.hpp"
 #include <memory>
 #include <iostream>
 
@@ -9,10 +10,66 @@ namespace gl
 
 using namespace std;
 
+typedef src::Stream Source;
+
 list<Program *> Program::collection{};
+
+struct Lib
+{
+	GLuint id = 0;
+	unique_ptr<Source> source{nullptr};
+
+	Lib() = default;
+	explicit Lib(unique_ptr<Source> &&source)
+		: source{move(source)}
+	{}
+};
+
+vector<Lib> vectLibs{};
+vector<Lib> fragLibs{};
+
+void Program::init()
+{
+	vectLibs.push_back(Lib{src::file::stream("lib/normal.vert")});
+
+	fragLibs.push_back(Lib{src::file::stream("lib/normal.frag")});
+	fragLibs.push_back(Lib{src::file::stream("lib/position.frag")});
+	fragLibs.push_back(Lib{src::file::stream("lib/vsm.frag")});
+
+	reloadLibs();
+}
+
+void Program::reloadLibs()
+{
+	for (auto &lib : vectLibs)
+	{
+		SRC_STREAM_USE(*(lib.source));
+
+		if (lib.id)
+		{
+			GL_CHECK(glDeleteShader(lib.id));
+		}
+
+		lib.id = Program::createShader(GL_FRAGMENT_SHADER, lib.source->contents);
+	}
+
+	for (auto &lib : fragLibs)
+	{
+		SRC_STREAM_USE(*(lib.source));
+
+		if (lib.id)
+		{
+			GL_CHECK(glDeleteShader(lib.id));
+		}
+
+		lib.id = Program::createShader(GL_FRAGMENT_SHADER, lib.source->contents);
+	}
+}
 
 void Program::reloadAll()
 {
+	reloadLibs();
+
 	for (Program *prog : Program::collection)
 	{
 		try
@@ -90,6 +147,22 @@ GLuint Program::createProgram(const vector<GLuint> &shaders)
 		GL_CHECK(glAttachShader(id, shader));
 	}
 
+	for (auto &lib : vectLibs)
+	{
+		if (lib.id)
+		{
+			GL_CHECK(glAttachShader(id, lib.id));
+		}
+	}
+
+	for (auto &lib : fragLibs)
+	{
+		if (lib.id)
+		{
+			GL_CHECK(glAttachShader(id, lib.id));
+		}
+	}
+
 	GL_CHECK(glLinkProgram(id));
 
 	GLint status;
@@ -111,6 +184,22 @@ GLuint Program::createProgram(const vector<GLuint> &shaders)
 	{
 		GL_CHECK(glDetachShader(id, shader));
 		GL_CHECK(glDeleteShader(shader));
+	}
+
+	for (auto &lib : vectLibs)
+	{
+		if (lib.id)
+		{
+			GL_CHECK(glDetachShader(id, lib.id));
+		}
+	}
+
+	for (auto &lib : fragLibs)
+	{
+		if (lib.id)
+		{
+			GL_CHECK(glDetachShader(id, lib.id));
+		}
 	}
 
 	return id;
@@ -300,297 +389,15 @@ UniformValue & Program::getValue(const string &name)
 	return uniformValue;
 }
 
-void Program::var(GLint name, GLint value)
+#include "program.cpp.var"
+#include "program.cpp.uniform"
+
+namespace
 {
-	if (id)
+	const util::InitQAttacher attach{gl::initQ, []
 	{
-		GL_CHECK(glProgramUniform1i(id, name, value));
-	}
-}
-
-void Program::var(GLint name, GLuint value)
-{
-	if (id)
-	{
-		GL_CHECK(glProgramUniform1ui(id, name, value));
-	}
-}
-
-void Program::var(GLint name, GLfloat value)
-{
-	if (id)
-	{
-		GL_CHECK(glProgramUniform1f(id, name, value));
-	}
-}
-
-void Program::var(GLint name, GLfloat x, GLfloat y)
-{
-	if (id)
-	{
-		GL_CHECK(glProgramUniform2f(id, name, x, y));
-	}
-}
-
-void Program::var(GLint name, GLfloat x, GLfloat y, GLfloat z)
-{
-	if (id)
-	{
-		GL_CHECK(glProgramUniform3f(id, name, x, y, z));
-	}
-}
-
-void Program::var(GLint name, GLfloat x, GLfloat y, GLfloat z, GLfloat w)
-{
-	if (id)
-	{
-		GL_CHECK(glProgramUniform4f(id, name, x, y, z, w));
-	}
-}
-
-void Program::var(GLint name, const glm::vec2 &value)
-{
-	if (id)
-	{
-		GL_CHECK(glProgramUniform2fv(id, name, 1, glm::value_ptr(value)));
-	}
-}
-
-void Program::var(GLint name, const glm::vec3 &value)
-{
-	if (id)
-	{
-		GL_CHECK(glProgramUniform3fv(id, name, 1, glm::value_ptr(value)));
-	}
-}
-
-void Program::var(GLint name, const glm::vec4 &value)
-{
-	if (id)
-	{
-		GL_CHECK(glProgramUniform4fv(id, name, 1, glm::value_ptr(value)));
-	}
-}
-
-void Program::var(GLint name, const glm::mat3 &value)
-{
-	if (id)
-	{
-		GL_CHECK(glProgramUniformMatrix3fv(id, name, 1, GL_FALSE, glm::value_ptr(value)));
-	}
-}
-
-void Program::var(GLint name, const glm::mat4 &value)
-{
-	if (id)
-	{
-		GL_CHECK(glProgramUniformMatrix4fv(id, name, 1, GL_FALSE, glm::value_ptr(value)));
-	}
-}
-
-
-GLint Program::var(const std::string &name, GLint value)
-{
-	GLint location = getName(name);
-	var(location, value);
-	return location;
-}
-
-GLint Program::var(const std::string &name, GLuint value)
-{
-	GLint location = getName(name);
-	var(location, value);
-	return location;
-}
-
-GLint Program::var(const std::string &name, GLfloat value)
-{
-	GLint location = getName(name);
-	var(location, value);
-	return location;
-}
-
-GLint Program::var(const std::string &name, GLfloat x, GLfloat y)
-{
-	GLint location = getName(name);
-	var(location, x, y);
-	return location;
-}
-
-GLint Program::var(const std::string &name, GLfloat x, GLfloat y, GLfloat z)
-{
-	GLint location = getName(name);
-	var(location, x, y, z);
-	return location;
-}
-
-GLint Program::var(const std::string &name, GLfloat x, GLfloat y, GLfloat z, GLfloat w)
-{
-	GLint location = getName(name);
-	var(location, x, y, z, w);
-	return location;
-}
-
-GLint Program::var(const std::string &name, const glm::vec2 &value)
-{
-	GLint location = getName(name);
-	var(location, value);
-	return location;
-}
-
-GLint Program::var(const std::string &name, const glm::vec3 &value)
-{
-	GLint location = getName(name);
-	var(location, value);
-	return location;
-}
-
-GLint Program::var(const std::string &name, const glm::vec4 &value)
-{
-	GLint location = getName(name);
-	var(location, value);
-	return location;
-}
-
-GLint Program::var(const std::string &name, const glm::mat3 &value)
-{
-	GLint location = getName(name);
-	var(location, value);
-	return location;
-}
-
-GLint Program::var(const std::string &name, const glm::mat4 &value)
-{
-	GLint location = getName(name);
-	var(location, value);
-	return location;
-}
-
-GLint Program::uniform(const string &name, GLint value)
-{
-	UniformValue &uniformValue = getValue(name);
-	uniformValue.type = UniformValue::Type::uniform_int;
-	uniformValue.i = value;
-
-	var(uniformValue.id, value);
-
-	return uniformValue.id;
-}
-
-GLint Program::uniform(const string &name, GLuint value)
-{
-	UniformValue &uniformValue = getValue(name);
-	uniformValue.type = UniformValue::Type::uniform_uint;
-	uniformValue.ui = value;
-
-	var(uniformValue.id, value);
-
-	return uniformValue.id;
-}
-
-GLint Program::uniform(const string &name, GLfloat value)
-{
-	UniformValue &uniformValue = getValue(name);
-	uniformValue.type = UniformValue::Type::uniform_float;
-	uniformValue.f = value;
-
-	var(uniformValue.id, value);
-
-	return uniformValue.id;
-}
-
-GLint Program::uniform(const string &name, GLfloat x, GLfloat y)
-{
-	UniformValue &uniformValue = getValue(name);
-	uniformValue.type = UniformValue::Type::uniform_vec2;
-	uniformValue.v2.x = x;
-	uniformValue.v2.y = y;
-
-	var(uniformValue.id, uniformValue.v2);
-
-	return uniformValue.id;
-}
-
-GLint Program::uniform(const string &name, GLfloat x, GLfloat y, GLfloat z)
-{
-	UniformValue &uniformValue = getValue(name);
-	uniformValue.type = UniformValue::Type::uniform_vec3;
-	uniformValue.v3.x = x;
-	uniformValue.v3.y = y;
-	uniformValue.v3.z = z;
-
-	var(uniformValue.id, uniformValue.v3);
-
-	return uniformValue.id;
-}
-
-GLint Program::uniform(const string &name, GLfloat x, GLfloat y, GLfloat z, GLfloat w)
-{
-	UniformValue &uniformValue = getValue(name);
-	uniformValue.type = UniformValue::Type::uniform_vec4;
-	uniformValue.v4.x = x;
-	uniformValue.v4.y = y;
-	uniformValue.v4.z = z;
-	uniformValue.v4.w = w;
-
-	var(uniformValue.id, uniformValue.v4);
-
-	return uniformValue.id;
-}
-
-GLint Program::uniform(const string &name, const glm::vec2 &value)
-{
-	UniformValue &uniformValue = getValue(name);
-	uniformValue.type = UniformValue::Type::uniform_vec2;
-	uniformValue.v2 = value;
-
-	var(uniformValue.id, value);
-
-	return uniformValue.id;
-}
-
-GLint Program::uniform(const string &name, const glm::vec3 &value)
-{
-	UniformValue &uniformValue = getValue(name);
-	uniformValue.type = UniformValue::Type::uniform_vec3;
-	uniformValue.v3 = value;
-
-	var(uniformValue.id, value);
-
-	return uniformValue.id;
-}
-
-GLint Program::uniform(const string &name, const glm::vec4 &value)
-{
-	UniformValue &uniformValue = getValue(name);
-	uniformValue.type = UniformValue::Type::uniform_vec4;
-	uniformValue.v4 = value;
-
-	var(uniformValue.id, value);
-
-	return uniformValue.id;
-}
-
-GLint Program::uniform(const string &name, const glm::mat3 &value)
-{
-	UniformValue &uniformValue = getValue(name);
-	uniformValue.type = UniformValue::Type::uniform_mat3;
-	uniformValue.m3 = value;
-
-	var(uniformValue.id, value);
-
-	return uniformValue.id;
-}
-
-GLint Program::uniform(const string &name, const glm::mat4 &value)
-{
-	UniformValue &uniformValue = getValue(name);
-	uniformValue.type = UniformValue::Type::uniform_mat4;
-	uniformValue.m4 = value;
-
-	var(uniformValue.id, value);
-
-	return uniformValue.id;
+		gl::Program::init();
+	}};
 }
 
 } // gl

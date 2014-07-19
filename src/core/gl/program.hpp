@@ -21,6 +21,9 @@ public:
 	typedef src::Stream Source;
 
 	static std::list<Program *> collection;
+
+	static void init();
+	static void reloadLibs();
 	static void reloadAll();
 
 	static GLuint createShader(GLenum type, const GLchar *source, GLint sourceLength);

@@ -18,21 +18,8 @@ uniform vec4 lightPosition;
 uniform float lightLinearAttenuation;
 uniform float lightQuadraticAttenuation;
 
-vec3 decodeNormal(vec2 enc)
-{
-	float scale = 1.7777;
-	vec3 nn = vec3(enc.xy * 2.0 * scale - scale, 1.0);
-	float g = 2.0 / dot(nn, nn);
-	vec3 n = vec3(g * nn.xy, g - 1.0);
-
-	return n;
-}
-
-vec3 reconstructPosition(float z)
-{
-	vec4 position = invP * vec4(uv * 2.0 - 1.0, z, 1.0);
-	return (position.xyz / position.w);
-}
+vec3 decodeNormal(vec2 enc);
+vec3 reconstructPosition(float z, vec2 uv);
 
 void main()
 {
@@ -41,7 +28,7 @@ void main()
 	float depth = texture(texDS, uv).x * 2.0 - 1.0;
 
 	vec3 normal = decodeNormal(encodedNormal);
-	vec3 position = reconstructPosition(depth);
+	vec3 position = reconstructPosition(depth, uv);
 
 	vec3 n = normalize(normal);
 	vec3 l = normalize(lightPosition.xyz - position.xyz);
