@@ -2,7 +2,7 @@
 #define SRC_MEM_HPP
 
 #include "../src.hpp"
-#include "../gl/types.hpp"
+#include "../rn/types.hpp"
 
 namespace src
 {

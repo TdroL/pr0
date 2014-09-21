@@ -3,11 +3,11 @@
 
 #include <vector>
 
-#include <core/gl/fbo.hpp>
-#include <core/gl/fbocube.hpp>
+#include <core/rn/fbo.hpp>
+#include <core/rn/fbocube.hpp>
 
-#include <core/gl/mesh.hpp>
-#include <core/gl/program.hpp>
+#include <core/rn/mesh.hpp>
+#include <core/rn/program.hpp>
 
 #include <core/ecs/entity.hpp>
 
@@ -17,20 +17,20 @@ public:
 	ecs::Entity cameraId{};
 	ecs::Entity lightIds[10]{};
 
-	gl::Program deferredGBuffer{};
-	gl::Program deferredShadowMap{};
-	gl::Program deferredDirectionalLight{};
-	gl::Program deferredSkinDirectionalLight{};
-	gl::Program deferredPointLight{};
-	gl::Program simple{};
-	gl::Program blurFilter{};
-	gl::Program blurPreview{};
-	gl::Program shadowMapPreview{};
+	rn::Program deferredGBuffer{};
+	rn::Program deferredShadowMap{};
+	rn::Program deferredDirectionalLight{};
+	rn::Program deferredSkinDirectionalLight{};
+	rn::Program deferredPointLight{};
+	rn::Program simple{};
+	rn::Program blurFilter{};
+	rn::Program blurPreview{};
+	rn::Program shadowMapPreview{};
 
-	gl::FBO gBuffer{"gBuffer"};
-	gl::FBO blurBuffer{"blurBuffer"};
-	gl::FBO shadowMapBuffer{"shadowMapBuffer"};
-	// gl::FBOCube shadowCubeMapBuffer{"shadowCubeMapBuffer"};
+	rn::FBO gBuffer{"gBuffer"};
+	rn::FBO blurBuffer{"blurBuffer"};
+	rn::FBO shadowMapBuffer{"shadowMapBuffer"};
+	// rn::FBOCube shadowCubeMapBuffer{"shadowCubeMapBuffer"};
 
 	App() {};
 	~App() {};

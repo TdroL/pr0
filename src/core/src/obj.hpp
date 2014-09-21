@@ -2,7 +2,7 @@
 #define SRC_OBJ_HPP
 
 #include "../src.hpp"
-#include "../gl/types.hpp"
+#include "../rn/types.hpp"
 
 #include <string>
 #include <vector>

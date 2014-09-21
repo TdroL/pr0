@@ -13,10 +13,10 @@ namespace mesh
 
 using namespace std;
 
-vector<gl::Mesh> meshes{};
+vector<rn::Mesh> meshes{};
 map<string, size_t> mappings{};
 
-size_t add(const string &name, gl::Mesh &&mesh)
+size_t add(const string &name, rn::Mesh &&mesh)
 {
 	auto it = mappings.find(name);
 	size_t id = 0;
@@ -48,7 +48,7 @@ size_t load(const string &name)
 	}
 	else
 	{
-		gl::Mesh mesh{string{name}};
+		rn::Mesh mesh{string{name}};
 
 		if (name.compare(name.size() - 4, 4, ".obj") == 0)
 		{
@@ -70,7 +70,7 @@ size_t load(const string &name)
 }
 
 
-gl::Mesh & get(const size_t id)
+rn::Mesh & get(const size_t id)
 {
 
 	if (id == 0 || meshes.size() < id)

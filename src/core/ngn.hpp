@@ -8,10 +8,10 @@
 namespace ngn
 {
 
-extern util::InitQ initQ;
-
 extern double ct;
 extern double dt;
+
+util::InitQ & initQ();
 
 void init();
 

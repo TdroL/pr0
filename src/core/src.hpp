@@ -5,8 +5,8 @@
 #include <memory>
 #include <string>
 
-#include "gl.hpp"
-#include "gl/types.hpp"
+#include "rn.hpp"
+#include "rn/types.hpp"
 #include "util.hpp"
 
 namespace src
@@ -15,11 +15,11 @@ namespace src
 class Mesh
 {
 public:
-	gl::BufferData vertexData{};
-	gl::BufferData indexData{};
-	std::vector<gl::VertexLayout> layouts{};
-	std::vector<gl::DrawIndex> indices{};
-	std::vector<gl::DrawArray> arrays{};
+	rn::BufferData vertexData{};
+	rn::BufferData indexData{};
+	std::vector<rn::VertexLayout> layouts{};
+	std::vector<rn::DrawIndex> indices{};
+	std::vector<rn::DrawArray> arrays{};
 
 	virtual void use() {}
 	virtual void release() {}

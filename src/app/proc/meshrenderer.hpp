@@ -3,7 +3,7 @@
 
 #include <core/ecs/entity.hpp>
 #include <glm/glm.hpp>
-#include <core/gl/program.hpp>
+#include <core/rn/program.hpp>
 
 namespace proc
 {
@@ -11,7 +11,7 @@ namespace proc
 class MeshRenderer
 {
 public:
-	static void render(const ecs::Entity &entity, gl::Program &prog);
+	static void render(const ecs::Entity &entity, rn::Program &prog);
 };
 
 } // proc

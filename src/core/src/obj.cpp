@@ -1,5 +1,5 @@
 #include "obj.hpp"
-#include "../gl.hpp"
+#include "../rn.hpp"
 #include "../ngn/fs.hpp"
 #include "../util/str.hpp"
 

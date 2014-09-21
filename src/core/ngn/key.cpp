@@ -78,10 +78,10 @@ void update()
 
 namespace
 {
-	const util::InitQAttacher attach{ngn::initQ, []
+	const util::InitQAttacher attach(ngn::initQ(), []
 	{
 		key::init();
-	}};
+	});
 }
 
 } // ngn

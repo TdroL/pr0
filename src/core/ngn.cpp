@@ -1,6 +1,6 @@
 #include "ngn.hpp"
 
-#include "gl.hpp"
+#include "rn.hpp"
 
 #include "ngn/window.hpp"
 #include "ngn/key.hpp"
@@ -12,10 +12,14 @@ namespace ngn
 
 using namespace std;
 
-util::InitQ initQ{};
-
 double ct = 0.0;
 double dt = numeric_limits<double>::epsilon();
+
+util::InitQ & initQ()
+{
+	static util::InitQ q{"ngn::initQ"};
+	return q;
+}
 
 void init()
 {
@@ -33,40 +37,40 @@ void init()
 
 	window::create(1600, 900);
 
+#ifdef NGN_USE_GLEW
 	{
-	#ifdef NGN_USE_GLEW
 		glewExperimental = GL_TRUE;
 		auto err = glewInit();
 		if (err != GLEW_OK)
 		{
 			throw string{"ngn::init() - glewInit() - "} + reinterpret_cast<const char *>(glewGetErrorString(err));
 		}
-	#else
-		if (gl3wInit())
-		{
-			throw string{"ngn::init() - gl3wInit() - Failed to initialize OpenGL"};
-		}
-
-		if ( ! gl3wIsSupported(window::contextMajor, window::contextMinor)) {
-			int versionMajor;
-			int versionMinor;
-			glGetIntegerv(GL_MAJOR_VERSION, &versionMajor);
-			glGetIntegerv(GL_MINOR_VERSION, &versionMinor);
-
-			throw string{"ngn::init() - gl3wIsSupported(" + to_string(window::contextMajor) + ", " + to_string(window::contextMinor) + ") - OpenGL " + to_string(versionMajor) + "." + to_string(versionMinor)};
-		}
-	#endif
 	}
+#else
+	if (gl3wInit())
+	{
+		throw string{"ngn::init() - gl3wInit() - Failed to initialize OpenGL"};
+	}
+
+	if ( ! gl3wIsSupported(window::contextMajor, window::contextMinor)) {
+		int versionMajor;
+		int versionMinor;
+		rn::get(GL_MAJOR_VERSION, versionMajor);
+		rn::get(GL_MINOR_VERSION, versionMinor);
+
+		throw string{"ngn::init() - gl3wIsSupported(" + to_string(window::contextMajor) + ", " + to_string(window::contextMinor) + ") - OpenGL " + to_string(versionMajor) + "." + to_string(versionMinor)};
+	}
+#endif
 
 	UTIL_DEBUG
 	{
 		clog << "OpenGL info:" << endl;
-		clog << gl::getBasicInfo("  ") << endl;
+		clog << rn::getBasicInfo() << endl;
 	}
 
 	window::vsync(1);
 
-	ngn::initQ.run();
+	initQ().run();
 }
 
 void deinit()
@@ -95,7 +99,7 @@ void startLoop()
 void endLoop()
 {
 	glUseProgram(0);
-	gl::stats.reset();
+	rn::stats.reset();
 	ngn::window::swapBuffers();
 }
 

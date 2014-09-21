@@ -3,7 +3,7 @@
 
 #include <core/ecs/component.hpp>
 #include <glm/glm.hpp>
-#include <core/gl.hpp>
+#include <core/rn.hpp>
 
 namespace comp
 {

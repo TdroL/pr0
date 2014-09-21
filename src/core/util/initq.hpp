@@ -2,6 +2,7 @@
 #define UTIL_INITQ_HPP
 
 #include <vector>
+#include <string>
 #include <functional>
 
 namespace util {
@@ -10,31 +11,21 @@ class InitQ
 {
 public:
 	bool autorun = false;
+	std::string name = "Unnamed init queue";
 	std::vector<std::function<void()>> queue{};
 
-	void run()
-	{
-		for (auto &fn : queue)
-		{
-			fn();
-		}
+	InitQ() = default;
+	explicit InitQ(std::string &&name);
 
-		autorun = true;
-	}
+	void run();
+
+	void attach(std::function<void()> &&fn);
 };
 
 class InitQAttacher
 {
 public:
-	InitQAttacher(InitQ &container, std::function<void()> &&fn)
-	{
-		container.queue.push_back(move(fn));
-
-		if (container.autorun)
-		{
-			fn();
-		}
-	}
+	InitQAttacher(InitQ &container, std::function<void()> &&fn);
 };
 
 }

@@ -1,5 +1,5 @@
 #include "sbm.hpp"
-#include "../gl.hpp"
+#include "../rn.hpp"
 #include "../ngn/fs.hpp"
 
 #include <array>

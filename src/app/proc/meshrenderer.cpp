@@ -10,7 +10,7 @@ namespace proc
 
 using namespace comp;
 
-void MeshRenderer::render(const ecs::Entity &entity, gl::Program &prog)
+void MeshRenderer::render(const ecs::Entity &entity, rn::Program &prog)
 {
 	if (ecs::has<Material>(entity))
 	{
