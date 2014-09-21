@@ -9,12 +9,12 @@ in vec3 normal;
 uniform float matShininess;
 uniform vec4 matDiffuse;
 
-vec2 encodeNormal(vec3 n);
+vec2 normalEncode(vec3 n);
 
 void main()
 {
 	vec3 n = normalize(normal);
 
-	outColor = vec4(matDiffuse.rgb, matShininess);
-	outNormal = encodeNormal(n);
+	outColor = vec4(pow(matDiffuse.rgb, vec3(2.2)), matShininess);
+	outNormal = normalEncode(n);
 }

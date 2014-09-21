@@ -5,12 +5,12 @@ namespace util
 
 using namespace std;
 
-std::size_t align(std::size_t size, std::size_t alignTo)
+size_t align(size_t size, size_t alignTo)
 {
 	return (size + (alignTo - 1)) & ~(alignTo - 1);
 }
 
-std::size_t align(std::size_t size)
+size_t align(size_t size)
 {
 	return util::align(size, sizeof(void *));
 }

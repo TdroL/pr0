@@ -21,9 +21,9 @@ uniform mat4 shadowmapMVP;
 uniform vec3 lightDirection;
 uniform vec4 lightColor;
 
-vec3 decodeNormal(vec2 enc);
-vec3 reconstructPosition(float z, vec2 uv);
-float chebyshevUpperBound(float dist, vec2 moments);
+vec3 normalDecode(vec2 enc);
+vec3 positionReconstruct(float z, vec2 uv);
+float vsmVisibility(float dist, vec2 moments);
 
 void main()
 {
@@ -34,8 +34,8 @@ void main()
 	vec3 albedo = diffuseShininess.rgb;
 	float shininess = diffuseShininess.a;
 
-	vec3 normal = decodeNormal(encodedNormal);
-	vec3 position = reconstructPosition(depth, uv);
+	vec3 normal = normalDecode(encodedNormal);
+	vec3 position = positionReconstruct(depth, uv);
 
 	vec4 shadowCoord = shadowmapMVP * invV * vec4(position, 1.0) * 0.5 + 0.5;
 	shadowCoord /= shadowCoord.w;
@@ -53,18 +53,20 @@ void main()
 	float exponent = acos(n_h) / (shininess);
 	float gauss = (theta != 0.0) ? exp(-(exponent * exponent) * inversesqrt(theta)) : 0.0;
 
-	vec3 ambient  = lightColor.rgb / 32.0;
-	vec3 diffuse  = lightColor.rgb * albedo * theta;
-	vec3 specular = lightColor.rgb * gauss;
+	vec3 lightColorG = pow(lightColor.rgb, vec3(2.2));
+
+	vec3 ambient  = lightColorG * albedo * theta / 512;
+	vec3 diffuse  = lightColorG * albedo * theta;
+	vec3 specular = lightColorG * gauss;
 
 	float visibility = 1.0;
 
 	vec2 moments = texture(shadowMoments, shadowCoord.xy).rg;
-	visibility = chebyshevUpperBound(min(shadowCoord.z, 1.0), moments);
+	visibility = vsmVisibility(min(shadowCoord.z, 1.0), moments);
 
-	// outColor.rgb = ambient + (diffuse + specular) * visibility;
-	outColor.rgb = albedo * vec3(theta);
-	outColor.r = albedo.r * pow(theta, 2.0/3.0);
+	outColor.rgb = pow(ambient + (diffuse + specular) * visibility, vec3(1/2.2));
+	// outColor.rgb = albedo * vec3(theta);
+	// outColor.r = albedo.r * pow(theta, 2.0/3.0);
 	// outColor.g = albedo.g * ((theta + 0.05) / (1.0 + 0.05));
 	// outColor.b = albedo.b * ((theta + 0.0) / (1.0 + 0.0));
 	// outColor.rgb *= visibility;

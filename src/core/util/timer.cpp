@@ -31,9 +31,9 @@ bool Timer::update()
 	}
 
 	timed += ngn::ct - prevTime;
+	timef = static_cast<float>(timed);
 	prevTime = ngn::ct;
 
-	timef = static_cast<float>(timed);
 
 	return false;
 }

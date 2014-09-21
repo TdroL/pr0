@@ -1,5 +1,7 @@
 #version 330
 
+// From http://fabiensanglard.net/shadowmappingVSM/index.php
+
 vec2 vsmMoments(float depth)
 {
 	vec2 moments = vec2(depth, depth * depth);
@@ -12,7 +14,8 @@ vec2 vsmMoments(float depth)
 	return moments;
 }
 
-float chebyshevUpperBound(float dist, vec2 moments)
+// Chebyshev Upper Bound
+float vsmVisibility(float dist, vec2 moments)
 {
 	dist = max(dist, moments.x);
 

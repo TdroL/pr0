@@ -11,8 +11,8 @@ public:
 	bool active = true;
 	F fn;
 
-	explicit ScopeExit(F fn)
-	: fn{fn}
+	explicit ScopeExit(F &&fn)
+		: fn{std::move(fn)}
 	{}
 
 	void dispatch()

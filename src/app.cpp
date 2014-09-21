@@ -134,24 +134,24 @@ void App::init()
 		cerr << "Warning: " << e << endl;
 	}
 
-	gBuffer.setTex(0, gl::Tex2D{});
-	gBuffer.setTex(1, gl::Tex2D{GL_RG16F, GL_RG, GL_HALF_FLOAT});
+	gBuffer.setTex(0, gl::Tex2D{GL_RGBA16F, GL_RGBA, GL_FLOAT});
+	gBuffer.setTex(1, gl::Tex2D{GL_RG16F, GL_RG, GL_FLOAT});
 	gBuffer.setDepth(gl::Tex2D{GL_DEPTH24_STENCIL8, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8});
 	gBuffer.create();
 
-	blurBuffer.width = 1024;
-	blurBuffer.height = 1024;
-	blurBuffer.clearColor = glm::vec4{1.f, 1.f, 1.f, 1.f};
-	blurBuffer.setTex(0, gl::Tex2D{GL_RG16F, GL_RG, GL_HALF_FLOAT});
-	blurBuffer.setDepth(gl::Renderbuffer{GL_DEPTH_COMPONENT32F});
-	blurBuffer.create();
-
-	shadowMapBuffer.width = blurBuffer.width;
-	shadowMapBuffer.height = blurBuffer.height;
-	shadowMapBuffer.clearColor = glm::vec4{1.f, 1.f, 1.f, 1.f};
-	shadowMapBuffer.setTex(0, gl::Tex2D{GL_RG32F, GL_RG, GL_FLOAT});
+	shadowMapBuffer.width = 1024;
+	shadowMapBuffer.height = 1024;
+	shadowMapBuffer.clearColor = glm::vec4{numeric_limits<GLfloat>::max()};
+	shadowMapBuffer.setTex(0, gl::Tex2D{GL_RGB32F, GL_RGB, GL_FLOAT});
 	shadowMapBuffer.setDepth(gl::Tex2D{GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT});
 	shadowMapBuffer.create();
+
+	blurBuffer.width = shadowMapBuffer.width;
+	blurBuffer.height = shadowMapBuffer.height;
+	blurBuffer.clearColor = glm::vec4{numeric_limits<GLfloat>::max()};
+	blurBuffer.setTex(0, gl::Tex2D{GL_RGB32F, GL_RGB, GL_FLOAT});
+	blurBuffer.setDepth(gl::Renderbuffer{GL_DEPTH_COMPONENT32F});
+	blurBuffer.create();
 
 	/* Scene creation */
 
@@ -507,7 +507,7 @@ void App::render()
 	gBuffer.blit(0, GL_STENCIL_BUFFER_BIT);
 
 	directionalLightsPass();
-	// pointLightsPass();
+	pointLightsPass();
 	flatLightPass();
 
 	{
@@ -672,10 +672,14 @@ void App::pointLightsPass()
 			gBuffer.colors[0].bind(0);
 			gBuffer.colors[1].bind(1);
 			gBuffer.depth.tex.bind(2);
+			// shadowMapBuffer.colors[0].bind(3);
+			// shadowMapBuffer.depth.tex.bind(4);
 
-			deferredDirectionalLight.var("texColor", 0);
-			deferredDirectionalLight.var("texNormal", 1);
-			deferredDirectionalLight.var("texDepth", 2);
+			deferredPointLight.var("texColor", 0);
+			deferredPointLight.var("texNormal", 1);
+			deferredPointLight.var("texDepth", 2);
+			// deferredPointLight.var("shadowMoments", 3);
+			// deferredPointLight.var("shadowDepth", 4);
 
 			gl::FBO::mesh.render();
 

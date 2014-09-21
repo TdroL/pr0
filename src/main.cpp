@@ -85,6 +85,10 @@ int main(int argc, char const* argv[])
 			gl::reloadSoftAll();
 		}
 
+		GL_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
+
+		GL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 16, 16, 0, GL_FLOAT, GL_FLOAT, nullptr));
+
 		/* Refresh system */
 
 		ngn::update();
@@ -152,7 +156,7 @@ int main(int argc, char const* argv[])
 				win::vsync(vsyncs[currentVsync]);
 				cout << "done" << endl;
 
-				cout << "Soft-reloading GL..." << endl;
+				cout << "Soft reloading GL..." << endl;
 				gl::reloadSoftAll();
 				cout << "done" << endl;
 			}

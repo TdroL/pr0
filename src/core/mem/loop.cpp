@@ -14,7 +14,6 @@ namespace loop
 
 using namespace std;
 
-
 uint8_t *currentPtr = nullptr;
 uint8_t *endPtr = nullptr;
 size_t poolSize = 20; // 20 * 1024 * 1024 = 20 MiB

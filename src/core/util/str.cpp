@@ -14,44 +14,41 @@ namespace util
 namespace str
 {
 
-void ltrim(std::string &s) {
-	s.erase(std::begin(s), std::find_if(std::begin(s), std::end(s), std::not1(std::ptr_fun<int, int>(std::isspace))));
+using namespace std;
+
+void ltrim(string &s) {
+	s.erase(begin(s), find_if(begin(s), end(s), not1(ptr_fun<int, int>(isspace))));
 }
 
-void rtrim(std::string &s) {
-	s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), std::end(s));
+void rtrim(string &s) {
+	s.erase(find_if(s.rbegin(), s.rend(), not1(ptr_fun<int, int>(isspace))).base(), end(s));
 }
 
-void trim(std::string &s) {
+void trim(string &s) {
 	ltrim(s);
 	rtrim(s);
 }
 
 #ifdef __GNUG__
 
-std::string demangle(const char* name)
-{
+string demangle(const char* name) {
 
-	int status = -4; // some arbitrary value to eliminate the compiler warning
+	int status = -1;
 
-	// enable c++11 by passing the flag -std=c++11 to g++
-	std::unique_ptr<char, void(*)(void*)> res{
-		abi::__cxa_demangle(name, NULL, NULL, &status),
-		std::free
-	};
+	unique_ptr<char, void(*)(void*)> res{abi::__cxa_demangle(name, nullptr, nullptr, &status), free};
 
-	return (status==0) ? res.get() : name ;
+	return (status == 0) ? res.get() : name ;
 }
 
 #else
 
 // does nothing if not g++
-std::string demangle(const char* name) {
+string demangle(const char* name) {
 	return name;
 }
 
 #endif
 
-}
+} // str
 
-}
+} // util

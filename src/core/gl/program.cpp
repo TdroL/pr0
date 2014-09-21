@@ -3,6 +3,7 @@
 #include "../src/file.hpp"
 #include "../util/initq.hpp"
 #include <memory>
+#include <string>
 #include <iostream>
 
 namespace gl
@@ -20,29 +21,40 @@ struct Lib
 	unique_ptr<Source> source{nullptr};
 
 	Lib() = default;
+	Lib(Lib &&rhs)
+		: id{move(rhs.id)}, source{move(rhs.source)}
+	{
+		rhs.id = 0;
+		rhs.source.reset(nullptr);
+	}
 	explicit Lib(unique_ptr<Source> &&source)
 		: source{move(source)}
 	{}
 };
 
-vector<Lib> vectLibs{};
+vector<Lib> vertLibs{};
 vector<Lib> fragLibs{};
 
 void Program::init()
 {
-	vectLibs.push_back(Lib{src::file::stream("lib/normal.vert")});
-
-	fragLibs.push_back(Lib{src::file::stream("lib/normal.frag")});
-	fragLibs.push_back(Lib{src::file::stream("lib/position.frag")});
-	fragLibs.push_back(Lib{src::file::stream("lib/vsm.frag")});
+	fragLibs.emplace_back(src::file::stream("lib/normal.frag"));
+	fragLibs.emplace_back(src::file::stream("lib/position.frag"));
+	fragLibs.emplace_back(src::file::stream("lib/blur.frag"));
+	fragLibs.emplace_back(src::file::stream("lib/vsm.frag"));
+	fragLibs.emplace_back(src::file::stream("lib/esm.frag"));
 
 	reloadLibs();
 }
 
 void Program::reloadLibs()
 {
-	for (auto &lib : vectLibs)
+	for (auto &lib : vertLibs)
 	{
+		if ( ! lib.source)
+		{
+			throw string{"gl::Program::reloadLibs() - missing vertex shader library source"};
+		}
+
 		SRC_STREAM_USE(*(lib.source));
 
 		if (lib.id)
@@ -50,11 +62,16 @@ void Program::reloadLibs()
 			GL_CHECK(glDeleteShader(lib.id));
 		}
 
-		lib.id = Program::createShader(GL_FRAGMENT_SHADER, lib.source->contents);
+		lib.id = Program::createShader(GL_VERTEX_SHADER, lib.source->contents);
 	}
 
 	for (auto &lib : fragLibs)
 	{
+		if ( ! lib.source)
+		{
+			throw string{"gl::Program::reloadLibs() - missing fragment shader library source"};
+		}
+
 		SRC_STREAM_USE(*(lib.source));
 
 		if (lib.id)
@@ -147,7 +164,7 @@ GLuint Program::createProgram(const vector<GLuint> &shaders)
 		GL_CHECK(glAttachShader(id, shader));
 	}
 
-	for (auto &lib : vectLibs)
+	for (auto &lib : vertLibs)
 	{
 		if (lib.id)
 		{
@@ -186,7 +203,7 @@ GLuint Program::createProgram(const vector<GLuint> &shaders)
 		GL_CHECK(glDeleteShader(shader));
 	}
 
-	for (auto &lib : vectLibs)
+	for (auto &lib : vertLibs)
 	{
 		if (lib.id)
 		{
@@ -389,8 +406,8 @@ UniformValue & Program::getValue(const string &name)
 	return uniformValue;
 }
 
-#include "program.cpp.var"
-#include "program.cpp.uniform"
+#include "program.var.inl"
+#include "program.uniform.inl"
 
 namespace
 {

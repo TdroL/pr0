@@ -11,22 +11,14 @@ layout(location = 0) out vec4 outColor;
 in vec2 uv;
 
 uniform sampler2D texSource;
-
 uniform vec2 scale;
+
+vec3 blurGaussian(sampler2D tex, vec2 uv, vec2 scale);
+float esmLogBlur(sampler2D tex, vec2 uv, vec2 scale);
 
 void main()
 {
-	outColor = vec4(0.0);
-
-	outColor += texture(texSource, uv + vec2(-3.0 * scale.x, -3.0 * scale.y)) * 0.015625;
-	outColor += texture(texSource, uv + vec2(-2.0 * scale.x, -2.0 * scale.y)) * 0.09375;
-	outColor += texture(texSource, uv + vec2(-1.0 * scale.x, -1.0 * scale.y)) * 0.234375;
-	outColor += texture(texSource, uv + vec2( 0.0 * scale.x,  0.0 * scale.y)) * 0.3125;
-	outColor += texture(texSource, uv + vec2( 1.0 * scale.x,  1.0 * scale.y)) * 0.234375;
-	outColor += texture(texSource, uv + vec2( 2.0 * scale.x,  2.0 * scale.y)) * 0.09375;
-	outColor += texture(texSource, uv + vec2( 3.0 * scale.x,  3.0 * scale.y)) * 0.015625;
-
-	// outColor  = texture(texSource, uv + vec2( 0.0 * scale.x,  0.0 * scale.y));
-
+	outColor.rgb = blurGaussian(texSource, uv, scale);
+	outColor.b = esmLogBlur(texSource, uv, scale);
 	outColor.a = 1.0;
 }

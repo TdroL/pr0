@@ -58,8 +58,8 @@ $(BUILDDIR)/%.d: $(SRCDIR)/%.cpp
 
 -include $(DEPFILES)
 
-# asm: main.cpp
-# 	@echo " ASM main.cpp"; $(CC) $(CXXFLAGS) -S -fverbose-asm main.cpp $(LIBS) -o main.asm; cat main.asm | c++filt > main.s; rm main.asm
+# asm: src/main.cpp
+# 	@echo " ASM main.cpp"; $(CC) $(CXXFLAGS) -S -fverbose-asm src/main.cpp $(LIBS) -o main.asm; cat main.asm | c++filt > main.s; rm main.asm
 
 all: $(PROGRAM)
 

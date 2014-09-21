@@ -15,6 +15,8 @@ using namespace std;
 
 util::InitQ initQ{};
 
+const char *lastGLCall = nullptr;
+
 Stats stats = {0, 0};
 Status status = Status::uninited;
 
@@ -56,7 +58,8 @@ namespace
 		}
 
 		cerr << "[GL debug]: " << error_type << " from " << source_name << ",\t" << type_severity << endl;
-		cerr << "Message: " << message << endl;
+		cerr << "  Last saved GL call: " << lastGLCall << endl;
+		cerr << "  Message: " << message << endl;
 		cerr << flush;
 	}
 }
@@ -92,8 +95,23 @@ void reload()
 	GL_CHECK(glEnable(GL_BLEND));
 	GL_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
-	GL_CHECK(glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB));
-	GL_CHECK(glDebugMessageCallbackARB(debugHandler, reinterpret_cast<void*>(15)));
+#ifdef NGN_USE_GLEW
+	if (GLEW_ARB_debug_output) {
+		GL_CHECK(glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB));
+		GL_CHECK(glDebugMessageCallbackARB(debugHandler, reinterpret_cast<void*>(15)));
+	} else {
+		clog << "gl::reload() - GL_ARB_debug_output not supported" << endl;
+		clog << flush;
+	}
+#else
+	if (glDebugMessageCallbackARB != nullptr) {
+		GL_CHECK(glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB));
+		GL_CHECK(glDebugMessageCallbackARB(debugHandler, reinterpret_cast<void*>(15)));
+	} else {
+		clog << "gl::reload() - GL_ARB_debug_output not supported" << endl;
+		clog << flush;
+	}
+#endif
 }
 
 void reloadAll()
@@ -1443,9 +1461,9 @@ void get(const GLenum name, GLuint &value)    { glGetIntegerv(name, reinterpret_
 void get(const GLenum name, GLint64 &value)   { glGetInteger64v(name, &value); }
 void get(const GLenum name, GLfloat &value)   { glGetFloatv(name, &value); }
 void get(const GLenum name, GLdouble &value)  { glGetDoublev(name, &value); }
-void get(const GLenum name, glm::vec2 &value)  { glGetFloatv(name, glm::value_ptr(value)); }
-void get(const GLenum name, glm::vec3 &value)  { glGetFloatv(name, glm::value_ptr(value)); }
-void get(const GLenum name, glm::vec4 &value)  { glGetFloatv(name, glm::value_ptr(value)); }
+void get(const GLenum name, glm::vec2 &value) { glGetFloatv(name, glm::value_ptr(value)); }
+void get(const GLenum name, glm::vec3 &value) { glGetFloatv(name, glm::value_ptr(value)); }
+void get(const GLenum name, glm::vec4 &value) { glGetFloatv(name, glm::value_ptr(value)); }
 
 void get(const GLenum name, GLboolean *value) { glGetBooleanv(name, value); }
 void get(const GLenum name, GLint *value)     { glGetIntegerv(name, value); }
@@ -1453,9 +1471,9 @@ void get(const GLenum name, GLuint *value)    { glGetIntegerv(name, reinterpret_
 void get(const GLenum name, GLint64 *value)   { glGetInteger64v(name, value); }
 void get(const GLenum name, GLfloat *value)   { glGetFloatv(name, value); }
 void get(const GLenum name, GLdouble *value)  { glGetDoublev(name, value); }
-void get(const GLenum name, glm::vec2 *value)  { glGetFloatv(name, glm::value_ptr(*value)); }
-void get(const GLenum name, glm::vec3 *value)  { glGetFloatv(name, glm::value_ptr(*value)); }
-void get(const GLenum name, glm::vec4 *value)  { glGetFloatv(name, glm::value_ptr(*value)); }
+void get(const GLenum name, glm::vec2 *value) { glGetFloatv(name, glm::value_ptr(*value)); }
+void get(const GLenum name, glm::vec3 *value) { glGetFloatv(name, glm::value_ptr(*value)); }
+void get(const GLenum name, glm::vec4 *value) { glGetFloatv(name, glm::value_ptr(*value)); }
 
 void get(const GLenum name, GLboolean &value, GLuint i) { glGetBooleani_v(name, i, &value); }
 void get(const GLenum name, GLint &value, GLuint i)     { glGetIntegeri_v(name, i, &value); }
@@ -1486,7 +1504,10 @@ namespace
 {
 	const util::InitQAttacher attach{ngn::initQ, []
 	{
-		// gl::flushErrors();
+
+#ifdef NGN_USE_GLEW
+		gl::flushErrors();
+#endif
 
 		gl::init();
 	}};

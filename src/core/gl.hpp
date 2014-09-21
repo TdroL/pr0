@@ -25,6 +25,7 @@ namespace gl
 {
 
 extern util::InitQ initQ;
+extern const char *lastGLCall;
 
 enum Status
 {
@@ -97,13 +98,43 @@ void flushErrors();
 
 	#define GL_CHECK_LOG_ERROR_PARAM(name, error, param) { std::cerr << "[GL error]:" << __FILE__ << ":" << __LINE__ << ": " << #name << " = " << gl::getEnumName(error) << " (err = 0x" << std::hex << error << std::dec << ") -- " << param << std::endl << std::flush; }
 
-	#define GL_VALIDATE(fn) { GLenum err = glGetError(); if (err != GL_NO_ERROR) { do { GL_CHECK_LOG_ERROR(fn, err); err = glGetError(); } while (err != GL_NO_ERROR); exit(1); } }
+	#define GL_SAVE_CALL(fn) do { \
+		gl::lastGLCall = "[" __FILE__  ":" UTIL_STRINGIFY(__LINE__) "] " #fn; \
+	} while (0)
 
-	#define GL_VALIDATE_PARAM(fn, param) { GLenum err = glGetError(); if (err != GL_NO_ERROR) { do { GL_CHECK_LOG_ERROR_PARAM(fn, err, param); err = glGetError(); } while (err != GL_NO_ERROR); exit(1); } }
+	#define GL_VALIDATE(fn) do { \
+		GLenum err = glGetError(); \
+		if (err != GL_NO_ERROR) { \
+			do { \
+				GL_CHECK_LOG_ERROR(fn, err); \
+				err = glGetError(); \
+			} while (err != GL_NO_ERROR); \
+			exit(1); \
+		} \
+	} while(0)
 
-	#define GL_CHECK(fn) { fn; GL_VALIDATE(fn); }
+	#define GL_VALIDATE_PARAM(fn, param) do { \
+		GLenum err = glGetError(); \
+		if (err != GL_NO_ERROR) { \
+			do { \
+				GL_CHECK_LOG_ERROR_PARAM(fn, err, param); \
+				err = glGetError(); \
+			} while (err != GL_NO_ERROR); \
+			exit(1); \
+		} \
+	} while(0)
 
-	#define GL_CHECK_PARAM(fn, param) { fn; GL_VALIDATE_PARAM(fn, param); }
+	#define GL_CHECK(fn) do { \
+		GL_SAVE_CALL(fn); \
+		fn; \
+		GL_VALIDATE(fn); \
+	} while (0)
+
+	#define GL_CHECK_PARAM(fn, param) do { \
+		GL_SAVE_CALL(fn); \
+		fn; \
+		GL_VALIDATE_PARAM(fn, param); \
+	} while (0)
 
 #else
 
