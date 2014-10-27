@@ -41,9 +41,8 @@ util::Timer sunTimer{};
 
 enum Shader {
 	global = 1,
-	skin = 2,
-	flat = 3,
-	MASK = 1 | 2 | 3,
+	flat = 2,
+	MASK = 1 | 2,
 };
 
 void App::init()
@@ -118,7 +117,7 @@ void App::init()
 
 	try
 	{
-		deferredSkinDirectionalLight.load("lighting/deferred/skindirectionallight.frag", "rn/fbo.vert");
+		deferredPointLight.load("lighting/deferred/pointlight.frag", "rn/fbo.vert");
 	}
 	catch (const string &e)
 	{
@@ -127,29 +126,40 @@ void App::init()
 
 	try
 	{
-		deferredPointLight.load("lighting/deferred/pointlight.frag", "rn/fbo.vert");
+		deferredFlatLight.load("lighting/deferred/flatlight.frag", "rn/fbo.vert");
 	}
 	catch (const string &e)
 	{
 		cerr << "Warning: " << e << endl;
 	}
 
-	gBuffer.setTex(0, rn::Tex2D{GL_RGBA16F, GL_RGBA, GL_FLOAT});
-	gBuffer.setTex(1, rn::Tex2D{GL_RG16F, GL_RG, GL_FLOAT});
-	gBuffer.setDepth(rn::Tex2D{GL_DEPTH24_STENCIL8, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8});
+	try
+	{
+		ambientOcclusion.load("lighting/ambientOcclusion.frag", "rn/fbo.vert");
+	}
+	catch (const string &e)
+	{
+		cerr << "Warning: " << e << endl;
+	}
+
+	gBuffer.width = win::width;
+	gBuffer.height = win::height;
+	gBuffer.setTex(0, rn::Tex2D{GL_RGBA16F});
+	gBuffer.setTex(1, rn::Tex2D{GL_RG16F});
+	gBuffer.setDepth(rn::Tex2D{GL_DEPTH24_STENCIL8});
 	gBuffer.create();
 
 	shadowMapBuffer.width = 1024;
 	shadowMapBuffer.height = 1024;
 	shadowMapBuffer.clearColor = glm::vec4{numeric_limits<GLfloat>::max()};
-	shadowMapBuffer.setTex(0, rn::Tex2D{GL_RGB32F, GL_RGB, GL_FLOAT});
-	shadowMapBuffer.setDepth(rn::Tex2D{GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT});
+	shadowMapBuffer.setTex(0, rn::Tex2D{GL_RGB32F});
+	shadowMapBuffer.setDepth(rn::Tex2D{GL_DEPTH_COMPONENT32F});
 	shadowMapBuffer.create();
 
 	blurBuffer.width = shadowMapBuffer.width;
 	blurBuffer.height = shadowMapBuffer.height;
 	blurBuffer.clearColor = glm::vec4{numeric_limits<GLfloat>::max()};
-	blurBuffer.setTex(0, rn::Tex2D{GL_RGB32F, GL_RGB, GL_FLOAT});
+	blurBuffer.setTex(0, rn::Tex2D{GL_RGB32F});
 	blurBuffer.setDepth(rn::Renderbuffer{GL_DEPTH_COMPONENT32F});
 	blurBuffer.create();
 
@@ -182,7 +192,7 @@ void App::init()
 		const auto intP = glm::inverse(projection.getMatrix());
 		deferredPointLight.uniform("invP", intP);
 		deferredDirectionalLight.uniform("invP", intP);
-		deferredSkinDirectionalLight.uniform("invP", intP);
+		ambientOcclusion.uniform("invP", intP);
 
 		float winRatio = static_cast<float>(win::width) / static_cast<float>(win::height);
 		glm::mat4 previewM{1.f};
@@ -215,7 +225,7 @@ void App::init()
 		material.shininess = 1.f/2.f;
 
 		auto &stencil = ecs::get<Stencil>(suzanneId);
-		stencil.ref = Shader::skin;
+		stencil.ref = Shader::global;
 
 		ecs::get<Mesh>(suzanneId).id = asset::mesh::load("suzanne.sbm");
 	}
@@ -235,7 +245,7 @@ void App::init()
 		material.shininess = 1.f/4.f;
 
 		auto &stencil = ecs::get<Stencil>(venusId);
-		stencil.ref = Shader::global; // global, skin, flat
+		stencil.ref = Shader::global;
 
 		ecs::get<Mesh>(venusId).id = asset::mesh::load("venus.sbm");
 	}
@@ -256,7 +266,7 @@ void App::init()
 		material.shininess = 1.f/8.f;
 
 		auto &stencil = ecs::get<Stencil>(dragonId);
-		stencil.ref = Shader::global; // global, skin, flat
+		stencil.ref = Shader::global;
 
 		ecs::get<Mesh>(dragonId).id = asset::mesh::load("dragon.sbm");
 	}
@@ -277,7 +287,7 @@ void App::init()
 		material.shininess = 1.f/16.f;
 
 		auto &stencil = ecs::get<Stencil>(planeId);
-		stencil.ref = Shader::global; // global, skin, flat
+		stencil.ref = Shader::global;
 
 		ecs::get<Mesh>(planeId).id = asset::mesh::load("plane.sbm");
 	}
@@ -500,6 +510,7 @@ void App::render()
 	RN_CHECK(glClearColor(0.f, 0.f, 0.f, 0.f));
 	RN_CHECK(glClearDepth(numeric_limits<GLfloat>::max()));
 	RN_CHECK(glClearStencil(0));
+	RN_CHECK(glStencilMask(0xF));
 	RN_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
 	gBufferPass();
@@ -510,6 +521,8 @@ void App::render()
 	pointLightsPass();
 	flatLightPass();
 
+	ssao();
+
 	{
 		shadowMapPreview.use();
 
@@ -517,6 +530,8 @@ void App::render()
 		shadowMapPreview.var("texSource", 0);
 
 		rn::FBO::mesh.render();
+
+		shadowMapPreview.forgo();
 	}
 }
 
@@ -546,6 +561,8 @@ void App::gBufferPass()
 		proc::MeshRenderer::render(entity, deferredGBuffer);
 	}
 
+	deferredGBuffer.forgo();
+
 	// draw light meshes
 	simple.use();
 	simple.var("V", V);
@@ -563,14 +580,16 @@ void App::gBufferPass()
 		simple.var("color", glm::vec3(ecs::get<DirectionalLight>(entity).color));
 		proc::MeshRenderer::render(entity, simple);
 	}
+
+	simple.forgo();
 }
 
 void App::directionalLightsPass()
 {
 	glm::mat4 &V = ecs::get<View>(cameraId).matrix;
+	glm::mat4 invV = glm::inverse(V);
 
-	deferredDirectionalLight.var("invV", glm::inverse(V));
-	deferredSkinDirectionalLight.var("invV", glm::inverse(V));
+	deferredDirectionalLight.var("invV", invV);
 
 	for (auto &entity : ecs::findWith<DirectionalLight>())
 	{
@@ -585,6 +604,7 @@ void App::directionalLightsPass()
 		gBuffer.colors[0].bind(0);
 		gBuffer.colors[1].bind(1);
 		gBuffer.depth.tex.bind(2);
+
 		shadowMapBuffer.colors[0].bind(3);
 		shadowMapBuffer.depth.tex.bind(4);
 
@@ -605,25 +625,8 @@ void App::directionalLightsPass()
 			deferredDirectionalLight.var("shadowDepth", 4);
 
 			rn::FBO::mesh.render();
-		}
 
-		// skin lighting
-		{
-			RN_CHECK(glStencilFunc(GL_EQUAL, Shader::skin, Shader::MASK));
-
-			deferredSkinDirectionalLight.use();
-
-			deferredSkinDirectionalLight.var("lightColor", light.color);
-			deferredSkinDirectionalLight.var("lightDirection", glm::mat3{V} * light.direction);
-			deferredSkinDirectionalLight.var("shadowmapMVP", shadowMapMVP);
-
-			deferredSkinDirectionalLight.var("texColor", 0);
-			deferredSkinDirectionalLight.var("texNormal", 1);
-			deferredSkinDirectionalLight.var("texDepth", 2);
-			deferredSkinDirectionalLight.var("shadowMoments", 3);
-			deferredSkinDirectionalLight.var("shadowDepth", 4);
-
-			rn::FBO::mesh.render();
+			deferredDirectionalLight.forgo();
 		}
 
 		RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
@@ -634,10 +637,15 @@ void App::pointLightsPass()
 {
 	glm::mat4 &V = ecs::get<View>(cameraId).matrix;
 
+	gBuffer.colors[0].bind(0);
+	gBuffer.colors[1].bind(1);
+	gBuffer.depth.tex.bind(2);
+
 	for (auto &entity : ecs::findWith<Transform, Mesh, PointLight>())
 	{
 		const auto &light = ecs::get<PointLight>(entity);
 		const auto &lightTransform = ecs::get<Transform>(entity);
+
 		const auto lightPosition = V * glm::vec4{lightTransform.translation, 1.f};
 
 		// @TODO: shadows
@@ -653,6 +661,8 @@ void App::pointLightsPass()
 		// 	{
 		// 		proc::MeshRenderer::render(entity, deferredShadowMap);
 		// 	}
+
+		// 	deferredShadowMap.forgo();
 		// }
 
 		{
@@ -669,9 +679,6 @@ void App::pointLightsPass()
 			deferredPointLight.var("lightLinearAttenuation", light.linearAttenuation);
 			deferredPointLight.var("lightQuadraticAttenuation", light.quadraticAttenuation);
 
-			gBuffer.colors[0].bind(0);
-			gBuffer.colors[1].bind(1);
-			gBuffer.depth.tex.bind(2);
 			// shadowMapBuffer.colors[0].bind(3);
 			// shadowMapBuffer.depth.tex.bind(4);
 
@@ -682,6 +689,8 @@ void App::pointLightsPass()
 			// deferredPointLight.var("shadowDepth", 4);
 
 			rn::FBO::mesh.render();
+
+			deferredPointLight.forgo();
 
 			RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 		}
@@ -695,13 +704,33 @@ void App::flatLightPass()
 	RN_CHECK(glStencilFunc(GL_EQUAL, Shader::flat, Shader::MASK));
 	RN_CHECK(glStencilMask(0x0));
 
-	rn::FBO::prog.use();
+	deferredFlatLight.use();
 
 	gBuffer.colors[0].bind(0);
-
-	rn::FBO::prog.var("tex0", 0);
+	deferredFlatLight.var("texColor", 0);
 
 	rn::FBO::mesh.render();
+
+	deferredFlatLight.forgo();
+}
+
+void App::ssao()
+{
+	ambientOcclusion.use();
+
+	gBuffer.colors[0].bind(0);
+	gBuffer.colors[1].bind(1);
+	gBuffer.depth.tex.bind(2);
+
+	ambientOcclusion.var("texColor", 0);
+	ambientOcclusion.var("texNormal", 1);
+	ambientOcclusion.var("texDepth", 2);
+
+	ambientOcclusion.var("filterRadius", glm::vec2{10.f / win::width, 10.f / win::height }); // 10 px filter radius
+
+	rn::FBO::mesh.render();
+
+	ambientOcclusion.forgo();
 }
 
 glm::mat4 App::genShadowMap(ecs::Entity lightId)
@@ -731,6 +760,7 @@ glm::mat4 App::genShadowMap(ecs::Entity lightId)
 			proc::MeshRenderer::render(entity, deferredShadowMap);
 		}
 
+		deferredShadowMap.forgo();
 		// RN_CHECK(glCullFace(GL_BACK));
 	}
 
@@ -748,6 +778,8 @@ glm::mat4 App::genShadowMap(ecs::Entity lightId)
 		blurFilter.var("scale", glm::vec2{1.f / blurBuffer.width, 0.0f /* blurBuffer.height */});
 
 		rn::FBO::mesh.render();
+
+		blurFilter.forgo();
 	}
 
 	// blur shadowmap: y pass
@@ -764,6 +796,8 @@ glm::mat4 App::genShadowMap(ecs::Entity lightId)
 		blurFilter.var("scale", glm::vec2{0.f /* blurBuffer.width */, 1.0f / blurBuffer.height});
 
 		rn::FBO::mesh.render();
+
+		blurFilter.forgo();
 	}
 
 	return shadowMapMVP;

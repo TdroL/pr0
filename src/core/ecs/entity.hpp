@@ -10,6 +10,7 @@
 #include <vector>
 #include <bitset>
 #include <algorithm>
+#include <typeinfo>
 
 namespace ecs
 {

@@ -19,13 +19,19 @@ public:
 
 	rn::Program deferredGBuffer{};
 	rn::Program deferredShadowMap{};
+
 	rn::Program deferredDirectionalLight{};
-	rn::Program deferredSkinDirectionalLight{};
 	rn::Program deferredPointLight{};
+	rn::Program deferredFlatLight{};
+
+	rn::Program ambientOcclusion{};
+
 	rn::Program simple{};
 	rn::Program blurFilter{};
 	rn::Program blurPreview{};
 	rn::Program shadowMapPreview{};
+
+	rn::Tex2D ssaoNoise{};
 
 	rn::FBO gBuffer{"gBuffer"};
 	rn::FBO blurBuffer{"blurBuffer"};
@@ -45,6 +51,8 @@ public:
 	void directionalLightsPass();
 	void pointLightsPass();
 	void flatLightPass();
+
+	void ssao();
 
 	glm::mat4 genShadowMap(ecs::Entity lightId);
 };

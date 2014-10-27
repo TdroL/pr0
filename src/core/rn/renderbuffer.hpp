@@ -12,14 +12,19 @@ public:
 	GLuint id = 0;
 	GLenum internalFormat = GL_DEPTH24_STENCIL8;
 
+	GLsizei width = 0;
+	GLsizei height = 0;
+
 	Renderbuffer() = default;
 	explicit Renderbuffer(GLenum internalFormat);
+	Renderbuffer(GLenum internalFormat, GLsizei width, GLsizei height);
+
 	Renderbuffer(Renderbuffer &&rhs);
 	Renderbuffer & operator=(Renderbuffer &&rhs);
 
 	~Renderbuffer();
 
-	void create(GLsizei width, GLsizei height);
+	void reload();
 	void reset();
 
 	GLenum getAttachmentType();

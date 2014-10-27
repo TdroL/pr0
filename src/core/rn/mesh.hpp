@@ -33,6 +33,12 @@ public:
 
 	std::string meshName = "Unnamed mesh";
 
+	GLfloat boundingSphere = 0.f;
+	struct BoundingBox{
+		glm::vec3 min{};
+		glm::vec3 max{};
+	} boundingBox{};
+
 	Mesh();
 	Mesh(Mesh &&rhs);
 	Mesh(std::string &&name);

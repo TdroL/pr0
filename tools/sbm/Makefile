@@ -71,7 +71,7 @@ release: clean all
 force: clean all
 
 run: all
-	./$(PROGRAM)
+	./$(PROGRAM) ${ARGS}
 
 clean-dep:
 	@echo "Cleaning dep files..."
@@ -84,4 +84,10 @@ clean-obj:
 
 clean: clean-dep clean-obj
 
-.PHONY: all release force run clean clean-dep
+ar:
+	@echo "Creating archive..."
+	@mkdir -p $(ARDIR)
+	@ar cr $(ARDIR)/$(ARNAME).a `find $(BUILDDIR) -name '*.o' -type f`
+	@echo "  $(ARDIR)/$(ARNAME).a  done"
+
+.PHONY: all release force run run-gdb clean clean-dep clean-obj archive

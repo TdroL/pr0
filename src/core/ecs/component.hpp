@@ -11,15 +11,15 @@
 namespace ecs
 {
 
-extern int bitCounter;
+extern size_t bitCounter;
 
 template<typename C>
 class Component
 {
 public:
-	static int bit()
+	static size_t bit()
 	{
-		static int bit = bitCounter++;
+		static size_t bit = bitCounter++;
 
 		assert(bit < ecs::MAX_COMPONENTS);
 

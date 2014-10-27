@@ -45,20 +45,27 @@ void main()
 	vec3 v = normalize(-position.xyz);
 	vec3 h = normalize(l + v);
 
-	float theta = max(dot(n, l), 0.0);
+	float n_l = dot(n, l);
+	float n_h = dot(n, h);
+	float n_v = dot(n, v);
 
-	float exponent = acos(dot(h, n)) / (shininess);
-	float gauss = (theta != 0.0) ? exp(-(exponent * exponent) * inversesqrt(theta)) : 0.0;
+	float theta = max(n_l, 0.0);
 
-	vec3 ambient  = lightColor.rgb / 32.0;
-	vec3 diffuse  = lightColor.rgb * albedo * theta;
-	vec3 specular = lightColor.rgb * gauss;
+	float exponent = acos(n_h) / shininess;
+	float gauss = sign(theta) * exp(-(exponent * exponent));
+
+	vec3 lightColorG = pow(lightColor.rgb, vec3(2.2));
+
+	vec3 ambient  = lightColorG * albedo / 512.0;
+	vec3 diffuse  = lightColorG * albedo * theta;
+	vec3 specular = lightColorG * gauss;
 
 	float visibility = 1.0;
 
 	vec2 moments = texture(shadowMoments, shadowCoord.xy).rg;
 	visibility = vsmVisibility(min(shadowCoord.z, 1.0), moments);
 
-	outColor.rgb = ambient + (diffuse + specular) * visibility;
+	outColor.rgb = pow(ambient + (diffuse + specular) * visibility, vec3(1/2.2));
+	// outColor.rgb = pow(albedo, vec3(1/2.2));
 	outColor.a = 1.0;
 }

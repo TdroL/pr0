@@ -1,5 +1,6 @@
 #include "obj.hpp"
 #include "../rn.hpp"
+#include "../rn/types.hpp"
 #include "../ngn/fs.hpp"
 #include "../util/str.hpp"
 
@@ -30,7 +31,7 @@ Mesh::Mesh(string &&fileName)
 {
 }
 
-void Mesh::use()
+void Mesh::open()
 {
 	vector<glm::vec3> inVertices;
 	vector<glm::vec2> inUvs;
@@ -42,7 +43,7 @@ void Mesh::use()
 
 	if ( ! ifs.is_open())
 	{
-		throw string{"src::obj::Mesh::use() - could not open file \"" + fileName + "\""};
+		throw string{"src::obj::Mesh::open() - could not open file \"" + fileName + "\""};
 	}
 
 	while ( ! ifs.eof())
@@ -174,14 +175,14 @@ void Mesh::use()
 				parser >> vertex;
 				if ( ! vertex)
 				{
-					throw string{"src::obj::Mesh::use() - incorrect face: \"" + item.first + "\". Expected: \"[vertex]\""};
+					throw string{"src::obj::Mesh::open() - incorrect face: \"" + item.first + "\". Expected: \"[vertex]\""};
 				}
 
 				vertex = vertex > 0 ? vertex - 1 : inVertices.size() + vertex;
 
 				if (static_cast<size_t>(vertex) >= inVertices.size())
 				{
-					throw string{"src::obj::Mesh::use() - illegal vertex index: \"" + to_string(vertex) + "\". Expected number of range from 1 to " + to_string(inVertices.size())};
+					throw string{"src::obj::Mesh::open() - illegal vertex index: \"" + to_string(vertex) + "\". Expected number of range from 1 to " + to_string(inVertices.size())};
 				}
 
 				vertexBuffer.push_back(inVertices[vertex].x);
@@ -196,7 +197,7 @@ void Mesh::use()
 
 				if ( ! vertex || ! uv)
 				{
-					throw string{"src::obj::Mesh::use() - incorrect face: \"" + item.first + "\". Expected: \"[vertex]/[uv]\""};
+					throw string{"src::obj::Mesh::open() - incorrect face: \"" + item.first + "\". Expected: \"[vertex]/[uv]\""};
 				}
 
 				vertex = vertex > 0 ? vertex - 1 : inVertices.size() + vertex;
@@ -204,12 +205,12 @@ void Mesh::use()
 
 				if (static_cast<size_t>(vertex) >= inVertices.size())
 				{
-					throw string{"src::obj::Mesh::use() - illegal vertex index: \"" + to_string(vertex) + "\". Expected number of range from 1 to " + to_string(inVertices.size())};
+					throw string{"src::obj::Mesh::open() - illegal vertex index: \"" + to_string(vertex) + "\". Expected number of range from 1 to " + to_string(inVertices.size())};
 				}
 
 				if (static_cast<size_t>(uv) >= inUvs.size())
 				{
-					throw string{"src::obj::Mesh::use() - illegal uv index: \"" + to_string(uv) + "\". Expected number of range from 1 to " + to_string(inUvs.size())};
+					throw string{"src::obj::Mesh::open() - illegal uv index: \"" + to_string(uv) + "\". Expected number of range from 1 to " + to_string(inUvs.size())};
 				}
 
 				vertexBuffer.push_back(inVertices[vertex].x);
@@ -227,7 +228,7 @@ void Mesh::use()
 
 				if ( ! vertex || ! normal)
 				{
-					throw string{"src::obj::Mesh::use() - incorrect face: \"" + item.first + "\". Expected: \"[vertex]//[normal]\""};
+					throw string{"src::obj::Mesh::open() - incorrect face: \"" + item.first + "\". Expected: \"[vertex]//[normal]\""};
 				}
 
 				vertex = vertex > 0 ? vertex - 1 : inVertices.size() + vertex;
@@ -235,12 +236,12 @@ void Mesh::use()
 
 				if (static_cast<size_t>(vertex) >= inVertices.size())
 				{
-					throw string{"src::obj::Mesh::use() - illegal vertex index: \"" + to_string(vertex) + "\". Expected number of range from 1 to " + to_string(inVertices.size())};
+					throw string{"src::obj::Mesh::open() - illegal vertex index: \"" + to_string(vertex) + "\". Expected number of range from 1 to " + to_string(inVertices.size())};
 				}
 
 				if (static_cast<size_t>(normal) >= inNormals.size())
 				{
-					throw string{"src::obj::Mesh::use() - illegal normal index: \"" + to_string(normal) + "\". Expected number of range from 1 to " + to_string(inNormals.size())};
+					throw string{"src::obj::Mesh::open() - illegal normal index: \"" + to_string(normal) + "\". Expected number of range from 1 to " + to_string(inNormals.size())};
 				}
 
 				vertexBuffer.push_back(inVertices[vertex].x);
@@ -258,7 +259,7 @@ void Mesh::use()
 
 				if ( ! vertex || ! uv || ! normal)
 				{
-					throw string{"src::obj::Mesh::use() - incorrect face: \"" + item.first + "\". Expected: \"[vertex]/[uv]/[normal]\""};
+					throw string{"src::obj::Mesh::open() - incorrect face: \"" + item.first + "\". Expected: \"[vertex]/[uv]/[normal]\""};
 				}
 
 				vertex = vertex > 0 ? vertex - 1 : inVertices.size() + vertex;
@@ -267,17 +268,17 @@ void Mesh::use()
 
 				if (static_cast<size_t>(vertex) >= inVertices.size())
 				{
-					throw string{"src::obj::Mesh::use() - illegal vertex index: \"" + to_string(vertex) + "\". Expected number of range from 1 to " + to_string(inVertices.size())};
+					throw string{"src::obj::Mesh::open() - illegal vertex index: \"" + to_string(vertex) + "\". Expected number of range from 1 to " + to_string(inVertices.size())};
 				}
 
 				if (static_cast<size_t>(uv) >= inUvs.size())
 				{
-					throw string{"src::obj::Mesh::use() - illegal uv index: \"" + to_string(uv) + "\". Expected number of range from 1 to " + to_string(inUvs.size())};
+					throw string{"src::obj::Mesh::open() - illegal uv index: \"" + to_string(uv) + "\". Expected number of range from 1 to " + to_string(inUvs.size())};
 				}
 
 				if (static_cast<size_t>(normal) >= inNormals.size())
 				{
-					throw string{"src::obj::Mesh::use() - illegal normal index: \"" + to_string(normal) + "\". Expected number of range from 1 to "+ to_string(inNormals.size())};
+					throw string{"src::obj::Mesh::open() - illegal normal index: \"" + to_string(normal) + "\". Expected number of range from 1 to "+ to_string(inNormals.size())};
 				}
 
 				vertexBuffer.push_back(inVertices[vertex].x);
@@ -329,39 +330,39 @@ void Mesh::use()
 		case Branch::vert:
 		{
 			GLsizei stride = 3 * sizeof(GLfloat);
-			layouts.emplace_back(static_cast<GLuint>(0), static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(0 * sizeof(GLfloat)));
+			layouts.emplace_back(rn::LayoutLocation::vert, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(0 * sizeof(GLfloat)));
 
 			break;
 		}
 		case Branch::vert_uv:
 		{
 			GLsizei stride = 5 * sizeof(GLfloat);
-			layouts.emplace_back(static_cast<GLuint>(0), static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(0 * sizeof(GLfloat)));
-			layouts.emplace_back(static_cast<GLuint>(1), static_cast<GLint>(2), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(3 * sizeof(GLfloat)));
+			layouts.emplace_back(rn::LayoutLocation::vert, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(0 * sizeof(GLfloat)));
+			layouts.emplace_back(rn::LayoutLocation::tex, static_cast<GLint>(2), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(3 * sizeof(GLfloat)));
 
 			break;
 		}
 		case Branch::vert_norm:
 		{
 			GLsizei stride = 6 * sizeof(GLfloat);
-			layouts.emplace_back(static_cast<GLuint>(0), static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(0 * sizeof(GLfloat)));
-			layouts.emplace_back(static_cast<GLuint>(2), static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(3 * sizeof(GLfloat)));
+			layouts.emplace_back(rn::LayoutLocation::vert, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(0 * sizeof(GLfloat)));
+			layouts.emplace_back(rn::LayoutLocation::norm, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(3 * sizeof(GLfloat)));
 
 			break;
 		}
 		case Branch::vert_uv_norm:
 		{
 			GLsizei stride = 8 * sizeof(GLfloat);
-			layouts.emplace_back(static_cast<GLuint>(0), static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(0 * sizeof(GLfloat)));
-			layouts.emplace_back(static_cast<GLuint>(1), static_cast<GLint>(2), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(3 * sizeof(GLfloat)));
-			layouts.emplace_back(static_cast<GLuint>(2), static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(5 * sizeof(GLfloat)));
+			layouts.emplace_back(rn::LayoutLocation::vert, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(0 * sizeof(GLfloat)));
+			layouts.emplace_back(rn::LayoutLocation::tex, static_cast<GLint>(2), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(3 * sizeof(GLfloat)));
+			layouts.emplace_back(rn::LayoutLocation::norm, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(5 * sizeof(GLfloat)));
 
 			break;
 		}
 	}
 }
 
-void Mesh::release()
+void Mesh::close()
 {
 	vertexData.size = 0;
 	vertexData.data = nullptr;

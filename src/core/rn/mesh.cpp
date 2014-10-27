@@ -58,6 +58,10 @@ Mesh::Mesh(Mesh &&rhs)
 	arrays = move(rhs.arrays);
 	meshName = rhs.meshName; // copy
 
+	boundingSphere = rhs.boundingSphere;
+	boundingBox.min = rhs.boundingBox.min;
+	boundingBox.max = rhs.boundingBox.max;
+
 	rhs.vbo = 0;
 	rhs.ibo = 0;
 	rhs.vao = 0;
@@ -88,6 +92,10 @@ Mesh & Mesh::operator=(Mesh &&rhs)
 	indices = move(rhs.indices);
 	arrays = move(rhs.arrays);
 	meshName = rhs.meshName; // copy
+
+	boundingSphere = rhs.boundingSphere;
+	boundingBox.min = rhs.boundingBox.min;
+	boundingBox.max = rhs.boundingBox.max;
 
 	rhs.vbo = 0;
 	rhs.ibo = 0;
@@ -121,7 +129,7 @@ void Mesh::reload()
 
 	double timer = ngn::time();
 
-	SRC_MESH_USE(*source);
+	SRC_MESH_OPEN(*source);
 
 	const auto &vertexData = source->vertexData;
 	const auto &indexData = source->indexData;
@@ -160,8 +168,10 @@ void Mesh::reloadSoft()
 		RN_CHECK(glGenVertexArrays(1, &vao));
 		RN_CHECK(glBindVertexArray(vao));
 
+		// clog << meshName << " (" << vao << ") layouts:" << endl;
 		for (const auto & layout : layouts)
 		{
+			// clog << layout.index << ", " << layout.size << ", " << rn::getEnumName(layout.type) << ", " << layout.stride << ", " << dec << reinterpret_cast<size_t>(layout.pointer) << " vbo=" << vbo << " ibo=" << ibo << endl;
 			RN_CHECK(glEnableVertexAttribArray(layout.index));
 			RN_CHECK(glBindBuffer(GL_ARRAY_BUFFER, vbo));
 			RN_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo));
@@ -201,14 +211,18 @@ void Mesh::render()
 	{
 		RN_CHECK(glBindVertexArray(vao));
 
+		// clog << "vao=" << vao << " {" << meshName << "}" << endl;
+
 		for (const auto &index : indices)
 		{
+			// clog << "  index.mode=[" << rn::getEnumName(index.mode) << "] index.count=" << index.count << " index.offset=" << index.offset << endl;
 			RN_CHECK(glDrawElements(index.mode, index.count, index.type, reinterpret_cast<GLvoid *>(index.offset)));
 			rn::stats.triangles += index.count;
 		}
 
 		for (const auto &array : arrays)
 		{
+			// clog << "  array.mode=[" << rn::getEnumName(array.mode) << "] array.offset=" << array.offset << " array.count=" << array.count << endl;
 			RN_CHECK_PARAM(glDrawArrays(array.mode, array.offset, array.count), array.mode << " " << rn::getEnumName(array.mode));
 			rn::stats.triangles += array.count;
 		}

@@ -22,8 +22,8 @@ public:
 	std::vector<GLuint> indexCache{};
 
 	Mesh(std::string &&fileName);
-	void use() override;
-	void release() override;
+	void open() override;
+	void close() override;
 	std::string name() override;
 };
 

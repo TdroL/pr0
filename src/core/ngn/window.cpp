@@ -135,6 +135,27 @@ void switchMode(Mode mode)
 {
 	resetHints();
 
+	/**/
+	GLFWmonitor *monitor = nullptr;
+
+	switch (mode) {
+		case Mode::borderless:
+			glfwWindowHint(GLFW_DECORATED, GL_FALSE);
+			glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+		break;
+
+		case Mode::windowed:
+			glfwWindowHint(GLFW_DECORATED, GL_TRUE);
+			glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
+		break;
+
+		case Mode::fullscreen:
+			glfwWindowHint(GLFW_DECORATED, GL_TRUE);
+			glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+			monitor = glfwGetPrimaryMonitor();
+		break;
+	}
+	/*/
 	if (mode == Mode::borderless)
 	{
 		glfwWindowHint(GLFW_DECORATED, GL_FALSE);
@@ -158,6 +179,7 @@ void switchMode(Mode mode)
 	{
 		glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 	}
+	*/
 
 	GLFWwindow *newHandler = glfwCreateWindow(width, height, title.c_str(), monitor, handler);
 

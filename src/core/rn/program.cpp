@@ -1,5 +1,6 @@
 #include "program.hpp"
 #include "../rn.hpp"
+#include "../rn/ext.hpp"
 #include "../src/file.hpp"
 #include "../util/initq.hpp"
 #include <memory>
@@ -55,7 +56,7 @@ void Program::reloadLibs()
 			throw string{"rn::Program::reloadLibs() - missing vertex shader library source"};
 		}
 
-		SRC_STREAM_USE(*(lib.source));
+		SRC_STREAM_OPEN(lib.source);
 
 		if (lib.id)
 		{
@@ -72,7 +73,7 @@ void Program::reloadLibs()
 			throw string{"rn::Program::reloadLibs() - missing fragment shader library source"};
 		}
 
-		SRC_STREAM_USE(*(lib.source));
+		SRC_STREAM_OPEN(lib.source);
 
 		if (lib.id)
 		{
@@ -276,8 +277,8 @@ void Program::reload()
 		throw string{"rn::Program{" + programName + "}::reload() - missing vertex shader source"};
 	}
 
-	SRC_STREAM_USE(*fragmentShader);
-	SRC_STREAM_USE(*vertexShader);
+	SRC_STREAM_OPEN(fragmentShader);
+	SRC_STREAM_OPEN(vertexShader);
 
 	vector<GLuint> shaders{
 		Program::createShader(GL_FRAGMENT_SHADER, fragmentShader->contents),
@@ -371,7 +372,7 @@ void Program::use()
 	RN_CHECK(glUseProgram(id));
 }
 
-void Program::release()
+void Program::forgo()
 {
 	RN_CHECK(glUseProgram(0));
 }
@@ -413,6 +414,10 @@ namespace
 {
 	const util::InitQAttacher attach(rn::initQ(), []
 	{
+		if ( ! rn::ext::ARB_separate_shader_objects) {
+			throw string{"rn::Program initQ - rn::Program requires GL_ARB_separate_shader_objects"};
+		}
+
 		rn::Program::init();
 	});
 }

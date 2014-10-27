@@ -6,6 +6,12 @@
 namespace rn
 {
 
+struct LayoutLocation {
+	static const GLuint vert;
+	static const GLuint tex;
+	static const GLuint norm;
+};
+
 struct VertexLayout
 {
 	GLuint index = 0;

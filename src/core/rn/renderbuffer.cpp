@@ -9,8 +9,12 @@ Renderbuffer::Renderbuffer(GLenum internalFormat)
 	: internalFormat{internalFormat}
 {}
 
+Renderbuffer::Renderbuffer(GLenum internalFormat, GLsizei width, GLsizei height)
+	: internalFormat{internalFormat}, width{width}, height{height}
+{}
+
 Renderbuffer::Renderbuffer(Renderbuffer &&rhs)
-	: id{rhs.id}, internalFormat{rhs.internalFormat}
+	: id{rhs.id}, internalFormat{rhs.internalFormat}, width{rhs.width}, height{rhs.height}
 {
 	rhs.id = 0;
 	rhs.reset();
@@ -27,6 +31,8 @@ Renderbuffer & Renderbuffer::operator=(Renderbuffer &&rhs)
 
 	id = rhs.id;
 	internalFormat = rhs.internalFormat;
+	width = rhs.width;
+	height = rhs.height;
 
 	rhs.id = 0;
 	rhs.reset();
@@ -34,7 +40,7 @@ Renderbuffer & Renderbuffer::operator=(Renderbuffer &&rhs)
 	return *this;
 }
 
-void Renderbuffer::create(GLsizei width, GLsizei height)
+void Renderbuffer::reload()
 {
 	reset();
 
@@ -42,7 +48,7 @@ void Renderbuffer::create(GLsizei width, GLsizei height)
 
 	RN_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, id));
 
-	RN_CHECK(glRenderbufferStorage(GL_RENDERBUFFER, internalFormat, width, height));
+	RN_CHECK_PARAM(glRenderbufferStorage(GL_RENDERBUFFER, internalFormat, width, height), rn::getEnumName(internalFormat));
 
 	RN_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, 0));
 }

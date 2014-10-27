@@ -3,6 +3,6 @@
 namespace ecs
 {
 
-int bitCounter = 0;
+size_t bitCounter = 0;
 
 } // ecs

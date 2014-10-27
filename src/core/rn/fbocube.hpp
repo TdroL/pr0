@@ -74,7 +74,7 @@ public:
 	// void clear();
 
 	void use();
-	void release();
+	void forgo();
 };
 
 class FBOCubeScoper
@@ -83,7 +83,7 @@ public:
 	FBOCube &fbo;
 
 	FBOCubeScoper(FBOCube &fbo) : fbo(fbo) { fbo.use(); }
-	~FBOCubeScoper() { fbo.release(); }
+	~FBOCubeScoper() { fbo.forgo(); }
 };
 
 #define RN_FBOCUBE_USE(fboSource) rn::FBOCubeScoper UTIL_CONCAT2(FBOCubeScoper, __COUNTER__)(fboSource)

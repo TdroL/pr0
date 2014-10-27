@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <cctype>
 #include <memory>
 
 #ifdef __GNUG__
@@ -27,6 +28,30 @@ void rtrim(string &s) {
 void trim(string &s) {
 	ltrim(s);
 	rtrim(s);
+}
+
+bool isInt(const string &s)
+{
+	return !s.empty() && s.find_first_not_of("0123456789") == string::npos;
+}
+
+bool isNumeric(const string &s)
+{
+	int dots = 0;
+	return !s.empty() && end(s) == find_if(begin(s), end(s), [&dots](char c)
+		{
+			if (c == '.') {
+				dots++;
+
+				if (dots > 1) {
+					return true;
+				}
+
+				return false;
+			}
+
+			return !isdigit(c);
+		});
 }
 
 #ifdef __GNUG__

@@ -1,5 +1,6 @@
 #include "font.hpp"
 #include "../rn.hpp"
+#include "../rn/ext.hpp"
 #include "../util.hpp"
 #include "program.hpp"
 #include "mesh.hpp"
@@ -8,6 +9,7 @@
 #include "../ngn.hpp"
 #include "../ngn/window.hpp"
 
+#include <cassert>
 #include <algorithm>
 #include <glm/glm.hpp>
 #include <iostream>
@@ -107,6 +109,11 @@ void Font::load(unique_ptr<Source> &&source)
 
 void Font::reload()
 {
+	if (rn::status != rn::Status::inited)
+	{
+		throw string{"rn::Font::reload() - OpenGL not initialized"};
+	}
+
 	reset();
 
 	double timer = ngn::time();
@@ -116,7 +123,7 @@ void Font::reload()
 		throw string{"rn::Font::reload() - missing font source"};
 	}
 
-	SRC_STREAM_USE(*source);
+	SRC_STREAM_OPEN(source);
 
 	FT_Open_Args args;
 	args.flags = FT_OPEN_MEMORY;
@@ -127,13 +134,10 @@ void Font::reload()
 
 	if ((err = FT_Open_Face(ft, &args, 0, &face)) != 0)
 	{
-		throw string{"rn::Font::init() - could not load font (error " + to_string(err) + ")"};
+		throw string{"rn::Font::reload() - could not load font (error " + to_string(err) + ")"};
 	}
 
-	if (rn::status != rn::Status::inited)
-	{
-		throw string{"rn::Font::init() - OpenGL not initialized"};
-	}
+	assert(face);
 
 	FT_Select_Charmap(face, FT_ENCODING_UNICODE);
 
@@ -145,13 +149,18 @@ void Font::reload()
 	RN_CHECK(glGenVertexArrays(1, &vao));
 	RN_CHECK(glGenBuffers(1, &vbo));
 
+	// clog << "rn::Font::reload() - " << fontName << " vao=" << vao << " vbo=" << vbo << endl;
+
 	RN_CHECK(glGenTextures(1, &tex));
 	RN_CHECK(glBindTexture(GL_TEXTURE_2D, tex));
-	RN_CHECK(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
 	RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
 	RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 	RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
 	RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+
+	RN_CHECK(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
+
+	assert(face->glyph);
 
 	FT_GlyphSlot g = face->glyph;
 	int w = 0;
@@ -188,7 +197,8 @@ void Font::reload()
 	atlasWidth = w;
 	atlasHeight = h;
 
-	RN_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr));
+	// RN_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr));
+	RN_CHECK_PARAM(glTexStorage2D(GL_TEXTURE_2D, 1, GL_R8, w, h), rn::getEnumName(GL_R8));
 
 	int ox = 0;
 	int oy = 0;
@@ -211,7 +221,12 @@ void Font::reload()
 			ox = 0;
 		}
 
-		RN_CHECK(glTexSubImage2D(GL_TEXTURE_2D, 0, ox, oy, g->bitmap.width, g->bitmap.rows, GL_RED, GL_UNSIGNED_BYTE, g->bitmap.buffer));
+		if (g->bitmap.buffer)
+		{
+			RN_CHECK(glTexSubImage2D(GL_TEXTURE_2D, 0, ox, oy, g->bitmap.width, g->bitmap.rows, GL_RED, GL_UNSIGNED_BYTE, g->bitmap.buffer));
+		} else {
+			// clog << i << " [" << static_cast<char>(i) << "] skipping glTexSubImage2D" << endl;
+		}
 
 		auto &c = chars[i];
 
@@ -228,6 +243,7 @@ void Font::reload()
 		ox += g->bitmap.width + 1;
 	}
 
+	RN_CHECK(glPixelStorei(GL_UNPACK_ALIGNMENT, 4));
 	RN_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
 
 	UTIL_DEBUG
@@ -252,7 +268,7 @@ void Font::reset()
 
 	if (tex)
 	{
-		glDeleteTextures(1, &tex);
+		RN_CHECK(glDeleteTextures(1, &tex));
 		tex = 0;
 	}
 
@@ -271,7 +287,8 @@ void Font::reset()
 
 void Font::render(const string &text)
 {
-	bool cullFace = glIsEnabled(GL_CULL_FACE);
+	bool cullFace;
+	RN_CHECK(cullFace = glIsEnabled(GL_CULL_FACE));
 	RN_CHECK(glDisable(GL_CULL_FACE));
 
 	float x = position.x;
@@ -350,6 +367,10 @@ namespace
 {
 	const util::InitQAttacher attach(rn::initQ(), []
 	{
+		if ( ! rn::ext::ARB_texture_storage) {
+			throw string{"rn::Font initQ - rn::Font requires GL_ARB_texture_storage"};
+		}
+
 		rn::Font::init();
 	});
 }

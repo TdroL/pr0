@@ -102,21 +102,21 @@ void FBO::setTex(size_t id, rn::Tex2D &&tex)
 	}
 
 	colors[id].enabled = true;
-	colors[id].tex = std::move(tex);
+	colors[id].tex = move(tex);
 }
 
 void FBO::setDepth(rn::Tex2D &&tex)
 {
 	depth.type = Texture;
 	depth.buf.reset();
-	depth.tex = std::move(tex);
+	depth.tex = move(tex);
 }
 
 void FBO::setDepth(rn::Renderbuffer &&buf)
 {
 	depth.type = Renderbuffer;
 	depth.tex.reset();
-	depth.buf = std::move(buf);
+	depth.buf = move(buf);
 }
 
 void FBO::create()
@@ -182,16 +182,24 @@ void FBO::reload()
 			continue;
 		}
 
-		color.tex.create(width, height, GL_LINEAR, GL_CLAMP_TO_EDGE);
+		color.tex.filter = GL_LINEAR;
+		color.tex.wrap = GL_CLAMP_TO_EDGE;
+		color.tex.source = src::mem::tex2d(width, height);
+		color.tex.reload();
 	}
 
 	if (depth.type == Renderbuffer)
 	{
-		depth.buf.create(width, height);
+		depth.buf.width = width;
+		depth.buf.height = height;
+		depth.buf.reload();
 	}
 	else if (depth.type == Texture)
 	{
-		depth.tex.create(width, height, GL_NEAREST, GL_CLAMP_TO_EDGE);
+		depth.tex.filter = GL_NEAREST;
+		depth.tex.wrap = GL_CLAMP_TO_EDGE;
+		depth.tex.source = src::mem::tex2d(width, height);
+		depth.tex.reload();
 	}
 
 	reloadSoft();
@@ -219,7 +227,7 @@ void FBO::reloadSoft()
 			return container.enabled;
 		});
 
-		std::vector<GLenum> drawBuffers(util::nextPowerOf2(enabledColors), GL_NONE);
+		vector<GLenum> drawBuffers(util::nextPowerOf2(enabledColors), GL_NONE);
 
 		for (size_t i = 0, j = 0; i < colors.size(); i++)
 		{
@@ -314,7 +322,7 @@ void FBO::use()
 	FBO::activeStack.push_back(this);
 }
 
-void FBO::release()
+void FBO::forgo()
 {
 	FBO::activeStack.pop_back();
 

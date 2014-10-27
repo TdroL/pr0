@@ -6,6 +6,7 @@
 // #include <core/cam/basic.hpp>
 #include <core/rn.hpp>
 // #include <core/rn/fbo.hpp>
+#include <core/rn/ext.hpp>
 #include <core/rn/font.hpp>
 // #include <core/rn/mesh.hpp>
 // #include <core/rn/program.hpp>
@@ -17,6 +18,7 @@
 #include <core/ngn.hpp>
 #include <core/ngn/fs.hpp>
 #include <core/ngn/key.hpp>
+#include <core/ngn/ino.hpp>
 #include <core/ngn/loop.hpp>
 #include <core/ngn/window.hpp>
 // #include <core/src/mem.hpp>
@@ -32,9 +34,15 @@ namespace win = ngn::window;
 
 int main(int argc, char const* argv[])
 {
+	#if defined(DEBUG) || defined(_DEBUG)
+		cout << "Debug: ON" << endl;
+	#else
+		cout << "Debug: OFF" << endl;
+	#endif
 	try
 	{
 		ngn::init();
+		ngn::ino::init(argc, argv);
 
 		UTIL_SCOPE_EXIT([] () {
 			ngn::deinit();
@@ -42,107 +50,118 @@ int main(int argc, char const* argv[])
 
 		UTIL_DEBUG
 		{
-			for (int i = 1; i < argc; ++i)
+			if (ngn::ino::has("--help"))
 			{
-				if (argv[i] == string{"--print-exts"})
-				{
-					clog << "Extensions:" << endl;
-					clog << rn::getExtensionsInfo() << endl;
-				}
+				clog << "Options:" << endl;
+				clog << "  --print-exts    - shows core extensions support" << endl;
+				clog << "  --frames=<num>  - limits number of rendered frames" << endl;
+
+				return EXIT_SUCCESS;
+			}
+
+			if (ngn::ino::has("--print-exts"))
+			{
+				clog << "Extensions:" << endl;
+				clog << rn::getExtensionsInfo() << endl;
+				clog << endl;
+				clog << "Suported extensions:" << endl;
+				clog << boolalpha;
+				clog << "GL_ARB_arrays_of_arrays = " << (bool) rn::ext::ARB_arrays_of_arrays << endl;
+				clog << "GL_ARB_base_instance = " << (bool) rn::ext::ARB_base_instance << endl;
+				clog << "GL_ARB_blend_func_extended = " << (bool) rn::ext::ARB_blend_func_extended << endl;
+				clog << "GL_ARB_cl_event = " << (bool) rn::ext::ARB_cl_event << endl;
+				clog << "GL_ARB_clear_buffer_object = " << (bool) rn::ext::ARB_clear_buffer_object << endl;
+				clog << "GL_ARB_compressed_texture_pixel_storage = " << (bool) rn::ext::ARB_compressed_texture_pixel_storage << endl;
+				clog << "GL_ARB_compute_shader = " << (bool) rn::ext::ARB_compute_shader << endl;
+				clog << "GL_ARB_conservative_depth = " << (bool) rn::ext::ARB_conservative_depth << endl;
+				clog << "GL_ARB_copy_buffer = " << (bool) rn::ext::ARB_copy_buffer << endl;
+				clog << "GL_ARB_copy_image = " << (bool) rn::ext::ARB_copy_image << endl;
+				clog << "GL_ARB_debug_output = " << (bool) rn::ext::ARB_debug_output << endl;
+				clog << "GL_ARB_depth_buffer_float = " << (bool) rn::ext::ARB_depth_buffer_float << endl;
+				clog << "GL_ARB_depth_clamp = " << (bool) rn::ext::ARB_depth_clamp << endl;
+				clog << "GL_ARB_draw_buffers_blend = " << (bool) rn::ext::ARB_draw_buffers_blend << endl;
+				clog << "GL_ARB_draw_elements_base_vertex = " << (bool) rn::ext::ARB_draw_elements_base_vertex << endl;
+				clog << "GL_ARB_draw_indirect = " << (bool) rn::ext::ARB_draw_indirect << endl;
+				clog << "GL_ARB_ES2_compatibility = " << (bool) rn::ext::ARB_ES2_compatibility << endl;
+				clog << "GL_ARB_ES3_compatibility = " << (bool) rn::ext::ARB_ES3_compatibility << endl;
+				clog << "GL_ARB_explicit_attrib_location = " << (bool) rn::ext::ARB_explicit_attrib_location << endl;
+				clog << "GL_ARB_explicit_uniform_location = " << (bool) rn::ext::ARB_explicit_uniform_location << endl;
+				clog << "GL_ARB_fragment_coord_conventions = " << (bool) rn::ext::ARB_fragment_coord_conventions << endl;
+				clog << "GL_ARB_fragment_layer_viewport = " << (bool) rn::ext::ARB_fragment_layer_viewport << endl;
+				clog << "GL_ARB_framebuffer_no_attachments = " << (bool) rn::ext::ARB_framebuffer_no_attachments << endl;
+				clog << "GL_ARB_framebuffer_object = " << (bool) rn::ext::ARB_framebuffer_object << endl;
+				clog << "GL_ARB_framebuffer_sRGB = " << (bool) rn::ext::ARB_framebuffer_sRGB << endl;
+				clog << "GL_ARB_get_program_binary = " << (bool) rn::ext::ARB_get_program_binary << endl;
+				clog << "GL_ARB_gpu_shader5 = " << (bool) rn::ext::ARB_gpu_shader5 << endl;
+				clog << "GL_ARB_gpu_shader_fp64 = " << (bool) rn::ext::ARB_gpu_shader_fp64 << endl;
+				clog << "GL_ARB_half_float_pixel = " << (bool) rn::ext::ARB_half_float_pixel << endl;
+				clog << "GL_ARB_half_float_vertex = " << (bool) rn::ext::ARB_half_float_vertex << endl;
+				clog << "GL_ARB_imaging = " << (bool) rn::ext::ARB_imaging << endl;
+				clog << "GL_ARB_internalformat_query = " << (bool) rn::ext::ARB_internalformat_query << endl;
+				clog << "GL_ARB_internalformat_query2 = " << (bool) rn::ext::ARB_internalformat_query2 << endl;
+				clog << "GL_ARB_invalidate_subdata = " << (bool) rn::ext::ARB_invalidate_subdata << endl;
+				clog << "GL_ARB_map_buffer_alignment = " << (bool) rn::ext::ARB_map_buffer_alignment << endl;
+				clog << "GL_ARB_map_buffer_range = " << (bool) rn::ext::ARB_map_buffer_range << endl;
+				clog << "GL_ARB_multi_draw_indirect = " << (bool) rn::ext::ARB_multi_draw_indirect << endl;
+				clog << "GL_ARB_occlusion_query2 = " << (bool) rn::ext::ARB_occlusion_query2 << endl;
+				clog << "GL_ARB_program_interface_query = " << (bool) rn::ext::ARB_program_interface_query << endl;
+				clog << "GL_ARB_provoking_vertex = " << (bool) rn::ext::ARB_provoking_vertex << endl;
+				clog << "GL_ARB_robust_buffer_access_behavior = " << (bool) rn::ext::ARB_robust_buffer_access_behavior << endl;
+				clog << "GL_ARB_robustness = " << (bool) rn::ext::ARB_robustness << endl;
+				clog << "GL_ARB_robustness_isolation = " << (bool) rn::ext::ARB_robustness_isolation << endl;
+				clog << "GL_ARB_sample_shading = " << (bool) rn::ext::ARB_sample_shading << endl;
+				clog << "GL_ARB_sampler_objects = " << (bool) rn::ext::ARB_sampler_objects << endl;
+				clog << "GL_ARB_seamless_cube_map = " << (bool) rn::ext::ARB_seamless_cube_map << endl;
+				clog << "GL_ARB_separate_shader_objects = " << (bool) rn::ext::ARB_separate_shader_objects << endl;
+				clog << "GL_ARB_shader_atomic_counters = " << (bool) rn::ext::ARB_shader_atomic_counters << endl;
+				clog << "GL_ARB_shader_bit_encoding = " << (bool) rn::ext::ARB_shader_bit_encoding << endl;
+				clog << "GL_ARB_shader_image_load_store = " << (bool) rn::ext::ARB_shader_image_load_store << endl;
+				clog << "GL_ARB_shader_image_size = " << (bool) rn::ext::ARB_shader_image_size << endl;
+				clog << "GL_ARB_shader_objects = " << (bool) rn::ext::ARB_shader_objects << endl;
+				clog << "GL_ARB_shader_precision = " << (bool) rn::ext::ARB_shader_precision << endl;
+				clog << "GL_ARB_shader_stencil_export = " << (bool) rn::ext::ARB_shader_stencil_export << endl;
+				clog << "GL_ARB_shader_storage_buffer_object = " << (bool) rn::ext::ARB_shader_storage_buffer_object << endl;
+				clog << "GL_ARB_shader_subroutine = " << (bool) rn::ext::ARB_shader_subroutine << endl;
+				clog << "GL_ARB_shading_language_420pack = " << (bool) rn::ext::ARB_shading_language_420pack << endl;
+				clog << "GL_ARB_shading_language_include = " << (bool) rn::ext::ARB_shading_language_include << endl;
+				clog << "GL_ARB_shading_language_packing = " << (bool) rn::ext::ARB_shading_language_packing << endl;
+				clog << "GL_ARB_stencil_texturing = " << (bool) rn::ext::ARB_stencil_texturing << endl;
+				clog << "GL_ARB_sync = " << (bool) rn::ext::ARB_sync << endl;
+				clog << "GL_ARB_tessellation_shader = " << (bool) rn::ext::ARB_tessellation_shader << endl;
+				clog << "GL_ARB_texture_buffer_object_rgb32 = " << (bool) rn::ext::ARB_texture_buffer_object_rgb32 << endl;
+				clog << "GL_ARB_texture_buffer_range = " << (bool) rn::ext::ARB_texture_buffer_range << endl;
+				clog << "GL_ARB_texture_compression_bptc = " << (bool) rn::ext::ARB_texture_compression_bptc << endl;
+				clog << "GL_ARB_texture_compression_rgtc = " << (bool) rn::ext::ARB_texture_compression_rgtc << endl;
+				clog << "GL_ARB_texture_cube_map_array = " << (bool) rn::ext::ARB_texture_cube_map_array << endl;
+				clog << "GL_ARB_texture_gather = " << (bool) rn::ext::ARB_texture_gather << endl;
+				clog << "GL_ARB_texture_multisample = " << (bool) rn::ext::ARB_texture_multisample << endl;
+				clog << "GL_ARB_texture_query_levels = " << (bool) rn::ext::ARB_texture_query_levels << endl;
+				clog << "GL_ARB_texture_query_lod = " << (bool) rn::ext::ARB_texture_query_lod << endl;
+				clog << "GL_ARB_texture_rg = " << (bool) rn::ext::ARB_texture_rg << endl;
+				clog << "GL_ARB_texture_rgb10_a2ui = " << (bool) rn::ext::ARB_texture_rgb10_a2ui << endl;
+				clog << "GL_ARB_texture_storage = " << (bool) rn::ext::ARB_texture_storage << endl;
+				clog << "GL_ARB_texture_storage_multisample = " << (bool) rn::ext::ARB_texture_storage_multisample << endl;
+				clog << "GL_ARB_texture_swizzle = " << (bool) rn::ext::ARB_texture_swizzle << endl;
+				clog << "GL_ARB_texture_view = " << (bool) rn::ext::ARB_texture_view << endl;
+				clog << "GL_ARB_timer_query = " << (bool) rn::ext::ARB_timer_query << endl;
+				clog << "GL_ARB_transform_feedback2 = " << (bool) rn::ext::ARB_transform_feedback2 << endl;
+				clog << "GL_ARB_transform_feedback3 = " << (bool) rn::ext::ARB_transform_feedback3 << endl;
+				clog << "GL_ARB_transform_feedback_instanced = " << (bool) rn::ext::ARB_transform_feedback_instanced << endl;
+				clog << "GL_ARB_uniform_buffer_object = " << (bool) rn::ext::ARB_uniform_buffer_object << endl;
+				clog << "GL_ARB_vertex_array_bgra = " << (bool) rn::ext::ARB_vertex_array_bgra << endl;
+				clog << "GL_ARB_vertex_array_object = " << (bool) rn::ext::ARB_vertex_array_object << endl;
+				clog << "GL_ARB_vertex_attrib_64bit = " << (bool) rn::ext::ARB_vertex_attrib_64bit << endl;
+				clog << "GL_ARB_vertex_attrib_binding = " << (bool) rn::ext::ARB_vertex_attrib_binding << endl;
+				clog << "GL_ARB_vertex_buffer_object = " << (bool) rn::ext::ARB_vertex_buffer_object << endl;
+				clog << "GL_ARB_vertex_type_2_10_10_10_rev = " << (bool) rn::ext::ARB_vertex_type_2_10_10_10_rev << endl;
+				clog << "GL_ARB_viewport_array = " << (bool) rn::ext::ARB_viewport_array << endl;
+				clog << "GL_KHR_debug = " << (bool) rn::ext::KHR_debug << endl;
+				clog << "GL_KHR_texture_compression_astc_ldr = " << (bool) rn::ext::KHR_texture_compression_astc_ldr << endl;
+				clog << noboolalpha;
+
+				return EXIT_SUCCESS;
 			}
 		}
-
-		cout << "GL_ARB_arrays_of_arrays = " << (bool) rn::ext_ARB_arrays_of_arrays << endl;
-		cout << "GL_ARB_base_instance = " << (bool) rn::ext_ARB_base_instance << endl;
-		cout << "GL_ARB_blend_func_extended = " << (bool) rn::ext_ARB_blend_func_extended << endl;
-		cout << "GL_ARB_cl_event = " << (bool) rn::ext_ARB_cl_event << endl;
-		cout << "GL_ARB_clear_buffer_object = " << (bool) rn::ext_ARB_clear_buffer_object << endl;
-		cout << "GL_ARB_compressed_texture_pixel_storage = " << (bool) rn::ext_ARB_compressed_texture_pixel_storage << endl;
-		cout << "GL_ARB_compute_shader = " << (bool) rn::ext_ARB_compute_shader << endl;
-		cout << "GL_ARB_conservative_depth = " << (bool) rn::ext_ARB_conservative_depth << endl;
-		cout << "GL_ARB_copy_buffer = " << (bool) rn::ext_ARB_copy_buffer << endl;
-		cout << "GL_ARB_copy_image = " << (bool) rn::ext_ARB_copy_image << endl;
-		cout << "GL_ARB_debug_output = " << (bool) rn::ext_ARB_debug_output << endl;
-		cout << "GL_ARB_depth_buffer_float = " << (bool) rn::ext_ARB_depth_buffer_float << endl;
-		cout << "GL_ARB_depth_clamp = " << (bool) rn::ext_ARB_depth_clamp << endl;
-		cout << "GL_ARB_draw_buffers_blend = " << (bool) rn::ext_ARB_draw_buffers_blend << endl;
-		cout << "GL_ARB_draw_elements_base_vertex = " << (bool) rn::ext_ARB_draw_elements_base_vertex << endl;
-		cout << "GL_ARB_draw_indirect = " << (bool) rn::ext_ARB_draw_indirect << endl;
-		cout << "GL_ARB_ES2_compatibility = " << (bool) rn::ext_ARB_ES2_compatibility << endl;
-		cout << "GL_ARB_ES3_compatibility = " << (bool) rn::ext_ARB_ES3_compatibility << endl;
-		cout << "GL_ARB_explicit_attrib_location = " << (bool) rn::ext_ARB_explicit_attrib_location << endl;
-		cout << "GL_ARB_explicit_uniform_location = " << (bool) rn::ext_ARB_explicit_uniform_location << endl;
-		cout << "GL_ARB_fragment_coord_conventions = " << (bool) rn::ext_ARB_fragment_coord_conventions << endl;
-		cout << "GL_ARB_fragment_layer_viewport = " << (bool) rn::ext_ARB_fragment_layer_viewport << endl;
-		cout << "GL_ARB_framebuffer_no_attachments = " << (bool) rn::ext_ARB_framebuffer_no_attachments << endl;
-		cout << "GL_ARB_framebuffer_object = " << (bool) rn::ext_ARB_framebuffer_object << endl;
-		cout << "GL_ARB_framebuffer_sRGB = " << (bool) rn::ext_ARB_framebuffer_sRGB << endl;
-		cout << "GL_ARB_get_program_binary = " << (bool) rn::ext_ARB_get_program_binary << endl;
-		cout << "GL_ARB_gpu_shader5 = " << (bool) rn::ext_ARB_gpu_shader5 << endl;
-		cout << "GL_ARB_gpu_shader_fp64 = " << (bool) rn::ext_ARB_gpu_shader_fp64 << endl;
-		cout << "GL_ARB_half_float_pixel = " << (bool) rn::ext_ARB_half_float_pixel << endl;
-		cout << "GL_ARB_half_float_vertex = " << (bool) rn::ext_ARB_half_float_vertex << endl;
-		cout << "GL_ARB_imaging = " << (bool) rn::ext_ARB_imaging << endl;
-		cout << "GL_ARB_internalformat_query = " << (bool) rn::ext_ARB_internalformat_query << endl;
-		cout << "GL_ARB_internalformat_query2 = " << (bool) rn::ext_ARB_internalformat_query2 << endl;
-		cout << "GL_ARB_invalidate_subdata = " << (bool) rn::ext_ARB_invalidate_subdata << endl;
-		cout << "GL_ARB_map_buffer_alignment = " << (bool) rn::ext_ARB_map_buffer_alignment << endl;
-		cout << "GL_ARB_map_buffer_range = " << (bool) rn::ext_ARB_map_buffer_range << endl;
-		cout << "GL_ARB_multi_draw_indirect = " << (bool) rn::ext_ARB_multi_draw_indirect << endl;
-		cout << "GL_ARB_occlusion_query2 = " << (bool) rn::ext_ARB_occlusion_query2 << endl;
-		cout << "GL_ARB_program_interface_query = " << (bool) rn::ext_ARB_program_interface_query << endl;
-		cout << "GL_ARB_provoking_vertex = " << (bool) rn::ext_ARB_provoking_vertex << endl;
-		cout << "GL_ARB_robust_buffer_access_behavior = " << (bool) rn::ext_ARB_robust_buffer_access_behavior << endl;
-		cout << "GL_ARB_robustness = " << (bool) rn::ext_ARB_robustness << endl;
-		cout << "GL_ARB_robustness_isolation = " << (bool) rn::ext_ARB_robustness_isolation << endl;
-		cout << "GL_ARB_sample_shading = " << (bool) rn::ext_ARB_sample_shading << endl;
-		cout << "GL_ARB_sampler_objects = " << (bool) rn::ext_ARB_sampler_objects << endl;
-		cout << "GL_ARB_seamless_cube_map = " << (bool) rn::ext_ARB_seamless_cube_map << endl;
-		cout << "GL_ARB_separate_shader_objects = " << (bool) rn::ext_ARB_separate_shader_objects << endl;
-		cout << "GL_ARB_shader_atomic_counters = " << (bool) rn::ext_ARB_shader_atomic_counters << endl;
-		cout << "GL_ARB_shader_bit_encoding = " << (bool) rn::ext_ARB_shader_bit_encoding << endl;
-		cout << "GL_ARB_shader_image_load_store = " << (bool) rn::ext_ARB_shader_image_load_store << endl;
-		cout << "GL_ARB_shader_image_size = " << (bool) rn::ext_ARB_shader_image_size << endl;
-		cout << "GL_ARB_shader_objects = " << (bool) rn::ext_ARB_shader_objects << endl;
-		cout << "GL_ARB_shader_precision = " << (bool) rn::ext_ARB_shader_precision << endl;
-		cout << "GL_ARB_shader_stencil_export = " << (bool) rn::ext_ARB_shader_stencil_export << endl;
-		cout << "GL_ARB_shader_storage_buffer_object = " << (bool) rn::ext_ARB_shader_storage_buffer_object << endl;
-		cout << "GL_ARB_shader_subroutine = " << (bool) rn::ext_ARB_shader_subroutine << endl;
-		cout << "GL_ARB_shading_language_420pack = " << (bool) rn::ext_ARB_shading_language_420pack << endl;
-		cout << "GL_ARB_shading_language_include = " << (bool) rn::ext_ARB_shading_language_include << endl;
-		cout << "GL_ARB_shading_language_packing = " << (bool) rn::ext_ARB_shading_language_packing << endl;
-		cout << "GL_ARB_stencil_texturing = " << (bool) rn::ext_ARB_stencil_texturing << endl;
-		cout << "GL_ARB_sync = " << (bool) rn::ext_ARB_sync << endl;
-		cout << "GL_ARB_tessellation_shader = " << (bool) rn::ext_ARB_tessellation_shader << endl;
-		cout << "GL_ARB_texture_buffer_object_rgb32 = " << (bool) rn::ext_ARB_texture_buffer_object_rgb32 << endl;
-		cout << "GL_ARB_texture_buffer_range = " << (bool) rn::ext_ARB_texture_buffer_range << endl;
-		cout << "GL_ARB_texture_compression_bptc = " << (bool) rn::ext_ARB_texture_compression_bptc << endl;
-		cout << "GL_ARB_texture_compression_rgtc = " << (bool) rn::ext_ARB_texture_compression_rgtc << endl;
-		cout << "GL_ARB_texture_cube_map_array = " << (bool) rn::ext_ARB_texture_cube_map_array << endl;
-		cout << "GL_ARB_texture_gather = " << (bool) rn::ext_ARB_texture_gather << endl;
-		cout << "GL_ARB_texture_multisample = " << (bool) rn::ext_ARB_texture_multisample << endl;
-		cout << "GL_ARB_texture_query_levels = " << (bool) rn::ext_ARB_texture_query_levels << endl;
-		cout << "GL_ARB_texture_query_lod = " << (bool) rn::ext_ARB_texture_query_lod << endl;
-		cout << "GL_ARB_texture_rg = " << (bool) rn::ext_ARB_texture_rg << endl;
-		cout << "GL_ARB_texture_rgb10_a2ui = " << (bool) rn::ext_ARB_texture_rgb10_a2ui << endl;
-		cout << "GL_ARB_texture_storage = " << (bool) rn::ext_ARB_texture_storage << endl;
-		cout << "GL_ARB_texture_storage_multisample = " << (bool) rn::ext_ARB_texture_storage_multisample << endl;
-		cout << "GL_ARB_texture_swizzle = " << (bool) rn::ext_ARB_texture_swizzle << endl;
-		cout << "GL_ARB_texture_view = " << (bool) rn::ext_ARB_texture_view << endl;
-		cout << "GL_ARB_timer_query = " << (bool) rn::ext_ARB_timer_query << endl;
-		cout << "GL_ARB_transform_feedback2 = " << (bool) rn::ext_ARB_transform_feedback2 << endl;
-		cout << "GL_ARB_transform_feedback3 = " << (bool) rn::ext_ARB_transform_feedback3 << endl;
-		cout << "GL_ARB_transform_feedback_instanced = " << (bool) rn::ext_ARB_transform_feedback_instanced << endl;
-		cout << "GL_ARB_uniform_buffer_object = " << (bool) rn::ext_ARB_uniform_buffer_object << endl;
-		cout << "GL_ARB_vertex_array_bgra = " << (bool) rn::ext_ARB_vertex_array_bgra << endl;
-		cout << "GL_ARB_vertex_array_object = " << (bool) rn::ext_ARB_vertex_array_object << endl;
-		cout << "GL_ARB_vertex_attrib_64bit = " << (bool) rn::ext_ARB_vertex_attrib_64bit << endl;
-		cout << "GL_ARB_vertex_attrib_binding = " << (bool) rn::ext_ARB_vertex_attrib_binding << endl;
-		cout << "GL_ARB_vertex_buffer_object = " << (bool) rn::ext_ARB_vertex_buffer_object << endl;
-		cout << "GL_ARB_vertex_type_2_10_10_10_rev = " << (bool) rn::ext_ARB_vertex_type_2_10_10_10_rev << endl;
-		cout << "GL_ARB_viewport_array = " << (bool) rn::ext_ARB_viewport_array << endl;
-		cout << "GL_KHR_debug = " << (bool) rn::ext_KHR_debug << endl;
-		cout << "GL_KHR_texture_compression_astc_ldr = " << (bool) rn::ext_KHR_texture_compression_astc_ldr << endl;
 
 		App app{};
 		app.init();
@@ -154,6 +173,11 @@ int main(int argc, char const* argv[])
 			win::Mode::windowed,
 			win::Mode::borderless,
 			win::Mode::fullscreen
+		};
+		const string modeNames[] {
+			"windowed",
+			"borderless",
+			"fullscreen",
 		};
 		size_t currentMode = 0;
 
@@ -184,7 +208,7 @@ int main(int argc, char const* argv[])
 
 		ngn::update();
 
-		while ( ! win::shouldClose())
+		for (int frame = 0, frames = ngn::ino::get("--frames", -1); (frames == -1 || frame < frames) && ! win::shouldClose(); frame++)
 		{
 			NGN_LOOP;
 
@@ -225,6 +249,13 @@ int main(int argc, char const* argv[])
 			{
 				cout << "Reloading FBOs..." << endl;
 				rn::FBO::reloadAll();
+				cout << "done" << endl;
+			}
+
+			if (key::hit(KEY_F9))
+			{
+				cout << "Reloading textures..." << endl;
+				rn::Tex2D::reloadAll();
 				cout << "done" << endl;
 			}
 
@@ -278,9 +309,9 @@ int main(int argc, char const* argv[])
 					oss << "F6 - reload meshes\n";
 					oss << "F7 - reload fonts\n";
 					oss << "F8 - reload FBOs\n";
-					oss << "\n";
+					oss << "F9 - reload textures\n";
 					oss << "F10 - change vsync mode (current: " << vsyncNames[currentVsync] << ")\n";
-					oss << "F11 - change window mode\n";
+					oss << "F11 - change window mode (current: " << modeNames[currentMode] << ")\n";
 					oss << "\n";
 					oss << "Movement: W, A, S, D\n";
 					oss << "Camera: arrows\n";

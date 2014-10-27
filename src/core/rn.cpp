@@ -2,10 +2,12 @@
 #include <iostream>
 
 #include "rn.hpp"
+#include "rn/ext.hpp"
 #include "rn/font.hpp"
 #include "rn/fbo.hpp"
 #include "rn/mesh.hpp"
 #include "ngn.hpp"
+#include "util/count.hpp"
 
 namespace rn
 {
@@ -19,42 +21,43 @@ Status status = Status::uninited;
 
 namespace
 {
-	void debugHandler(GLenum source, GLenum type, GLuint, GLenum severity, GLsizei, const GLchar *message, GLvoid *)
+	void debugHandler(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei, const GLchar *message, GLvoid *)
 	{
-		string type_severity;
-		switch(severity)
+
+		string error_type;
+		switch(type)
 		{
-			case GL_DEBUG_SEVERITY_HIGH_ARB:   type_severity = "High priority"; break;
-			case GL_DEBUG_SEVERITY_MEDIUM_ARB: type_severity = "Medium priority"; break;
-			case GL_DEBUG_SEVERITY_LOW_ARB:    type_severity = "Low priority"; break;
-			default: return;
+			case GL_DEBUG_TYPE_ERROR:               error_type = "Error"; break;
+			case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: error_type = "Deprecated Functionality"; break;
+			case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  error_type = "Undefined Behavior"; break;
+			case GL_DEBUG_TYPE_PORTABILITY:         error_type = "Portability"; break;
+			case GL_DEBUG_TYPE_PERFORMANCE:         error_type = "Performance"; break;
+			case GL_DEBUG_TYPE_OTHER:               error_type = "Other"; break;
+			default:                                error_type = "Unknown"; break;
 		}
 
 		string source_name;
 		switch(source)
 		{
-			case GL_DEBUG_SOURCE_API_ARB:             source_name = "API"; break;
-			case GL_DEBUG_SOURCE_WINDOW_SYSTEM_ARB:   source_name = "Window System"; break;
-			case GL_DEBUG_SOURCE_SHADER_COMPILER_ARB: source_name = "Shader Compiler"; break;
-			case GL_DEBUG_SOURCE_THIRD_PARTY_ARB:     source_name = "Third Party"; break;
-			case GL_DEBUG_SOURCE_APPLICATION_ARB:     source_name = "Application"; break;
-			case GL_DEBUG_SOURCE_OTHER_ARB:           source_name = "Other"; break;
-			default:                                  source_name = "Unknown"; break;
+			case GL_DEBUG_SOURCE_API:             source_name = "API"; break;
+			case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   source_name = "Window System"; break;
+			case GL_DEBUG_SOURCE_SHADER_COMPILER: source_name = "Shader Compiler"; break;
+			case GL_DEBUG_SOURCE_THIRD_PARTY:     source_name = "Third Party"; break;
+			case GL_DEBUG_SOURCE_APPLICATION:     source_name = "Application"; break;
+			case GL_DEBUG_SOURCE_OTHER:           source_name = "Other"; break;
+			default:                              source_name = "Unknown"; break;
 		}
 
-		string error_type;
-		switch(type)
+		string type_severity;
+		switch(severity)
 		{
-			case GL_DEBUG_TYPE_ERROR_ARB:               error_type = "Error"; break;
-			case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR_ARB: error_type = "Deprecated Functionality"; break;
-			case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR_ARB:  error_type = "Undefined Behavior"; break;
-			case GL_DEBUG_TYPE_PORTABILITY_ARB:         error_type = "Portability"; break;
-			case GL_DEBUG_TYPE_PERFORMANCE_ARB:         error_type = "Performance"; break;
-			case GL_DEBUG_TYPE_OTHER_ARB:               error_type = "Other"; break;
-			default:                                    error_type = "Unknown"; break;
+			case GL_DEBUG_SEVERITY_HIGH:   type_severity = "High priority"; break;
+			case GL_DEBUG_SEVERITY_MEDIUM: type_severity = "Medium priority"; break;
+			case GL_DEBUG_SEVERITY_LOW:    type_severity = "Low priority"; break;
+			default: return;
 		}
 
-		cerr << "[GL debug]: " << error_type << " from " << source_name << ",\t" << type_severity << endl;
+		cerr << "[GL debug]: " << error_type << " (id:" << id << ") from " << source_name << ",\t" << type_severity << endl;
 		cerr << "  Last saved GL call: " << lastGLCall << endl;
 		cerr << "  Message: " << message << endl;
 		cerr << endl;
@@ -70,11 +73,6 @@ util::InitQ & initQ()
 
 void init()
 {
-#if defined(DEBUG) || defined(_DEBUG)
-	cout << "DEBUG: on" << endl;
-#else
-	cout << "DEBUG: off" << endl;
-#endif
 	RN_VALIDATE(rn::init());
 	reload();
 
@@ -104,39 +102,29 @@ void reload()
 	RN_CHECK(glEnable(GL_BLEND));
 	RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
-#ifdef NGN_USE_GLEW
-	if (GLEW_KHR_debug)
+	const GLuint ignoreMessages[] = {
+		131076 // glVertexAttribPointer(..., **12**) - Usage warning: Generic vertex attribute array 2 uses a pointer with a small value (0x000000000000000C). Is this intended to be used as an offset into a buffer object?
+	};
+
+	GLsizei ignoreMessagesCount = util::countOf(ignoreMessages);
+
+	if (rn::ext::KHR_debug)
 	{
 		RN_CHECK(glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS));
 		RN_CHECK(glDebugMessageCallback(debugHandler, reinterpret_cast<void*>(15)));
+		RN_CHECK(glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DONT_CARE, ignoreMessagesCount, ignoreMessages, GL_FALSE));
 	}
-	else if (GLEW_ARB_debug_output)
+	else if (rn::ext::ARB_debug_output)
 	{
 		RN_CHECK(glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB));
 		RN_CHECK(glDebugMessageCallbackARB(debugHandler, reinterpret_cast<void*>(15)));
+		RN_CHECK(glDebugMessageControlARB(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DONT_CARE, ignoreMessagesCount, ignoreMessages, GL_FALSE));
 	}
 	else
 	{
 		clog << "rn::reload() - GL_ARB_debug_output not supported" << endl;
 		clog << flush;
 	}
-#else
-	if (ext_KHR_debug)
-	{
-		RN_CHECK(glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS));
-		RN_CHECK(glDebugMessageCallback(debugHandler, reinterpret_cast<void*>(15)));
-	}
-	else if (ext_ARB_debug_output)
-	{
-		RN_CHECK(glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB));
-		RN_CHECK(glDebugMessageCallbackARB(debugHandler, reinterpret_cast<void*>(15)));
-	}
-	else
-	{
-		clog << "rn::reload() - GL_ARB_debug_output not supported" << endl;
-		clog << flush;
-	}
-#endif
 }
 
 void reloadAll()
@@ -1524,127 +1512,6 @@ void flushErrors()
 	}
 	while (err != GL_NO_ERROR);
 }
-
-bool Ext::test()
-{
-	if (name.empty())
-	{
-		throw string{"rn::Ext::test() - name not set"};
-	}
-
-	GLuint num;
-	rn::get(GL_NUM_EXTENSIONS, num);
-
-	for (GLuint i = 0; i < num; i++)
-	{
-		const char *ext = reinterpret_cast<const char *>(glGetStringi(GL_EXTENSIONS, i));
-
-		if (ext != nullptr && name.compare(ext) == 0)
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
-
-Ext::operator bool()
-{
-	static bool result = test();
-	return result;
-}
-
-Ext ext_ARB_arrays_of_arrays{"GL_ARB_arrays_of_arrays"};
-Ext ext_ARB_base_instance{"GL_ARB_base_instance"};
-Ext ext_ARB_blend_func_extended{"GL_ARB_blend_func_extended"};
-Ext ext_ARB_cl_event{"GL_ARB_cl_event"};
-Ext ext_ARB_clear_buffer_object{"GL_ARB_clear_buffer_object"};
-Ext ext_ARB_compressed_texture_pixel_storage{"GL_ARB_compressed_texture_pixel_storage"};
-Ext ext_ARB_compute_shader{"GL_ARB_compute_shader"};
-Ext ext_ARB_conservative_depth{"GL_ARB_conservative_depth"};
-Ext ext_ARB_copy_buffer{"GL_ARB_copy_buffer"};
-Ext ext_ARB_copy_image{"GL_ARB_copy_image"};
-Ext ext_ARB_debug_output{"GL_ARB_debug_output"};
-Ext ext_ARB_depth_buffer_float{"GL_ARB_depth_buffer_float"};
-Ext ext_ARB_depth_clamp{"GL_ARB_depth_clamp"};
-Ext ext_ARB_draw_buffers_blend{"GL_ARB_draw_buffers_blend"};
-Ext ext_ARB_draw_elements_base_vertex{"GL_ARB_draw_elements_base_vertex"};
-Ext ext_ARB_draw_indirect{"GL_ARB_draw_indirect"};
-Ext ext_ARB_ES2_compatibility{"GL_ARB_ES2_compatibility"};
-Ext ext_ARB_ES3_compatibility{"GL_ARB_ES3_compatibility"};
-Ext ext_ARB_explicit_attrib_location{"GL_ARB_explicit_attrib_location"};
-Ext ext_ARB_explicit_uniform_location{"GL_ARB_explicit_uniform_location"};
-Ext ext_ARB_fragment_coord_conventions{"GL_ARB_fragment_coord_conventions"};
-Ext ext_ARB_fragment_layer_viewport{"GL_ARB_fragment_layer_viewport"};
-Ext ext_ARB_framebuffer_no_attachments{"GL_ARB_framebuffer_no_attachments"};
-Ext ext_ARB_framebuffer_object{"GL_ARB_framebuffer_object"};
-Ext ext_ARB_framebuffer_sRGB{"GL_ARB_framebuffer_sRGB"};
-Ext ext_ARB_get_program_binary{"GL_ARB_get_program_binary"};
-Ext ext_ARB_gpu_shader5{"GL_ARB_gpu_shader5"};
-Ext ext_ARB_gpu_shader_fp64{"GL_ARB_gpu_shader_fp64"};
-Ext ext_ARB_half_float_pixel{"GL_ARB_half_float_pixel"};
-Ext ext_ARB_half_float_vertex{"GL_ARB_half_float_vertex"};
-Ext ext_ARB_imaging{"GL_ARB_imaging"};
-Ext ext_ARB_internalformat_query{"GL_ARB_internalformat_query"};
-Ext ext_ARB_internalformat_query2{"GL_ARB_internalformat_query2"};
-Ext ext_ARB_invalidate_subdata{"GL_ARB_invalidate_subdata"};
-Ext ext_ARB_map_buffer_alignment{"GL_ARB_map_buffer_alignment"};
-Ext ext_ARB_map_buffer_range{"GL_ARB_map_buffer_range"};
-Ext ext_ARB_multi_draw_indirect{"GL_ARB_multi_draw_indirect"};
-Ext ext_ARB_occlusion_query2{"GL_ARB_occlusion_query2"};
-Ext ext_ARB_program_interface_query{"GL_ARB_program_interface_query"};
-Ext ext_ARB_provoking_vertex{"GL_ARB_provoking_vertex"};
-Ext ext_ARB_robust_buffer_access_behavior{"GL_ARB_robust_buffer_access_behavior"};
-Ext ext_ARB_robustness{"GL_ARB_robustness"};
-Ext ext_ARB_robustness_isolation{"GL_ARB_robustness_isolation"};
-Ext ext_ARB_sample_shading{"GL_ARB_sample_shading"};
-Ext ext_ARB_sampler_objects{"GL_ARB_sampler_objects"};
-Ext ext_ARB_seamless_cube_map{"GL_ARB_seamless_cube_map"};
-Ext ext_ARB_separate_shader_objects{"GL_ARB_separate_shader_objects"};
-Ext ext_ARB_shader_atomic_counters{"GL_ARB_shader_atomic_counters"};
-Ext ext_ARB_shader_bit_encoding{"GL_ARB_shader_bit_encoding"};
-Ext ext_ARB_shader_image_load_store{"GL_ARB_shader_image_load_store"};
-Ext ext_ARB_shader_image_size{"GL_ARB_shader_image_size"};
-Ext ext_ARB_shader_objects{"GL_ARB_shader_objects"};
-Ext ext_ARB_shader_precision{"GL_ARB_shader_precision"};
-Ext ext_ARB_shader_stencil_export{"GL_ARB_shader_stencil_export"};
-Ext ext_ARB_shader_storage_buffer_object{"GL_ARB_shader_storage_buffer_object"};
-Ext ext_ARB_shader_subroutine{"GL_ARB_shader_subroutine"};
-Ext ext_ARB_shading_language_420pack{"GL_ARB_shading_language_420pack"};
-Ext ext_ARB_shading_language_include{"GL_ARB_shading_language_include"};
-Ext ext_ARB_shading_language_packing{"GL_ARB_shading_language_packing"};
-Ext ext_ARB_stencil_texturing{"GL_ARB_stencil_texturing"};
-Ext ext_ARB_sync{"GL_ARB_sync"};
-Ext ext_ARB_tessellation_shader{"GL_ARB_tessellation_shader"};
-Ext ext_ARB_texture_buffer_object_rgb32{"GL_ARB_texture_buffer_object_rgb32"};
-Ext ext_ARB_texture_buffer_range{"GL_ARB_texture_buffer_range"};
-Ext ext_ARB_texture_compression_bptc{"GL_ARB_texture_compression_bptc"};
-Ext ext_ARB_texture_compression_rgtc{"GL_ARB_texture_compression_rgtc"};
-Ext ext_ARB_texture_cube_map_array{"GL_ARB_texture_cube_map_array"};
-Ext ext_ARB_texture_gather{"GL_ARB_texture_gather"};
-Ext ext_ARB_texture_multisample{"GL_ARB_texture_multisample"};
-Ext ext_ARB_texture_query_levels{"GL_ARB_texture_query_levels"};
-Ext ext_ARB_texture_query_lod{"GL_ARB_texture_query_lod"};
-Ext ext_ARB_texture_rg{"GL_ARB_texture_rg"};
-Ext ext_ARB_texture_rgb10_a2ui{"GL_ARB_texture_rgb10_a2ui"};
-Ext ext_ARB_texture_storage{"GL_ARB_texture_storage"};
-Ext ext_ARB_texture_storage_multisample{"GL_ARB_texture_storage_multisample"};
-Ext ext_ARB_texture_swizzle{"GL_ARB_texture_swizzle"};
-Ext ext_ARB_texture_view{"GL_ARB_texture_view"};
-Ext ext_ARB_timer_query{"GL_ARB_timer_query"};
-Ext ext_ARB_transform_feedback2{"GL_ARB_transform_feedback2"};
-Ext ext_ARB_transform_feedback3{"GL_ARB_transform_feedback3"};
-Ext ext_ARB_transform_feedback_instanced{"GL_ARB_transform_feedback_instanced"};
-Ext ext_ARB_uniform_buffer_object{"GL_ARB_uniform_buffer_object"};
-Ext ext_ARB_vertex_array_bgra{"GL_ARB_vertex_array_bgra"};
-Ext ext_ARB_vertex_array_object{"GL_ARB_vertex_array_object"};
-Ext ext_ARB_vertex_attrib_64bit{"GL_ARB_vertex_attrib_64bit"};
-Ext ext_ARB_vertex_attrib_binding{"GL_ARB_vertex_attrib_binding"};
-Ext ext_ARB_vertex_buffer_object{"GL_ARB_vertex_buffer_object"};
-Ext ext_ARB_vertex_type_2_10_10_10_rev{"GL_ARB_vertex_type_2_10_10_10_rev"};
-Ext ext_ARB_viewport_array{"GL_ARB_viewport_array"};
-Ext ext_KHR_debug{"GL_KHR_debug"};
-Ext ext_KHR_texture_compression_astc_ldr{"GL_KHR_texture_compression_astc_ldr"};
 
 namespace
 {

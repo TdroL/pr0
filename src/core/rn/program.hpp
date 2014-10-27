@@ -50,7 +50,7 @@ public:
 	void reset();
 
 	void use();
-	void release();
+	void forgo();
 
 	GLint getName(const std::string &name);
 	UniformValue & getValue(const std::string &name);

@@ -1,6 +1,7 @@
 #include "sbm.hpp"
 #include "../rn.hpp"
 #include "../ngn/fs.hpp"
+#include "../util/count.hpp"
 
 #include <array>
 #include <vector>
@@ -28,7 +29,7 @@ Mesh::Mesh(string &&fileName)
 {
 }
 
-void Mesh::use()
+void Mesh::open()
 {
 	dataCache = fs::contents<vector<char>>(fileName);
 	char *data = dataCache.data();
@@ -39,14 +40,14 @@ void Mesh::use()
 
 	if (*reinterpret_cast<const uint32_t *>(code) != *reinterpret_cast<const uint32_t *>(data))
 	{
-		throw string{"src::sbm::Mesh::use() - invalid SBM file \"" + fileName + "\""};
+		throw string{"src::sbm::Mesh::open() - invalid SBM file \"" + fileName + "\""};
 	}
 
 	data += sizeof(uint32_t);
 
 	if (*reinterpret_cast<const uint32_t *>(data) != 0x0001u)
 	{
-		throw string{"src::sbm::Mesh::use() - unsupported SBM file \"" + fileName + "\""};
+		throw string{"src::sbm::Mesh::open() - unsupported SBM file \"" + fileName + "\""};
 	}
 
 	data += sizeof(uint32_t);
@@ -59,10 +60,11 @@ void Mesh::use()
 
 	SBMHeader *header;
 
-	const uint32_t typeVertices = 0x0001;
-	const uint32_t typeIndices =  0x0002;
-	const uint32_t typeLayouts =  0x0003;
-	const uint32_t typeArrays =   0x0004;
+	const uint32_t typeVertices       = 0x0001;
+	const uint32_t typeIndices        = 0x0002;
+	const uint32_t typeLayouts        = 0x0003;
+	const uint32_t typeArrays         = 0x0004;
+	const uint32_t typeBounds         = 0x0005; // [squared radius, AABB: [MinX, MinY, MinZ, MaxX, MaxY, MaxZ]]
 
 	while (data < dataEnd)
 	{
@@ -138,13 +140,27 @@ void Mesh::use()
 
 				break;
 			}
+			case typeBounds:
+			{
+				decltype(boundingSphere) *boundingSphereData = reinterpret_cast<decltype(boundingSphere) *>(data + sizeof(header->type));
+				boundingSphere = *boundingSphereData;
+
+				decltype(boundingBox) *boundingBoxData = reinterpret_cast<decltype(boundingBox) *>(data + sizeof(header->type) + sizeof(boundingSphere));
+
+				for (size_t i = 0; i < util::countOf(boundingBox); ++i)
+				{
+					boundingBox[i] = (*boundingBoxData)[i];
+				}
+
+				break;
+			}
 		}
 
 		data += header->size;
 	}
 }
 
-void Mesh::release()
+void Mesh::close()
 {
 	vertexData.size = 0;
 	vertexData.data = nullptr;

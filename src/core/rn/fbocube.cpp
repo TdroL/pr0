@@ -368,7 +368,7 @@ void FBOCube::use()
 	FBOCube::activeStack.push_back(id);
 }
 
-void FBOCube::release()
+void FBOCube::forgo()
 {
 	FBOCube::activeStack.pop_back();
 

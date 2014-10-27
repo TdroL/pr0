@@ -5,6 +5,7 @@ SRCDIR = src
 VNDDIR = vendor
 BUILDDIR = tmp
 ARDIR = lib
+ARNAME = libcore
 PROGRAM = main
 CXXFLAGS = -Wall -Winline -Wextra -std=c++11 -m64 -march=native
 CXXFLAGS_DEBUG = -g -Og -Weffc++ -Wfatal-errors -DDEBUG
@@ -69,10 +70,10 @@ release: clean all
 force: clean all
 
 run: all
-	./$(PROGRAM)
+	./$(PROGRAM) ${ARGS}
 
 run-gdb: all
-	gdb $(PROGRAM)
+	gdb $(PROGRAM) ${ARGS}
 
 clean-dep:
 	@echo "Cleaning dep files..."
@@ -85,9 +86,10 @@ clean-obj:
 
 clean: clean-dep clean-obj
 
-archive:
+ar:
 	@echo "Creating archive..."
 	@mkdir -p $(ARDIR)
-	@ar cr $(ARDIR)/libpr0.a `find $(BUILDDIR) -name '*.o' -type f`
+	@ar cr $(ARDIR)/$(ARNAME).a `find $(BUILDDIR) -name '*.o' -type f`
+	@echo "  $(ARDIR)/$(ARNAME).a  done"
 
 .PHONY: all release force run run-gdb clean clean-dep clean-obj archive

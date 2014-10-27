@@ -73,9 +73,9 @@ public:
 	}
 };
 
-}
+} // details
 
-}
+} // mprint
 
 #define print mprint::details::Mprint{" ", "\n"} +=
 #define puts mprint::details::Mprint{" ", ""} +=

@@ -41,14 +41,13 @@ public:
 	{
 		DepthType type{Renderbuffer};
 
-		rn::Renderbuffer buf{
-			/* .internalFormat= */ GL_DEPTH24_STENCIL8,
-		};
-		rn::Tex2D tex{
-			/* .internalFormat= */ GL_DEPTH24_STENCIL8,
-			/* .format= */ GL_DEPTH_STENCIL,
-			/* .type= */ GL_UNSIGNED_INT_24_8
-		};
+		rn::Renderbuffer buf{GL_DEPTH24_STENCIL8};
+		//	/* .internalFormat= */ GL_DEPTH24_STENCIL8
+
+		rn::Tex2D tex{GL_DEPTH24_STENCIL8};
+		// 	/* .internalFormat= */ GL_DEPTH24_STENCIL8,
+		// 	/* .format= */ GL_DEPTH_STENCIL,
+		// 	/* .type= */ GL_UNSIGNED_INT_24_8
 
 		GLenum getAttachmentType()
 		{
@@ -79,8 +78,8 @@ public:
 
 	glm::vec4 clearColor{0.f, 0.f, 0.f, 0.f};
 
-	int width = 0;
-	int height = 0;
+	GLint width = 0;
+	GLint height = 0;
 
 	std::string fboName = "Unnamed FBO";
 
@@ -104,7 +103,7 @@ public:
 	void clear();
 
 	void use();
-	void release();
+	void forgo();
 };
 
 class FBOScoper
@@ -113,7 +112,7 @@ public:
 	FBO &fbo;
 
 	FBOScoper(FBO &fbo) : fbo(fbo) { fbo.use(); }
-	~FBOScoper() { fbo.release(); }
+	~FBOScoper() { fbo.forgo(); }
 };
 
 #define RN_FBO_USE(fboSource) rn::FBOScoper UTIL_CONCAT2(FBOScoper, __COUNTER__)(fboSource)

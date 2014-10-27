@@ -98,7 +98,6 @@ void startLoop()
 
 void endLoop()
 {
-	glUseProgram(0);
 	rn::stats.reset();
 	ngn::window::swapBuffers();
 }

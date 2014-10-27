@@ -17,7 +17,7 @@ public:
 
 	Stream();
 	Stream(std::string &&fileName);
-	void use() override;
+	void open() override;
 	std::string name() override;
 };
 

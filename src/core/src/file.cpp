@@ -22,7 +22,7 @@ Stream::Stream(std::string &&fileName)
 	: fileName{move(fileName)}
 {}
 
-void Stream::use()
+void Stream::open()
 {
 	contents = fs::contents<vector<char>>(fileName);
 }
