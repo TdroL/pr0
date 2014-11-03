@@ -6,6 +6,7 @@
 #include "../util/str.hpp"
 #include "../src/mem.hpp"
 #include "../ngn.hpp"
+#include "../rn/ext.hpp"
 #include "../ngn/window.hpp"
 
 #include <limits>
@@ -94,29 +95,72 @@ FBO::~FBO()
 	FBO::activeStack.erase(remove(begin(FBO::activeStack), end(FBO::activeStack), this), end(FBO::activeStack));
 }
 
-void FBO::setTex(size_t id, rn::Tex2D &&tex)
+void FBO::setColorTex(GLint internalFormat, size_t i)
 {
-	if (colors.size() <= id)
+	if (colors.size() <= i)
 	{
-		colors.resize(id + 1);
+		colors.resize(i + 1);
 	}
 
-	colors[id].enabled = true;
-	colors[id].tex = move(tex);
+	if (internalFormat)
+	{
+		colors[i].enabled = true;
+		colors[i].internalFormat = internalFormat;
+	}
+	else
+	{
+		colors[i].enabled = false;
+	}
 }
 
-void FBO::setDepth(rn::Tex2D &&tex)
+void FBO::setDepthTex(GLint internalFormat)
 {
-	depth.type = Texture;
-	depth.buf.reset();
-	depth.tex = move(tex);
+	resetDepthStorage();
+
+	if (internalFormat)
+	{
+		depth.type = Texture;
+		depth.internalFormat = internalFormat;
+	}
+	else
+	{
+		depth.type = None;
+	}
 }
 
-void FBO::setDepth(rn::Renderbuffer &&buf)
+void FBO::setDepthBuf(GLint internalFormat)
 {
-	depth.type = Renderbuffer;
-	depth.tex.reset();
-	depth.buf = move(buf);
+	resetDepthStorage();
+
+	if (internalFormat)
+	{
+		depth.type = Renderbuffer;
+		depth.internalFormat = internalFormat;
+	}
+	else
+	{
+		depth.type = None;
+	}
+}
+
+void FBO::clone(const FBO &fbo)
+{
+	reset();
+
+	colors = fbo.colors;
+
+	for (auto &color : colors)
+	{
+		color.id = 0;
+	}
+
+	depth.internalFormat = fbo.depth.internalFormat;
+	depth.type = fbo.depth.type;
+
+	clearColor = fbo.clearColor;
+
+	width = fbo.width;
+	height = fbo.height;
 }
 
 void FBO::create()
@@ -136,36 +180,45 @@ void FBO::create()
 
 void FBO::reset()
 {
-	resetStorages();
+	resetColorStorages();
+	resetDepthStorage();
 
-	colors.clear();
-
-	depth.type = Renderbuffer;
-}
-
-void FBO::resetStorages()
-{
 	if (id)
 	{
 		RN_CHECK(glDeleteFramebuffers(1, &id));
 		id = 0;
 	}
+}
 
+void FBO::resetColorStorages()
+{
 	for (auto &color : colors)
 	{
-		if (color.enabled)
+		if (color.id)
 		{
-			color.tex.reset();
+			RN_CHECK(glDeleteTextures(1, &color.id));
+			color.id = 0;
 		}
 	}
+}
 
-	if (depth.type == Renderbuffer)
+void FBO::resetDepthStorage()
+{
+	if (depth.id)
 	{
-		depth.buf.reset();
-	}
-	else // Texture
-	{
-		depth.tex.reset();
+		switch (depth.type)
+		{
+			case Renderbuffer:
+				RN_CHECK(glDeleteRenderbuffers(1, &depth.id));
+			break;
+			case Texture:
+				RN_CHECK(glDeleteTextures(1, &depth.id));
+			break;
+			default:
+			break;
+		}
+
+		depth.id = 0;
 	}
 }
 
@@ -173,7 +226,7 @@ void FBO::reload()
 {
 	double timer = ngn::time();
 
-	resetStorages();
+	reset();
 
 	for (auto &color : colors)
 	{
@@ -182,24 +235,47 @@ void FBO::reload()
 			continue;
 		}
 
-		color.tex.filter = GL_LINEAR;
-		color.tex.wrap = GL_CLAMP_TO_EDGE;
-		color.tex.source = src::mem::tex2d(width, height);
-		color.tex.reload();
+		RN_CHECK(glGenTextures(1, &color.id));
+
+		RN_CHECK(glBindTexture(GL_TEXTURE_2D, color.id));
+
+		RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+		RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+		RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+		RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+
+		RN_CHECK_PARAM(glTexStorage2D(GL_TEXTURE_2D, 1, color.internalFormat, width, height), rn::getEnumName(color.internalFormat));
+
+		RN_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
 	}
 
-	if (depth.type == Renderbuffer)
+	switch (depth.type)
 	{
-		depth.buf.width = width;
-		depth.buf.height = height;
-		depth.buf.reload();
-	}
-	else if (depth.type == Texture)
-	{
-		depth.tex.filter = GL_NEAREST;
-		depth.tex.wrap = GL_CLAMP_TO_EDGE;
-		depth.tex.source = src::mem::tex2d(width, height);
-		depth.tex.reload();
+		case Renderbuffer:
+			RN_CHECK(glGenRenderbuffers(1, &depth.id));
+
+			RN_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, depth.id));
+
+			RN_CHECK_PARAM(glRenderbufferStorage(GL_RENDERBUFFER, depth.internalFormat, width, height), rn::getEnumName(depth.internalFormat));
+
+			RN_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, 0));
+		break;
+		case Texture:
+			RN_CHECK(glGenTextures(1, &depth.id));
+
+			RN_CHECK(glBindTexture(GL_TEXTURE_2D, depth.id));
+
+			RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+			RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+			RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+			RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+
+			RN_CHECK_PARAM(glTexStorage2D(GL_TEXTURE_2D, 1, depth.internalFormat, width, height), rn::getEnumName(depth.internalFormat));
+
+			RN_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
+		break;
+		default:
+		break;
 	}
 
 	reloadSoft();
@@ -207,7 +283,8 @@ void FBO::reload()
 	UTIL_DEBUG
 	{
 		clog << fixed;
-		clog << "  [FBO {" <<  fboName << "}:" << ngn::time() - timer << "s]" << endl;
+		clog << "  [FBO {" <<  fboName << "}:" << (ngn::time() - timer) << "s]" << endl;
+		clog.unsetf(ios::floatfield);
 		// for (size_t i = 0; i < colors.size(); i++)
 		// {
 		// 	clog << "    " << rn::getEnumName(GL_COLOR_ATTACHMENT0 + i) << endl;
@@ -217,32 +294,42 @@ void FBO::reload()
 
 void FBO::reloadSoft()
 {
+	if ( ! colors.size() && depth.type == None)
+	{
+		return;
+	}
+
 	RN_CHECK(glGenFramebuffers(1, &id));
 	RN_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, id));
 
 	if ( ! colors.empty())
 	{
-		const size_t enabledColors = count_if(begin(colors), end(colors), [] (const TexContainer &container)
+		size_t enabledColors = count_if(begin(colors), end(colors), [] (const TexContainer &color)
 		{
-			return container.enabled;
+			return color.enabled;
 		});
 
-		vector<GLenum> drawBuffers(util::nextPowerOf2(enabledColors), GL_NONE);
+		size_t drawBuffersSize = util::nextPowerOf2(enabledColors);
 
-		for (size_t i = 0, j = 0; i < colors.size(); i++)
+		vector<GLenum> drawBuffers{};
+		drawBuffers.reserve(drawBuffersSize);
+
+		for (size_t i = 0; i < colors.size(); i++)
 		{
 			if ( ! colors[i].enabled)
 			{
 				continue;
 			}
 
-			RN_CHECK(glBindTexture(GL_TEXTURE_2D, colors[i].tex.id));
+			RN_CHECK(glBindTexture(GL_TEXTURE_2D, colors[i].id));
 
-			RN_CHECK(glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, colors[i].tex.id, 0));
+			RN_CHECK(glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, colors[i].id, 0));
 
-			drawBuffers[j] = GL_COLOR_ATTACHMENT0 + i;
-			j++;
+			drawBuffers.push_back(GL_COLOR_ATTACHMENT0 + i);
 		}
+
+		// fill rest of the draw buffers list
+		drawBuffers.resize(drawBuffersSize, GL_NONE);
 
 		RN_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
 
@@ -260,17 +347,39 @@ void FBO::reloadSoft()
 		RN_CHECK(glDrawBuffer(GL_NONE));
 	}
 
-	if (depth.type == Renderbuffer)
-	{
-		GLenum attachment = depth.buf.getAttachmentType();
+	GLenum attachment;
 
-		RN_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, depth.buf.id));
+	switch (depth.internalFormat)
+	{
+		case GL_DEPTH_COMPONENT:
+		case GL_DEPTH_COMPONENT16:
+		case GL_DEPTH_COMPONENT24:
+		case GL_DEPTH_COMPONENT32F:
+			attachment = GL_DEPTH_ATTACHMENT;
+		break;
+
+		case GL_DEPTH24_STENCIL8:
+		case GL_DEPTH32F_STENCIL8:
+			attachment = GL_DEPTH_STENCIL_ATTACHMENT;
+		break;
+
+		default:
+			attachment = GL_NONE;
 	}
-	else // Texture
-	{
-		GLenum attachment = depth.tex.getAttachmentType();
 
-		RN_CHECK(glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, depth.tex.id, 0));
+	if (attachment)
+	{
+		switch (depth.type)
+		{
+			case Renderbuffer:
+				RN_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, depth.id));
+			break;
+			case Texture:
+				RN_CHECK(glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, depth.id, 0));
+			break;
+			default:
+			break;
+		}
 	}
 
 	GLenum status = GL_NONE;
@@ -278,10 +387,42 @@ void FBO::reloadSoft()
 
 	if (status != GL_FRAMEBUFFER_COMPLETE)
 	{
-		throw string{"rn::FBO{" + fboName + "}::reloadSoft() - failed to verify framebuffer (" + rn::getEnumName(status) + ")\n  colors: " + to_string(colors.size()) + "\n  depth: " + (depth.type == Renderbuffer ? "renderbuffer" : "texture") + " (" + rn::getEnumName(depth.getAttachmentType()) + ")"};
+		throw string{"rn::FBO{" + fboName + "}::reloadSoft() - failed to verify framebuffer (" + rn::getEnumName(status) + ")\n  colors: " + to_string(colors.size()) + "\n  depth: " + (depth.type == Renderbuffer ? "renderbuffer" : "texture") + " (" + rn::getEnumName(attachment) + ")"};
 	}
 
 	RN_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+}
+
+GLsizei FBO::bindColorTex(GLsizei unit, size_t i)
+{
+	RN_CHECK(glActiveTexture(GL_TEXTURE0 + unit));
+
+	if (i < colors.size() && colors[i].enabled)
+	{
+		RN_CHECK(glBindTexture(GL_TEXTURE_2D, colors[i].id));
+	}
+	else
+	{
+		RN_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
+	}
+
+	return unit;
+}
+
+GLsizei FBO::bindDepthTex(GLsizei unit)
+{
+	RN_CHECK(glActiveTexture(GL_TEXTURE0 + unit));
+
+	if (depth.type == Texture)
+	{
+		RN_CHECK(glBindTexture(GL_TEXTURE_2D, depth.id));
+	}
+	else
+	{
+		RN_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
+	}
+
+	return unit;
 }
 
 void FBO::blit(GLuint target, GLbitfield mask)
@@ -299,17 +440,18 @@ void FBO::clear()
 	if ( ! colors.empty())
 	{
 		RN_CHECK(glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a));
-
 		mask |= GL_COLOR_BUFFER_BIT;
 	}
 
-	mask |= GL_DEPTH_BUFFER_BIT;
-
-	if (depth.getAttachmentType() == GL_DEPTH_STENCIL_ATTACHMENT)
+	if (depth.type != None)
 	{
-		RN_CHECK(glClearStencil(0));
+		mask |= GL_DEPTH_BUFFER_BIT;
 
-		mask |= GL_STENCIL_BUFFER_BIT;
+		if (depth.internalFormat == GL_DEPTH24_STENCIL8 || depth.internalFormat == GL_DEPTH32F_STENCIL8)
+		{
+			RN_CHECK(glClearStencil(0));
+			mask |= GL_STENCIL_BUFFER_BIT;
+		}
 	}
 
 	RN_CHECK(glClear(mask));
@@ -319,6 +461,7 @@ void FBO::use()
 {
 	RN_CHECK(glViewport(0, 0, width, height));
 	RN_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, id));
+
 	FBO::activeStack.push_back(this);
 }
 
@@ -343,6 +486,10 @@ namespace
 {
 	const util::InitQAttacher attach(rn::initQ(), []
 	{
+		if ( ! rn::ext::ARB_texture_storage) {
+			throw string{"rn::FBO initQ - rn::FBO requires GL_ARB_texture_storage"};
+		}
+
 		rn::FBO::init();
 	});
 }

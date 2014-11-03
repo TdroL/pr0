@@ -66,6 +66,6 @@ void main()
 	visibility = vsmVisibility(min(shadowCoord.z, 1.0), moments);
 
 	outColor.rgb = pow(ambient + (diffuse + specular) * visibility, vec3(1/2.2));
-	// outColor.rgb = pow(albedo, vec3(1/2.2));
+	outColor.rgb = pow(albedo, vec3(1/2.2));
 	outColor.a = 1.0;
 }

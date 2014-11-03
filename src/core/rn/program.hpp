@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <array>
 #include <memory>
 #include <map>
 #include <list>
@@ -58,38 +59,60 @@ public:
 	void var(GLint name, GLint value);
 	void var(GLint name, GLuint value);
 	void var(GLint name, GLfloat value);
-	void var(GLint name, GLfloat x, GLfloat y);
-	void var(GLint name, GLfloat x, GLfloat y, GLfloat z);
-	void var(GLint name, GLfloat x, GLfloat y, GLfloat z, GLfloat w);
 	void var(GLint name, const glm::vec2 &value);
 	void var(GLint name, const glm::vec3 &value);
 	void var(GLint name, const glm::vec4 &value);
 	void var(GLint name, const glm::mat3 &value);
 	void var(GLint name, const glm::mat4 &value);
 
+	void var(GLint name, const GLint *value, GLsizei count = 1);
+	void var(GLint name, const GLuint *value, GLsizei count = 1);
+	void var(GLint name, const GLfloat *value, GLsizei count = 1);
+	void var(GLint name, const glm::vec2 *value, GLsizei count = 1);
+	void var(GLint name, const glm::vec3 *value, GLsizei count = 1);
+	void var(GLint name, const glm::vec4 *value, GLsizei count = 1);
+	void var(GLint name, const glm::mat3 *value, GLsizei count = 1);
+	void var(GLint name, const glm::mat4 *value, GLsizei count = 1);
+
 	GLint var(const std::string &name, GLint value);
 	GLint var(const std::string &name, GLuint value);
 	GLint var(const std::string &name, GLfloat value);
-	GLint var(const std::string &name, GLfloat x, GLfloat y);
-	GLint var(const std::string &name, GLfloat x, GLfloat y, GLfloat z);
-	GLint var(const std::string &name, GLfloat x, GLfloat y, GLfloat z, GLfloat w);
 	GLint var(const std::string &name, const glm::vec2 &value);
 	GLint var(const std::string &name, const glm::vec3 &value);
 	GLint var(const std::string &name, const glm::vec4 &value);
 	GLint var(const std::string &name, const glm::mat3 &value);
 	GLint var(const std::string &name, const glm::mat4 &value);
 
-	GLint uniform(const std::string &name, GLint value);
-	GLint uniform(const std::string &name, GLuint value);
-	GLint uniform(const std::string &name, GLfloat value);
-	GLint uniform(const std::string &name, GLfloat x, GLfloat y);
-	GLint uniform(const std::string &name, GLfloat x, GLfloat y, GLfloat z);
-	GLint uniform(const std::string &name, GLfloat x, GLfloat y, GLfloat z, GLfloat w);
-	GLint uniform(const std::string &name, const glm::vec2 &value);
-	GLint uniform(const std::string &name, const glm::vec3 &value);
-	GLint uniform(const std::string &name, const glm::vec4 &value);
-	GLint uniform(const std::string &name, const glm::mat3 &value);
-	GLint uniform(const std::string &name, const glm::mat4 &value);
+	GLint var(const std::string &name, const GLint *value, GLsizei count = 1);
+	GLint var(const std::string &name, const GLuint *value, GLsizei count = 1);
+	GLint var(const std::string &name, const GLfloat *value, GLsizei count = 1);
+	GLint var(const std::string &name, const glm::vec2 *value, GLsizei count = 1);
+	GLint var(const std::string &name, const glm::vec3 *value, GLsizei count = 1);
+	GLint var(const std::string &name, const glm::vec4 *value, GLsizei count = 1);
+	GLint var(const std::string &name, const glm::mat3 *value, GLsizei count = 1);
+	GLint var(const std::string &name, const glm::mat4 *value, GLsizei count = 1);
+
+	template<typename T>
+	GLint uniform(const std::string &name, T value)
+	{
+		UniformValue &uniformValue = getValue(name);
+
+		var(uniformValue.id, uniformValue.set(value));
+
+		return uniformValue.id;
+	}
+
+	template<typename T>
+	GLint uniform(const std::string &name, std::unique_ptr<T[]> &&value, GLsizei count)
+	{
+		UniformValue &uniformValue = getValue(name);
+
+		if (value) {
+			var(uniformValue.id, uniformValue.set(value.release(), count), count);
+		}
+
+		return uniformValue.id;
+	}
 
 };
 

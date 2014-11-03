@@ -154,7 +154,8 @@ void Mesh::reload()
 	UTIL_DEBUG
 	{
 		clog << fixed;
-		clog << "  [Mesh:" << meshName << " {" << source->name() << "}:" << ngn::time() - timer << "s]" << endl;
+		clog << "  [Mesh:" << meshName << " {" << source->name() << "}:" << (ngn::time() - timer) << "s]" << endl;
+		clog.unsetf(ios::floatfield);
 		// clog << "    layouts=" << layouts.size() << endl;
 		// clog << "    indices=" << indices.size() << endl;
 		// clog << "    arrays=" << arrays.size() << endl;

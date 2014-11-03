@@ -1,15 +1,13 @@
 #ifndef APP_HPP
 #define APP_HPP
 
-#include <vector>
-
-#include <core/rn/fbo.hpp>
-#include <core/rn/fbocube.hpp>
+#include <core/ecs/entity.hpp>
 
 #include <core/rn/mesh.hpp>
 #include <core/rn/program.hpp>
 
-#include <core/ecs/entity.hpp>
+#include <core/rn/fbo.hpp>
+#include <core/rn/tex2d.hpp>
 
 class App
 {
@@ -17,26 +15,27 @@ public:
 	ecs::Entity cameraId{};
 	ecs::Entity lightIds[10]{};
 
-	rn::Program deferredGBuffer{};
-	rn::Program deferredShadowMap{};
+	rn::Program progGBuffer{};
+	rn::Program progShadowMap{};
 
-	rn::Program deferredDirectionalLight{};
-	rn::Program deferredPointLight{};
-	rn::Program deferredFlatLight{};
+	rn::Program progDirectionalLight{};
+	rn::Program progPointLight{};
+	rn::Program progFlatLight{};
 
-	rn::Program ambientOcclusion{};
+	rn::Program progSSAO{};
 
-	rn::Program simple{};
-	rn::Program blurFilter{};
-	rn::Program blurPreview{};
-	rn::Program shadowMapPreview{};
+	rn::Program progSimple{};
+	rn::Program progBlurFilter{};
+	rn::Program progBlurPreview{};
+	rn::Program progShadowMapPreview{};
 
-	rn::Tex2D ssaoNoise{};
+	rn::FBO fboGBuffer{"gBuffer"};
+	rn::FBO fboShadowMapBuffer{"shadowMapBuffer"};
+	rn::FBO fboShadowMapBlurBuffer{"fboShadowMapBlurBuffer"};
+	rn::FBO fboSSAOBuffer{"fboSSAOBuffer"};
+	rn::FBO fboSSAOBlurBuffer{"fboSSAOBlurBuffer"};
 
-	rn::FBO gBuffer{"gBuffer"};
-	rn::FBO blurBuffer{"blurBuffer"};
-	rn::FBO shadowMapBuffer{"shadowMapBuffer"};
-	// rn::FBOCube shadowCubeMapBuffer{"shadowCubeMapBuffer"};
+	rn::Tex2D texNoise{"SSAO noise", GL_RGB8, GL_LINEAR, GL_REPEAT};
 
 	App() {};
 	~App() {};

@@ -10,8 +10,6 @@
 #include "../util.hpp"
 #include "types.hpp"
 #include "mesh.hpp"
-#include "tex2d.hpp"
-#include "renderbuffer.hpp"
 #include "program.hpp"
 
 namespace rn
@@ -24,42 +22,21 @@ public:
 	{
 		Renderbuffer,
 		Texture,
+		None
 	};
 
 	struct TexContainer
 	{
-		bool enabled{false};
-		rn::Tex2D tex{};
-
-		void bind(GLsizei unit)
-		{
-			tex.bind(unit);
-		}
+		GLuint id = 0;
+		GLint internalFormat = GL_RGBA8;
+		bool enabled = false;
 	};
 
 	struct DepthContainer
 	{
-		DepthType type{Renderbuffer};
-
-		rn::Renderbuffer buf{GL_DEPTH24_STENCIL8};
-		//	/* .internalFormat= */ GL_DEPTH24_STENCIL8
-
-		rn::Tex2D tex{GL_DEPTH24_STENCIL8};
-		// 	/* .internalFormat= */ GL_DEPTH24_STENCIL8,
-		// 	/* .format= */ GL_DEPTH_STENCIL,
-		// 	/* .type= */ GL_UNSIGNED_INT_24_8
-
-		GLenum getAttachmentType()
-		{
-			if (type == Renderbuffer)
-			{
-				return buf.getAttachmentType();
-			}
-			else
-			{
-				return tex.getAttachmentType();
-			}
-		}
+		GLuint id = 0;
+		GLint internalFormat = GL_DEPTH24_STENCIL8;
+		DepthType type{None};
 	};
 
 	static std::list<FBO *> collection;
@@ -87,16 +64,22 @@ public:
 	explicit FBO(std::string &&name);
 	~FBO();
 
-	void setTex(size_t id, rn::Tex2D &&tex);
-	void setDepth(rn::Tex2D &&tex);
-	void setDepth(rn::Renderbuffer &&buf);
+	void setColorTex(GLint internalFormat, size_t i);
+	void setDepthTex(GLint internalFormat);
+	void setDepthBuf(GLint internalFormat);
+
+	void clone(const FBO &fbo);
 
 	void create();
 	void reset();
-	void resetStorages();
+	void resetDepthStorage();
+	void resetColorStorages();
 
 	void reload();
 	void reloadSoft();
+
+	GLsizei bindColorTex(GLsizei unit, size_t i);
+	GLsizei bindDepthTex(GLsizei unit);
 
 	void blit(GLuint target, GLbitfield mask);
 

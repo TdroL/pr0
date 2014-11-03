@@ -65,14 +65,15 @@ unique_ptr<src::Mesh> mesh(vector<GLfloat> &&vertices, vector<GLuint> &&indices)
  * Tex2D
  */
 
-Tex2D::Tex2D(GLsizei width, GLsizei height, vector<GLbyte> &&data, GLint levels, GLenum format, GLenum type, GLint alignment)
+Tex2D::Tex2D(GLsizei width, GLsizei height, unique_ptr<GLubyte[]> &&data, size_t size, GLenum format, GLenum type, GLint levels, GLint alignment)
 {
 	this->width = width;
 	this->height = height;
 	this->data = move(data);
-	this->levels = levels;
+	this->size = size;
 	this->format = format;
 	this->type = type;
+	this->levels = levels;
 	this->alignment = alignment;
 }
 
@@ -86,9 +87,9 @@ void Tex2D::setName(string &&sourceName)
 	this->sourceName = move(sourceName);
 }
 
-unique_ptr<src::Tex2D> tex2d(GLsizei width, GLsizei height, vector<GLbyte> &&data, GLint levels, GLenum format, GLenum type, GLint alignment)
+unique_ptr<src::Tex2D> tex2d(GLsizei width, GLsizei height, unique_ptr<GLubyte[]> &&data, size_t size, GLenum format, GLenum type, GLint levels, GLint alignment)
 {
-	return unique_ptr<src::Tex2D>{new Tex2D{width, height, move(data), levels, format, type, alignment}};
+	return unique_ptr<src::Tex2D>{new Tex2D{width, height, move(data), size, format, type, levels, alignment}};
 }
 
 } // mem

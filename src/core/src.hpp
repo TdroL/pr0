@@ -48,7 +48,9 @@ class Tex2D
 public:
 	GLsizei width = 0;
 	GLsizei height = 0;
-	std::vector<GLbyte> data{};
+
+	std::unique_ptr<GLubyte[]> data{nullptr};
+	std::size_t size = 0;
 
 	GLint levels = 1;
 

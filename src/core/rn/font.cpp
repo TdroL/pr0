@@ -249,7 +249,8 @@ void Font::reload()
 	UTIL_DEBUG
 	{
 		clog << fixed;
-		clog << "  [Font:" << fontName << " {" << source->name() << "}:" << ngn::time() - timer << "s]" << endl;
+		clog << "  [Font:" << fontName << " {" << source->name() << "}:" << (ngn::time() - timer) << "s]" << endl;
+		clog.unsetf(ios::floatfield);
 	}
 }
 
@@ -301,7 +302,7 @@ void Font::render(const string &text)
 	RN_CHECK(glEnable(GL_BLEND));
 	RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
-	RN_CHECK(glActiveTexture(GL_TEXTURE0));
+	RN_CHECK(glActiveTexture(GL_TEXTURE0 + 0));
 	RN_CHECK(glBindTexture(GL_TEXTURE_2D, tex));
 
 	prog.uniform("tex", 0);

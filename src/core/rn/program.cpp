@@ -303,42 +303,82 @@ void Program::reload()
 		{
 			case Type::uniform_int:
 			{
-				RN_CHECK(glProgramUniform1i(id, item.second.id, item.second.i));
+				var(item.second.id, item.second.i);
 				break;
 			}
 			case Type::uniform_uint:
 			{
-				RN_CHECK(glProgramUniform1ui(id, item.second.id, item.second.ui));
+				var(item.second.id, item.second.ui);
 				break;
 			}
 			case Type::uniform_float:
 			{
-				RN_CHECK(glProgramUniform1f(id, item.second.id, item.second.f));
+				var(item.second.id, item.second.f);
 				break;
 			}
 			case Type::uniform_vec2:
 			{
-				RN_CHECK(glProgramUniform2fv(id, item.second.id, 1, glm::value_ptr(item.second.v2)));
+				var(item.second.id, item.second.v2);
 				break;
 			}
 			case Type::uniform_vec3:
 			{
-				RN_CHECK(glProgramUniform3fv(id, item.second.id, 1, glm::value_ptr(item.second.v3)));
+				var(item.second.id, item.second.v3);
 				break;
 			}
 			case Type::uniform_vec4:
 			{
-				RN_CHECK(glProgramUniform4fv(id, item.second.id, 1, glm::value_ptr(item.second.v4)));
+				var(item.second.id, item.second.v4);
 				break;
 			}
 			case Type::uniform_mat3:
 			{
-				RN_CHECK(glProgramUniformMatrix3fv(id, item.second.id, 1, GL_FALSE, glm::value_ptr(item.second.m3)));
+				var(item.second.id, item.second.m3);
 				break;
 			}
 			case Type::uniform_mat4:
 			{
-				RN_CHECK(glProgramUniformMatrix4fv(id, item.second.id, 1, GL_FALSE, glm::value_ptr(item.second.m4)));
+				var(item.second.id, item.second.m4);
+				break;
+			}
+			case Type::uniform_v_int:
+			{
+				var(item.second.id, item.second.vi.first, item.second.vi.second);
+				break;
+			}
+			case Type::uniform_v_uint:
+			{
+				var(item.second.id, item.second.vui.first, item.second.vui.second);
+				break;
+			}
+			case Type::uniform_v_float:
+			{
+				var(item.second.id, item.second.vf.first, item.second.vf.second);
+				break;
+			}
+			case Type::uniform_v_vec2:
+			{
+				var(item.second.id, item.second.vv2.first, item.second.vv2.second);
+				break;
+			}
+			case Type::uniform_v_vec3:
+			{
+				var(item.second.id, item.second.vv3.first, item.second.vv3.second);
+				break;
+			}
+			case Type::uniform_v_vec4:
+			{
+				var(item.second.id, item.second.vv4.first, item.second.vv4.second);
+				break;
+			}
+			case Type::uniform_v_mat3:
+			{
+				var(item.second.id, item.second.vm3.first, item.second.vm3.second);
+				break;
+			}
+			case Type::uniform_v_mat4:
+			{
+				var(item.second.id, item.second.vm4.first, item.second.vm4.second);
 				break;
 			}
 			default:
@@ -407,8 +447,198 @@ UniformValue & Program::getValue(const string &name)
 	return uniformValue;
 }
 
-#include "program.var.inl"
-#include "program.uniform.inl"
+void Program::var(GLint name, GLint value)
+{
+	if (id) RN_CHECK(glProgramUniform1i(id, name, value));
+}
+
+void Program::var(GLint name, GLuint value)
+{
+	if (id) RN_CHECK(glProgramUniform1ui(id, name, value));
+}
+
+void Program::var(GLint name, GLfloat value)
+{
+	if (id) RN_CHECK(glProgramUniform1f(id, name, value));
+}
+
+void Program::var(GLint name, const glm::vec2 &value)
+{
+	if (id) RN_CHECK(glProgramUniform2fv(id, name, 1, glm::value_ptr(value)));
+}
+
+void Program::var(GLint name, const glm::vec3 &value)
+{
+	if (id) RN_CHECK(glProgramUniform3fv(id, name, 1, glm::value_ptr(value)));
+}
+
+void Program::var(GLint name, const glm::vec4 &value)
+{
+	if (id) RN_CHECK(glProgramUniform4fv(id, name, 1, glm::value_ptr(value)));
+}
+
+void Program::var(GLint name, const glm::mat3 &value)
+{
+	if (id) RN_CHECK(glProgramUniformMatrix3fv(id, name, 1, GL_FALSE, glm::value_ptr(value)));
+}
+
+void Program::var(GLint name, const glm::mat4 &value)
+{
+	if (id) RN_CHECK(glProgramUniformMatrix4fv(id, name, 1, GL_FALSE, glm::value_ptr(value)));
+}
+
+void Program::var(GLint name, const GLint *value, GLsizei count)
+{
+	if (id) RN_CHECK(glProgramUniform1iv(id, name, count, value));
+}
+
+void Program::var(GLint name, const GLuint *value, GLsizei count)
+{
+	if (id) RN_CHECK(glProgramUniform1uiv(id, name, count, value));
+}
+
+void Program::var(GLint name, const GLfloat *value, GLsizei count)
+{
+	if (id) RN_CHECK(glProgramUniform1fv(id, name, count, value));
+}
+
+void Program::var(GLint name, const glm::vec2 *value, GLsizei count)
+{
+	if (id) RN_CHECK(glProgramUniform2fv(id, name, count, reinterpret_cast<const GLfloat *>(value)));
+}
+
+void Program::var(GLint name, const glm::vec3 *value, GLsizei count)
+{
+	if (id) RN_CHECK(glProgramUniform3fv(id, name, count, reinterpret_cast<const GLfloat *>(value)));
+}
+
+void Program::var(GLint name, const glm::vec4 *value, GLsizei count)
+{
+	if (id) RN_CHECK(glProgramUniform4fv(id, name, count, reinterpret_cast<const GLfloat *>(value)));
+}
+
+void Program::var(GLint name, const glm::mat3 *value, GLsizei count)
+{
+	if (id) RN_CHECK(glProgramUniformMatrix3fv(id, name, count, GL_FALSE, reinterpret_cast<const GLfloat *>(value)));
+}
+
+void Program::var(GLint name, const glm::mat4 *value, GLsizei count)
+{
+	if (id) RN_CHECK(glProgramUniformMatrix4fv(id, name, count, GL_FALSE, reinterpret_cast<const GLfloat *>(value)));
+}
+
+
+GLint Program::var(const std::string &name, GLint value)
+{
+	GLint location = getName(name);
+	var(location, value);
+	return location;
+}
+
+GLint Program::var(const std::string &name, GLuint value)
+{
+	GLint location = getName(name);
+	var(location, value);
+	return location;
+}
+
+GLint Program::var(const std::string &name, GLfloat value)
+{
+	GLint location = getName(name);
+	var(location, value);
+	return location;
+}
+
+GLint Program::var(const std::string &name, const glm::vec2 &value)
+{
+	GLint location = getName(name);
+	var(location, value);
+	return location;
+}
+
+GLint Program::var(const std::string &name, const glm::vec3 &value)
+{
+	GLint location = getName(name);
+	var(location, value);
+	return location;
+}
+
+GLint Program::var(const std::string &name, const glm::vec4 &value)
+{
+	GLint location = getName(name);
+	var(location, value);
+	return location;
+}
+
+GLint Program::var(const std::string &name, const glm::mat3 &value)
+{
+	GLint location = getName(name);
+	var(location, value);
+	return location;
+}
+
+GLint Program::var(const std::string &name, const glm::mat4 &value)
+{
+	GLint location = getName(name);
+	var(location, value);
+	return location;
+}
+
+GLint Program::var(const std::string &name, const GLint *value, GLsizei count)
+{
+	GLint location = getName(name);
+	var(location, value, count);
+	return location;
+}
+
+GLint Program::var(const std::string &name, const GLuint *value, GLsizei count)
+{
+	GLint location = getName(name);
+	var(location, value, count);
+	return location;
+}
+
+GLint Program::var(const std::string &name, const GLfloat *value, GLsizei count)
+{
+	GLint location = getName(name);
+	var(location, value, count);
+	return location;
+}
+
+GLint Program::var(const std::string &name, const glm::vec2 *value, GLsizei count)
+{
+	GLint location = getName(name);
+	var(location, value, count);
+	return location;
+}
+
+GLint Program::var(const std::string &name, const glm::vec3 *value, GLsizei count)
+{
+	GLint location = getName(name);
+	var(location, value, count);
+	return location;
+}
+
+GLint Program::var(const std::string &name, const glm::vec4 *value, GLsizei count)
+{
+	GLint location = getName(name);
+	var(location, value, count);
+	return location;
+}
+
+GLint Program::var(const std::string &name, const glm::mat3 *value, GLsizei count)
+{
+	GLint location = getName(name);
+	var(location, value, count);
+	return location;
+}
+
+GLint Program::var(const std::string &name, const glm::mat4 *value, GLsizei count)
+{
+	GLint location = getName(name);
+	var(location, value, count);
+	return location;
+}
 
 namespace
 {

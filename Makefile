@@ -7,9 +7,9 @@ BUILDDIR = tmp
 ARDIR = lib
 ARNAME = libcore
 PROGRAM = main
-CXXFLAGS = -Wall -Winline -Wextra -std=c++11 -m64 -march=native
-CXXFLAGS_DEBUG = -g -Og -Weffc++ -Wfatal-errors -DDEBUG
-CXXFLAGS_RELEASE = -O3 -Wfatal-errors -funroll-loops -msse -msse2 -msse3 -mfpmath=sse
+CXXFLAGS = -Wall -Winline -Wextra -Wfatal-errors -std=c++1y -m64 -march=native
+CXXFLAGS_DEBUG = -g -Og -Weffc++ -DDEBUG
+CXXFLAGS_RELEASE = -O3 -s -funroll-loops -msse -msse2 -msse3 -mfpmath=sse
 LFLAGS =
 LDIR =
 LIBS = -static -lgcc -lglfw3 -lgl3w -lopengl32 -lstb_image -lfreetype

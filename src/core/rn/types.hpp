@@ -2,6 +2,7 @@
 #define RN_TYPES_HPP
 
 #include "../rn.hpp"
+#include <vector>
 
 namespace rn
 {
@@ -117,6 +118,14 @@ struct UniformValue
 		uniform_vec4,
 		uniform_mat3,
 		uniform_mat4,
+		uniform_v_int,
+		uniform_v_uint,
+		uniform_v_float,
+		uniform_v_vec2,
+		uniform_v_vec3,
+		uniform_v_vec4,
+		uniform_v_mat3,
+		uniform_v_mat4,
 	};
 
 	UniformValue::Type type;
@@ -131,17 +140,41 @@ struct UniformValue
 		glm::vec4 v4;
 		glm::mat3 m3;
 		glm::mat4 m4;
+		std::pair<GLint *, GLsizei> vi;
+		std::pair<GLuint *, GLsizei> vui;
+		std::pair<GLfloat *, GLsizei> vf;
+		std::pair<glm::vec2 *, GLsizei> vv2;
+		std::pair<glm::vec3 *, GLsizei> vv3;
+		std::pair<glm::vec4 *, GLsizei> vv4;
+		std::pair<glm::mat3 *, GLsizei> vm3;
+		std::pair<glm::mat4 *, GLsizei> vm4;
 	};
 
 	UniformValue() : type{uniform_int}, id{0}, m4{0} {}
-	UniformValue(UniformValue::Type type, GLint id, GLint i)      : type{type}, id{id}, i{i} {}
-	UniformValue(UniformValue::Type type, GLint id, GLuint ui)    : type{type}, id{id}, ui{ui} {}
-	UniformValue(UniformValue::Type type, GLint id, GLfloat f)    : type{type}, id{id}, f{f} {}
-	UniformValue(UniformValue::Type type, GLint id, glm::vec2 v2) : type{type}, id{id}, v2{v2} {}
-	UniformValue(UniformValue::Type type, GLint id, glm::vec3 v3) : type{type}, id{id}, v3{v3} {}
-	UniformValue(UniformValue::Type type, GLint id, glm::vec4 v4) : type{type}, id{id}, v4{v4} {}
-	UniformValue(UniformValue::Type type, GLint id, glm::mat3 m3) : type{type}, id{id}, m3{m3} {}
-	UniformValue(UniformValue::Type type, GLint id, glm::mat4 m4) : type{type}, id{id}, m4{m4} {}
+
+	GLint & set(GLint i);
+	GLuint & set(GLuint ui);
+	GLfloat & set(GLfloat f);
+	glm::vec2 & set(glm::vec2 v2);
+	glm::vec3 & set(glm::vec3 v3);
+	glm::vec4 & set(glm::vec4 v4);
+	glm::mat3 & set(glm::mat3 m3);
+	glm::mat4 & set(glm::mat4 m4);
+	GLint * set(GLint *vi, GLsizei count);
+	GLuint * set(GLuint *vui, GLsizei count);
+	GLfloat * set(GLfloat *vf, GLsizei count);
+	glm::vec2 * set(glm::vec2 *vv2, GLsizei count);
+	glm::vec3 * set(glm::vec3 *vv3, GLsizei count);
+	glm::vec4 * set(glm::vec4 *vv4, GLsizei count);
+	glm::mat3 * set(glm::mat3 *vm3, GLsizei count);
+	glm::mat4 * set(glm::mat4 *vm4, GLsizei count);
+
+	void reset();
+
+	~UniformValue()
+	{
+		reset();
+	}
 };
 
 struct TexParams

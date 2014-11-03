@@ -4,11 +4,15 @@
 #include <cmath>
 #include <limits>
 
+#include <glm/gtc/random.hpp>
+#include <glm/gtx/compatibility.hpp>
+
 #include <core/rn.hpp>
 #include <core/ngn.hpp>
 #include <core/ngn/key.hpp>
 #include <core/ngn/window.hpp>
 #include <core/src/sbm.hpp>
+#include <core/src/mem.hpp>
 #include <core/event.hpp>
 #include <core/util/timer.hpp>
 
@@ -52,27 +56,18 @@ void App::init()
 
 	try
 	{
-		simple.load("color.frag", "PN.vert");
+		progSimple.load("color.frag", "PN.vert");
 	}
 	catch (const string &e)
 	{
 		cerr << "Warning: " << e << endl;
 	}
 
-	simple.uniform("color", glm::vec3{1.f});
+	progSimple.uniform("color", glm::vec3{1.f});
 
 	try
 	{
-		blurPreview.load("rn/blurPreview.frag", "rn/fbo.vert");
-	}
-	catch (const string &e)
-	{
-		cerr << "Warning: " << e << endl;
-	}
-
-	try
-	{
-		shadowMapPreview.load("lighting/shadows/preview.frag", "rn/fboM.vert");
+		progBlurPreview.load("rn/blurPreview.frag", "rn/fbo.vert");
 	}
 	catch (const string &e)
 	{
@@ -81,7 +76,7 @@ void App::init()
 
 	try
 	{
-		deferredGBuffer.load("lighting/deferred/gbuffer.frag", "PN.vert");
+		progShadowMapPreview.load("lighting/shadows/preview.frag", "rn/fboM.vert");
 	}
 	catch (const string &e)
 	{
@@ -90,7 +85,7 @@ void App::init()
 
 	try
 	{
-		blurFilter.load("rn/blur.frag", "rn/fbo.vert");
+		progGBuffer.load("lighting/deferred/gbuffer.frag", "PN.vert");
 	}
 	catch (const string &e)
 	{
@@ -99,7 +94,7 @@ void App::init()
 
 	try
 	{
-		deferredShadowMap.load("lighting/shadows/depthVSM.frag", "P.vert");
+		progBlurFilter.load("rn/blur.frag", "rn/fbo.vert");
 	}
 	catch (const string &e)
 	{
@@ -108,7 +103,7 @@ void App::init()
 
 	try
 	{
-		deferredDirectionalLight.load("lighting/deferred/directionallight.frag", "rn/fbo.vert");
+		progShadowMap.load("lighting/shadows/depthVSM.frag", "P.vert");
 	}
 	catch (const string &e)
 	{
@@ -117,7 +112,7 @@ void App::init()
 
 	try
 	{
-		deferredPointLight.load("lighting/deferred/pointlight.frag", "rn/fbo.vert");
+		progDirectionalLight.load("lighting/deferred/directionallight.frag", "rn/fbo.vert");
 	}
 	catch (const string &e)
 	{
@@ -126,7 +121,7 @@ void App::init()
 
 	try
 	{
-		deferredFlatLight.load("lighting/deferred/flatlight.frag", "rn/fbo.vert");
+		progPointLight.load("lighting/deferred/pointlight.frag", "rn/fbo.vert");
 	}
 	catch (const string &e)
 	{
@@ -135,33 +130,73 @@ void App::init()
 
 	try
 	{
-		ambientOcclusion.load("lighting/ambientOcclusion.frag", "rn/fbo.vert");
+		progFlatLight.load("lighting/deferred/flatlight.frag", "rn/fbo.vert");
 	}
 	catch (const string &e)
 	{
 		cerr << "Warning: " << e << endl;
 	}
 
-	gBuffer.width = win::width;
-	gBuffer.height = win::height;
-	gBuffer.setTex(0, rn::Tex2D{GL_RGBA16F});
-	gBuffer.setTex(1, rn::Tex2D{GL_RG16F});
-	gBuffer.setDepth(rn::Tex2D{GL_DEPTH24_STENCIL8});
-	gBuffer.create();
+	try
+	{
+		progSSAO.load("lighting/ssao.frag", "rn/fbo.vert");
+	}
+	catch (const string &e)
+	{
+		cerr << "Warning: " << e << endl;
+	}
 
-	shadowMapBuffer.width = 1024;
-	shadowMapBuffer.height = 1024;
-	shadowMapBuffer.clearColor = glm::vec4{numeric_limits<GLfloat>::max()};
-	shadowMapBuffer.setTex(0, rn::Tex2D{GL_RGB32F});
-	shadowMapBuffer.setDepth(rn::Tex2D{GL_DEPTH_COMPONENT32F});
-	shadowMapBuffer.create();
+	fboGBuffer.width = win::width;
+	fboGBuffer.height = win::height;
+	fboGBuffer.setColorTex(GL_RGBA16F, 0);
+	fboGBuffer.setColorTex(GL_RG16F, 1);
+	fboGBuffer.setDepthTex(GL_DEPTH24_STENCIL8);
+	fboGBuffer.create();
 
-	blurBuffer.width = shadowMapBuffer.width;
-	blurBuffer.height = shadowMapBuffer.height;
-	blurBuffer.clearColor = glm::vec4{numeric_limits<GLfloat>::max()};
-	blurBuffer.setTex(0, rn::Tex2D{GL_RGB32F});
-	blurBuffer.setDepth(rn::Renderbuffer{GL_DEPTH_COMPONENT32F});
-	blurBuffer.create();
+	fboShadowMapBuffer.width = 1024;
+	fboShadowMapBuffer.height = 1024;
+	fboShadowMapBuffer.clearColor = glm::vec4{numeric_limits<GLfloat>::max()};
+	fboShadowMapBuffer.setColorTex(GL_RGB32F, 0);
+	fboShadowMapBuffer.setDepthTex(GL_DEPTH_COMPONENT32F);
+	fboShadowMapBuffer.create();
+
+	fboShadowMapBlurBuffer.clone(fboShadowMapBuffer);
+	fboShadowMapBlurBuffer.setDepthTex(GL_NONE);
+	fboShadowMapBlurBuffer.create();
+
+	// gen SSAO kernel
+	size_t kernelSize = 16;
+	unique_ptr<glm::vec3[]> kernel{new glm::vec3[kernelSize]};
+
+	for (size_t i = 0; i < kernelSize; i++)
+	{
+		kernel[i] = glm::sphericalRand(1.f);
+		kernel[i].z = abs(kernel[i].z);
+
+		float scale = static_cast<float>(i) / static_cast<float>(kernelSize);
+		kernel[i] *= glm::lerp(0.1f, 1.0f, scale * scale);
+	}
+
+	// gen SSAO noise texture
+	int noiseWidth = 4;
+	int noiseHeight = 4;
+	size_t noiseSize = noiseWidth * noiseHeight * sizeof(GLuint);
+	unique_ptr<GLubyte[]> noise{new GLubyte[noiseSize]};
+
+	float formatScale = (1 << (8 * sizeof(GLubyte))) - 1; // 255
+
+	for (size_t i = 0; i < noiseSize; i += sizeof(GLuint))
+	{
+		glm::ivec2 vec = glm::ivec2{glm::circularRand(1.0f) * formatScale};
+
+		noise[i + 3] = static_cast<GLubyte>(vec.x); // x - red
+		noise[i + 2] = static_cast<GLubyte>(vec.y); // y - green
+		noise[i + 1] = 0; // z - blue
+		noise[i + 0] = 0; // w - alpha
+	}
+
+	texNoise.source = src::mem::tex2d(4, 4, move(noise), noiseSize, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8);
+	texNoise.reload();
 
 	/* Scene creation */
 
@@ -186,13 +221,15 @@ void App::init()
 
 		auto &projection = ecs::get<Projection>(cameraId);
 
-		simple.uniform("P", projection.getMatrix());
-		deferredGBuffer.uniform("P", projection.getMatrix());
+		const auto &P = projection.getMatrix();
+		progSimple.uniform("P", P);
+		progGBuffer.uniform("P", P);
+		progSSAO.uniform("P", P);
 
-		const auto intP = glm::inverse(projection.getMatrix());
-		deferredPointLight.uniform("invP", intP);
-		deferredDirectionalLight.uniform("invP", intP);
-		ambientOcclusion.uniform("invP", intP);
+		const auto invP = glm::inverse(P);
+		progPointLight.uniform("invP", invP);
+		progDirectionalLight.uniform("invP", invP);
+		progSSAO.uniform("invP", invP);
 
 		float winRatio = static_cast<float>(win::width) / static_cast<float>(win::height);
 		glm::mat4 previewM{1.f};
@@ -200,8 +237,11 @@ void App::init()
 		previewM = glm::scale(previewM, glm::vec3{.25f / winRatio, .25f, 0.f});
 		// previewM = glm::scale(previewM, glm::vec3{.25f});
 
-		shadowMapPreview.uniform("M", previewM);
-		blurPreview.uniform("M", previewM);
+		progShadowMapPreview.uniform("M", previewM);
+		progBlurPreview.uniform("M", previewM);
+
+		progSSAO.uniform("kernel", move(kernel), kernelSize);
+		progSSAO.uniform("noiseScale", glm::vec2{win::width / noiseWidth, win::height / noiseHeight});
 	}
 
 	// create models
@@ -515,23 +555,22 @@ void App::render()
 
 	gBufferPass();
 
-	gBuffer.blit(0, GL_STENCIL_BUFFER_BIT);
+	fboGBuffer.blit(0, GL_STENCIL_BUFFER_BIT);
 
 	directionalLightsPass();
-	pointLightsPass();
+	// pointLightsPass();
 	flatLightPass();
 
 	ssao();
 
 	{
-		shadowMapPreview.use();
+		progShadowMapPreview.use();
 
-		shadowMapBuffer.colors[0].bind(0);
-		shadowMapPreview.var("texSource", 0);
+		progShadowMapPreview.var("texSource", fboShadowMapBuffer.bindColorTex(0, 0));
 
 		rn::FBO::mesh.render();
 
-		shadowMapPreview.forgo();
+		progShadowMapPreview.forgo();
 	}
 }
 
@@ -544,13 +583,13 @@ void App::gBufferPass()
 
 	RN_SCOPE_DISABLE(GL_BLEND);
 
-	RN_FBO_USE(gBuffer);
-	gBuffer.clear();
+	RN_FBO_USE(fboGBuffer);
+	fboGBuffer.clear();
 
 	glm::mat4 &V = ecs::get<View>(cameraId).matrix;
 
-	deferredGBuffer.use();
-	deferredGBuffer.var("V", V);
+	progGBuffer.use();
+	progGBuffer.var("V", V);
 
 	for (auto &entity : ecs::findWith<Transform, Mesh, Material>())
 	{
@@ -558,30 +597,30 @@ void App::gBufferPass()
 
 		RN_CHECK(glStencilFunc(GL_ALWAYS, ref, 0xF));
 
-		proc::MeshRenderer::render(entity, deferredGBuffer);
+		proc::MeshRenderer::render(entity, progGBuffer);
 	}
 
-	deferredGBuffer.forgo();
+	progGBuffer.forgo();
 
 	// draw light meshes
-	simple.use();
-	simple.var("V", V);
+	progSimple.use();
+	progSimple.var("V", V);
 
 	RN_CHECK(glStencilFunc(GL_ALWAYS, Shader::flat, 0xF));
 
 	for (auto &entity : ecs::findWith<Transform, Mesh, PointLight>())
 	{
-		simple.var("color", glm::vec3(ecs::get<PointLight>(entity).color));
-		proc::MeshRenderer::render(entity, simple);
+		progSimple.var("color", glm::vec3(ecs::get<PointLight>(entity).color));
+		proc::MeshRenderer::render(entity, progSimple);
 	}
 
 	for (auto &entity : ecs::findWith<Transform, Mesh, DirectionalLight>())
 	{
-		simple.var("color", glm::vec3(ecs::get<DirectionalLight>(entity).color));
-		proc::MeshRenderer::render(entity, simple);
+		progSimple.var("color", glm::vec3(ecs::get<DirectionalLight>(entity).color));
+		proc::MeshRenderer::render(entity, progSimple);
 	}
 
-	simple.forgo();
+	progSimple.forgo();
 }
 
 void App::directionalLightsPass()
@@ -589,7 +628,7 @@ void App::directionalLightsPass()
 	glm::mat4 &V = ecs::get<View>(cameraId).matrix;
 	glm::mat4 invV = glm::inverse(V);
 
-	deferredDirectionalLight.var("invV", invV);
+	progDirectionalLight.var("invV", invV);
 
 	for (auto &entity : ecs::findWith<DirectionalLight>())
 	{
@@ -599,34 +638,28 @@ void App::directionalLightsPass()
 
 		RN_CHECK(glBlendFunc(GL_ONE, GL_ONE));
 		RN_SCOPE_ENABLE(GL_STENCIL_TEST);
+		RN_CHECK(glStencilFunc(GL_EQUAL, Shader::global, Shader::MASK));
 		RN_CHECK(glStencilMask(0x0));
-
-		gBuffer.colors[0].bind(0);
-		gBuffer.colors[1].bind(1);
-		gBuffer.depth.tex.bind(2);
-
-		shadowMapBuffer.colors[0].bind(3);
-		shadowMapBuffer.depth.tex.bind(4);
 
 		// global lighting
 		{
-			RN_CHECK(glStencilFunc(GL_EQUAL, Shader::global, Shader::MASK));
 
-			deferredDirectionalLight.use();
+			progDirectionalLight.use();
 
-			deferredDirectionalLight.var("lightColor", light.color);
-			deferredDirectionalLight.var("lightDirection", glm::mat3{V} * light.direction);
-			deferredDirectionalLight.var("shadowmapMVP", shadowMapMVP);
+			progDirectionalLight.var("lightColor", light.color);
+			progDirectionalLight.var("lightDirection", glm::mat3{V} * light.direction);
+			progDirectionalLight.var("shadowmapMVP", shadowMapMVP);
 
-			deferredDirectionalLight.var("texColor", 0);
-			deferredDirectionalLight.var("texNormal", 1);
-			deferredDirectionalLight.var("texDepth", 2);
-			deferredDirectionalLight.var("shadowMoments", 3);
-			deferredDirectionalLight.var("shadowDepth", 4);
+			progDirectionalLight.var("texColor", fboGBuffer.bindColorTex(0, 0));
+			progDirectionalLight.var("texNormal", fboGBuffer.bindColorTex(1, 1));
+			progDirectionalLight.var("texDepth", fboGBuffer.bindDepthTex(2));
+
+			progDirectionalLight.var("shadowMoments", fboShadowMapBuffer.bindColorTex(3, 0));
+			progDirectionalLight.var("shadowDepth", fboShadowMapBuffer.bindDepthTex(4));
 
 			rn::FBO::mesh.render();
 
-			deferredDirectionalLight.forgo();
+			progDirectionalLight.forgo();
 		}
 
 		RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
@@ -636,10 +669,6 @@ void App::directionalLightsPass()
 void App::pointLightsPass()
 {
 	glm::mat4 &V = ecs::get<View>(cameraId).matrix;
-
-	gBuffer.colors[0].bind(0);
-	gBuffer.colors[1].bind(1);
-	gBuffer.depth.tex.bind(2);
 
 	for (auto &entity : ecs::findWith<Transform, Mesh, PointLight>())
 	{
@@ -654,15 +683,15 @@ void App::pointLightsPass()
 
 		// 	shadowmap.clear();
 
-		// 	deferredShadowMap.use();
-		// 	deferredShadowMap.var("V", V);
+		// 	progShadowMap.use();
+		// 	progShadowMap.var("V", V);
 
 		// 	for (auto &entity : ecs::findWith<Transform, Mesh, Occluder>())
 		// 	{
-		// 		proc::MeshRenderer::render(entity, deferredShadowMap);
+		// 		proc::MeshRenderer::render(entity, progShadowMap);
 		// 	}
 
-		// 	deferredShadowMap.forgo();
+		// 	progShadowMap.forgo();
 		// }
 
 		{
@@ -673,24 +702,25 @@ void App::pointLightsPass()
 
 			RN_CHECK(glBlendFunc(GL_ONE, GL_ONE));
 
-			deferredPointLight.use();
-			deferredPointLight.var("lightPosition", lightPosition);
-			deferredPointLight.var("lightColor", light.color);
-			deferredPointLight.var("lightLinearAttenuation", light.linearAttenuation);
-			deferredPointLight.var("lightQuadraticAttenuation", light.quadraticAttenuation);
+			progPointLight.use();
+			progPointLight.var("lightPosition", lightPosition);
+			progPointLight.var("lightColor", light.color);
+			progPointLight.var("lightLinearAttenuation", light.linearAttenuation);
+			progPointLight.var("lightQuadraticAttenuation", light.quadraticAttenuation);
+
+			progPointLight.var("texColor", fboGBuffer.bindColorTex(0, 0));
+			progPointLight.var("texNormal", fboGBuffer.bindColorTex(1, 1));
+			progPointLight.var("texDepth", fboGBuffer.bindDepthTex(2));
 
 			// shadowMapBuffer.colors[0].bind(3);
 			// shadowMapBuffer.depth.tex.bind(4);
 
-			deferredPointLight.var("texColor", 0);
-			deferredPointLight.var("texNormal", 1);
-			deferredPointLight.var("texDepth", 2);
-			// deferredPointLight.var("shadowMoments", 3);
-			// deferredPointLight.var("shadowDepth", 4);
+			// progPointLight.var("shadowMoments", 3);
+			// progPointLight.var("shadowDepth", 4);
 
 			rn::FBO::mesh.render();
 
-			deferredPointLight.forgo();
+			progPointLight.forgo();
 
 			RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 		}
@@ -704,33 +734,33 @@ void App::flatLightPass()
 	RN_CHECK(glStencilFunc(GL_EQUAL, Shader::flat, Shader::MASK));
 	RN_CHECK(glStencilMask(0x0));
 
-	deferredFlatLight.use();
+	progFlatLight.use();
 
-	gBuffer.colors[0].bind(0);
-	deferredFlatLight.var("texColor", 0);
+	progFlatLight.var("texColor", fboGBuffer.bindColorTex(0, 0));
 
 	rn::FBO::mesh.render();
 
-	deferredFlatLight.forgo();
+	progFlatLight.forgo();
 }
 
 void App::ssao()
 {
-	ambientOcclusion.use();
+	RN_SCOPE_ENABLE(GL_STENCIL_TEST);
+	RN_CHECK(glStencilFunc(GL_EQUAL, Shader::global, Shader::MASK));
+	RN_CHECK(glStencilMask(0x0));
 
-	gBuffer.colors[0].bind(0);
-	gBuffer.colors[1].bind(1);
-	gBuffer.depth.tex.bind(2);
+	progSSAO.use();
 
-	ambientOcclusion.var("texColor", 0);
-	ambientOcclusion.var("texNormal", 1);
-	ambientOcclusion.var("texDepth", 2);
+	progSSAO.var("texColor", fboGBuffer.bindColorTex(0, 0));
+	progSSAO.var("texNormal", fboGBuffer.bindColorTex(1, 1));
+	progSSAO.var("texDepth", fboGBuffer.bindDepthTex(2));
+	progSSAO.var("texNoise", texNoise.bind(3));
 
-	ambientOcclusion.var("filterRadius", glm::vec2{10.f / win::width, 10.f / win::height }); // 10 px filter radius
+	progSSAO.var("filterRadius", glm::vec2{10.f / win::width, 10.f / win::height }); // 10px filter radius
 
 	rn::FBO::mesh.render();
 
-	ambientOcclusion.forgo();
+	progSSAO.forgo();
 }
 
 glm::mat4 App::genShadowMap(ecs::Entity lightId)
@@ -743,61 +773,57 @@ glm::mat4 App::genShadowMap(ecs::Entity lightId)
 	glm::mat4 shadowMapMVP = shadowMapP * shadowMapV * shadowMapM;
 
 	{
-		RN_FBO_USE(shadowMapBuffer);
+		RN_FBO_USE(fboShadowMapBuffer);
 
 		RN_SCOPE_DISABLE(GL_BLEND);
 
 		// RN_CHECK(glCullFace(GL_FRONT));
 
-		shadowMapBuffer.clear();
+		fboShadowMapBuffer.clear();
 
-		deferredShadowMap.use();
-		deferredShadowMap.var("P", shadowMapP);
-		deferredShadowMap.var("V", shadowMapV);
+		progShadowMap.use();
+		progShadowMap.var("P", shadowMapP);
+		progShadowMap.var("V", shadowMapV);
 
 		for (auto &entity : ecs::findWith<Transform, Mesh, Occluder>())
 		{
-			proc::MeshRenderer::render(entity, deferredShadowMap);
+			proc::MeshRenderer::render(entity, progShadowMap);
 		}
 
-		deferredShadowMap.forgo();
+		progShadowMap.forgo();
 		// RN_CHECK(glCullFace(GL_BACK));
 	}
 
 	// blur shadowmap: x pass
 	{
-		RN_FBO_USE(blurBuffer);
+		RN_FBO_USE(fboShadowMapBlurBuffer);
 
 		RN_SCOPE_DISABLE(GL_DEPTH_TEST);
 
-		blurFilter.use();
+		progBlurFilter.use();
 
-		shadowMapBuffer.colors[0].bind(0);
-
-		blurFilter.var("texSource", 0);
-		blurFilter.var("scale", glm::vec2{1.f / blurBuffer.width, 0.0f /* blurBuffer.height */});
+		progBlurFilter.var("texSource", fboShadowMapBuffer.bindColorTex(0, 0));
+		progBlurFilter.var("scale", glm::vec2{1.f / fboShadowMapBlurBuffer.width, 0.0f /* fboShadowMapBlurBuffer.height */});
 
 		rn::FBO::mesh.render();
 
-		blurFilter.forgo();
+		progBlurFilter.forgo();
 	}
 
 	// blur shadowmap: y pass
 	{
-		RN_FBO_USE(shadowMapBuffer);
+		RN_FBO_USE(fboShadowMapBuffer);
 
 		RN_SCOPE_DISABLE(GL_DEPTH_TEST);
 
-		blurFilter.use();
+		progBlurFilter.use();
 
-		blurBuffer.colors[0].bind(0);
-
-		blurFilter.var("texSource", 0);
-		blurFilter.var("scale", glm::vec2{0.f /* blurBuffer.width */, 1.0f / blurBuffer.height});
+		progBlurFilter.var("texSource", fboShadowMapBlurBuffer.bindColorTex(0, 0));
+		progBlurFilter.var("scale", glm::vec2{0.f /* fboShadowMapBlurBuffer.width */, 1.0f / fboShadowMapBlurBuffer.height});
 
 		rn::FBO::mesh.render();
 
-		blurFilter.forgo();
+		progBlurFilter.forgo();
 	}
 
 	return shadowMapMVP;
