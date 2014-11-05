@@ -56,14 +56,14 @@ void App::init()
 
 	try
 	{
-		progSimple.load("color.frag", "PN.vert");
+		progFBOBlit.load("rn/fboBlit.frag", "rn/fbo.vert");
 	}
 	catch (const string &e)
 	{
 		cerr << "Warning: " << e << endl;
 	}
 
-	progSimple.uniform("color", glm::vec3{1.f});
+	progFBOBlit.uniform("color", glm::vec3{1.f});
 
 	try
 	{
@@ -94,7 +94,16 @@ void App::init()
 
 	try
 	{
-		progBlurFilter.load("rn/blur.frag", "rn/fbo.vert");
+		progBlurGaussian7.load("rn/blurGaussian7.frag", "rn/fbo.vert");
+	}
+	catch (const string &e)
+	{
+		cerr << "Warning: " << e << endl;
+	}
+
+	try
+	{
+		progBlurBox4.load("rn/blurBox4.frag", "rn/fbo.vert");
 	}
 	catch (const string &e)
 	{
@@ -146,6 +155,15 @@ void App::init()
 		cerr << "Warning: " << e << endl;
 	}
 
+	try
+	{
+		progSSAOBlit.load("lighting/ssaoBlit.frag", "rn/fbo.vert");
+	}
+	catch (const string &e)
+	{
+		cerr << "Warning: " << e << endl;
+	}
+
 	fboGBuffer.width = win::width;
 	fboGBuffer.height = win::height;
 	fboGBuffer.setColorTex(GL_RGBA16F, 0);
@@ -164,17 +182,38 @@ void App::init()
 	fboShadowMapBlurBuffer.setDepthTex(GL_NONE);
 	fboShadowMapBlurBuffer.create();
 
+	fboSSAOBuffer.width = win::width / 2;
+	fboSSAOBuffer.height = win::height / 2;
+	fboSSAOBuffer.setColorTex(GL_R8, 0);
+	fboSSAOBuffer.create();
+
+	fboSSAOBlurBuffer.clone(fboSSAOBuffer);
+	fboSSAOBlurBuffer.create();
+
 	// gen SSAO kernel
-	size_t kernelSize = 16;
+	size_t kernelSize = 64;
 	unique_ptr<glm::vec3[]> kernel{new glm::vec3[kernelSize]};
+
+	float minCosine = glm::cos(glm::radians(90.f * 0.15f));
+
+	clog << "0deg=" << glm::cos(glm::radians(0.f)) << endl;
+	clog << "90deg=" << glm::cos(glm::radians(90.f)) << endl;
+	clog << "minCos=" << (1.0 - glm::cos(glm::radians(90.f * 0.15f))) << endl;
 
 	for (size_t i = 0; i < kernelSize; i++)
 	{
-		kernel[i] = glm::sphericalRand(1.f);
-		kernel[i].z = abs(kernel[i].z);
+		glm::vec3 b{0.f};
+		float cosine = 0.f;
+		// do
+		{
+			kernel[i] = glm::sphericalRand(1.f);
+			kernel[i].z = abs(kernel[i].z);
 
-		float scale = static_cast<float>(i) / static_cast<float>(kernelSize);
-		kernel[i] *= glm::lerp(0.1f, 1.0f, scale * scale);
+			b = glm::normalize(glm::vec3{kernel[i].x, kernel[i].y, 0.f});
+			cosine = glm::dot(kernel[i], b);
+			clog << "cosine=" << cosine << "\t" << minCosine << " \t" << (cosine > minCosine) << endl;
+		}
+		// while(false);
 	}
 
 	// gen SSAO noise texture
@@ -222,7 +261,6 @@ void App::init()
 		auto &projection = ecs::get<Projection>(cameraId);
 
 		const auto &P = projection.getMatrix();
-		progSimple.uniform("P", P);
 		progGBuffer.uniform("P", P);
 		progSSAO.uniform("P", P);
 
@@ -603,24 +641,24 @@ void App::gBufferPass()
 	progGBuffer.forgo();
 
 	// draw light meshes
-	progSimple.use();
-	progSimple.var("V", V);
+	progGBuffer.use();
+	progGBuffer.var("V", V);
 
 	RN_CHECK(glStencilFunc(GL_ALWAYS, Shader::flat, 0xF));
 
 	for (auto &entity : ecs::findWith<Transform, Mesh, PointLight>())
 	{
-		progSimple.var("color", glm::vec3(ecs::get<PointLight>(entity).color));
-		proc::MeshRenderer::render(entity, progSimple);
+		progGBuffer.var("color", glm::vec3(ecs::get<PointLight>(entity).color));
+		proc::MeshRenderer::render(entity, progGBuffer);
 	}
 
 	for (auto &entity : ecs::findWith<Transform, Mesh, DirectionalLight>())
 	{
-		progSimple.var("color", glm::vec3(ecs::get<DirectionalLight>(entity).color));
-		proc::MeshRenderer::render(entity, progSimple);
+		progGBuffer.var("color", glm::vec3(ecs::get<DirectionalLight>(entity).color));
+		proc::MeshRenderer::render(entity, progGBuffer);
 	}
 
-	progSimple.forgo();
+	progGBuffer.forgo();
 }
 
 void App::directionalLightsPass()
@@ -745,22 +783,103 @@ void App::flatLightPass()
 
 void App::ssao()
 {
+
 	RN_SCOPE_ENABLE(GL_STENCIL_TEST);
 	RN_CHECK(glStencilFunc(GL_EQUAL, Shader::global, Shader::MASK));
 	RN_CHECK(glStencilMask(0x0));
 
-	progSSAO.use();
+	fboGBuffer.blit(fboSSAOBuffer, GL_STENCIL_BUFFER_BIT);
 
-	progSSAO.var("texColor", fboGBuffer.bindColorTex(0, 0));
-	progSSAO.var("texNormal", fboGBuffer.bindColorTex(1, 1));
-	progSSAO.var("texDepth", fboGBuffer.bindDepthTex(2));
-	progSSAO.var("texNoise", texNoise.bind(3));
+	{
+		RN_SCOPE_DISABLE(GL_BLEND);
 
-	progSSAO.var("filterRadius", glm::vec2{10.f / win::width, 10.f / win::height }); // 10px filter radius
+		RN_FBO_USE(fboSSAOBuffer);
+		fboSSAOBuffer.clear();
 
-	rn::FBO::mesh.render();
+		progSSAO.use();
 
-	progSSAO.forgo();
+		progSSAO.var("texColor", fboGBuffer.bindColorTex(0, 0));
+		progSSAO.var("texNormal", fboGBuffer.bindColorTex(1, 1));
+		progSSAO.var("texDepth", fboGBuffer.bindDepthTex(2));
+		progSSAO.var("texNoise", texNoise.bind(3));
+
+		progSSAO.var("filterRadius", glm::vec2{10.f / win::width, 10.f / win::height }); // 10px filter radius
+
+		rn::FBO::mesh.render();
+
+		progSSAO.forgo();
+	}
+
+	if (!true)
+	{
+		progFBOBlit.use();
+
+		progFBOBlit.var("texSource", fboSSAOBuffer.bindColorTex(0, 0));
+
+		rn::FBO::mesh.render();
+
+		progFBOBlit.forgo();
+
+		return;
+	}
+
+	// blur: x pass
+	{
+		RN_SCOPE_DISABLE(GL_BLEND);
+
+		RN_FBO_USE(fboSSAOBlurBuffer);
+		fboSSAOBlurBuffer.clear();
+
+		progBlurBox4.use();
+
+		progBlurBox4.var("texSource", fboSSAOBuffer.bindColorTex(0, 0));
+		progBlurBox4.var("scale", glm::vec2{1.f, 0.f});
+
+		rn::FBO::mesh.render();
+
+		progBlurBox4.forgo();
+	}
+
+	if (!true)
+	{
+		progFBOBlit.use();
+
+		progFBOBlit.var("texSource", fboSSAOBlurBuffer.bindColorTex(0, 0));
+
+		rn::FBO::mesh.render();
+
+		progFBOBlit.forgo();
+
+		return;
+	}
+
+	// blur: y pass
+	{
+		RN_SCOPE_DISABLE(GL_BLEND);
+
+		RN_FBO_USE(fboSSAOBuffer);
+		fboSSAOBuffer.clear();
+
+		progBlurBox4.use();
+
+		progBlurBox4.var("texSource", fboSSAOBlurBuffer.bindColorTex(0, 0));
+		progBlurBox4.var("scale", glm::vec2{0.f, 1.f});
+
+		rn::FBO::mesh.render();
+
+		progBlurBox4.forgo();
+	}
+
+	if (true)
+	{
+		progSSAOBlit.use();
+
+		progSSAOBlit.var("texSource", fboSSAOBuffer.bindColorTex(0, 0));
+
+		rn::FBO::mesh.render();
+
+		progSSAOBlit.forgo();
+	}
 }
 
 glm::mat4 App::genShadowMap(ecs::Entity lightId)
@@ -800,14 +919,14 @@ glm::mat4 App::genShadowMap(ecs::Entity lightId)
 
 		RN_SCOPE_DISABLE(GL_DEPTH_TEST);
 
-		progBlurFilter.use();
+		progBlurGaussian7.use();
 
-		progBlurFilter.var("texSource", fboShadowMapBuffer.bindColorTex(0, 0));
-		progBlurFilter.var("scale", glm::vec2{1.f / fboShadowMapBlurBuffer.width, 0.0f /* fboShadowMapBlurBuffer.height */});
+		progBlurGaussian7.var("texSource", fboShadowMapBuffer.bindColorTex(0, 0));
+		progBlurGaussian7.var("scale", glm::vec2{1.f, 0.f});
 
 		rn::FBO::mesh.render();
 
-		progBlurFilter.forgo();
+		progBlurGaussian7.forgo();
 	}
 
 	// blur shadowmap: y pass
@@ -816,14 +935,14 @@ glm::mat4 App::genShadowMap(ecs::Entity lightId)
 
 		RN_SCOPE_DISABLE(GL_DEPTH_TEST);
 
-		progBlurFilter.use();
+		progBlurGaussian7.use();
 
-		progBlurFilter.var("texSource", fboShadowMapBlurBuffer.bindColorTex(0, 0));
-		progBlurFilter.var("scale", glm::vec2{0.f /* fboShadowMapBlurBuffer.width */, 1.0f / fboShadowMapBlurBuffer.height});
+		progBlurGaussian7.var("texSource", fboShadowMapBlurBuffer.bindColorTex(0, 0));
+		progBlurGaussian7.var("scale", glm::vec2{0.f, 1.f});
 
 		rn::FBO::mesh.render();
 
-		progBlurFilter.forgo();
+		progBlurGaussian7.forgo();
 	}
 
 	return shadowMapMVP;

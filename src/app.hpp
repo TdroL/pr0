@@ -23,9 +23,11 @@ public:
 	rn::Program progFlatLight{};
 
 	rn::Program progSSAO{};
+	rn::Program progSSAOBlit{};
 
-	rn::Program progSimple{};
-	rn::Program progBlurFilter{};
+	rn::Program progFBOBlit{};
+	rn::Program progBlurGaussian7{};
+	rn::Program progBlurBox4{};
 	rn::Program progBlurPreview{};
 	rn::Program progShadowMapPreview{};
 

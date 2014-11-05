@@ -81,7 +81,8 @@ public:
 	GLsizei bindColorTex(GLsizei unit, size_t i);
 	GLsizei bindDepthTex(GLsizei unit);
 
-	void blit(GLuint target, GLbitfield mask);
+	void blit(GLuint target, GLbitfield mask, GLint filter = GL_NEAREST, GLsizei targetWidth = 0, GLsizei targetHeight = 0);
+	void blit(FBO &fbo, GLbitfield mask, GLint filter = GL_NEAREST);
 
 	void clear();
 

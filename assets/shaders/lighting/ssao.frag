@@ -41,7 +41,9 @@ void main()
 
 	for (int i = 0; i < kernelSize; ++i)
 	{
-		vec3 sample = tbn * kernel[i] * sampleRadius + position;
+		float kernelScale = mix(0.1, 1.0, float(i * i) / float(kernelSize * kernelSize));
+
+		vec3 sample = tbn * kernel[i] * kernelScale * sampleRadius + position;
 
 		vec4 offset = P * vec4(sample, 1.0);
 		offset.xy = offset.xy / offset.w * 0.5 + 0.5;
@@ -50,9 +52,8 @@ void main()
 		vec3 samplePosition = positionReconstruct(sampleDepth, offset.xy);
 
 		float rangeCheck= abs(position.z - samplePosition.z) < sampleRadius ? 1.0 : 0.0;
-		occlusion += ((samplePosition.z > sample.z) ? 1.0 : 0.0) * rangeCheck;
+		occlusion += (sample.z < samplePosition.z ? 1.0 : 0.0) * rangeCheck;
 	}
 
-	outColor.rgb = vec3(0.0);
-	outColor.a = occlusion / kernelSize;
+	outColor.r = occlusion / kernelSize;
 }

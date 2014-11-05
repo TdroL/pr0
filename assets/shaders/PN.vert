@@ -1,7 +1,7 @@
 #version 330
 
-layout(location = 0) in vec3 vert_position;
-layout(location = 2) in vec3 vert_normal;
+layout(location = 0) in vec3 vertPosition;
+layout(location = 2) in vec3 vertNormal;
 
 uniform mat4 M, V, P;
 
@@ -10,10 +10,10 @@ out vec3 normal;
 
 void main()
 {
-	gl_Position = V * M * vec4(vert_position, 1.0);
+	gl_Position = V * M * vec4(vertPosition, 1.0);
 
 	position = gl_Position;
-	normal = mat3(V * M) * vert_normal;
+	normal = mat3(V * M) * vertNormal;
 
 	gl_Position = P * gl_Position;
 }

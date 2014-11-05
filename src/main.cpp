@@ -39,6 +39,7 @@ int main(int argc, char const* argv[])
 	#else
 		cout << "Debug: OFF" << endl;
 	#endif
+
 	try
 	{
 		ngn::init();
@@ -197,7 +198,9 @@ int main(int argc, char const* argv[])
 		UTIL_DEBUG
 		{
 			currentMode = 0;
-			currentVsync = 0;
+			currentVsync = 1;
+
+			clog << "Test: switching to " << modeNames[currentMode] << " " << vsyncNames[currentVsync] << endl;
 
 			win::switchMode(modes[currentMode]);
 			win::vsync(vsyncs[currentVsync]);

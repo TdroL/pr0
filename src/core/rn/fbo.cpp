@@ -425,11 +425,27 @@ GLsizei FBO::bindDepthTex(GLsizei unit)
 	return unit;
 }
 
-void FBO::blit(GLuint target, GLbitfield mask)
+void FBO::blit(GLuint target, GLbitfield mask, GLint filter, GLsizei targetWidth, GLsizei targetHeight)
 {
+	if ( ! targetWidth) {
+		targetWidth = width;
+	}
+
+	if ( ! targetHeight) {
+		targetHeight = height;
+	}
+
 	RN_CHECK(glBindFramebuffer(GL_READ_FRAMEBUFFER, id));
 	RN_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target));
-	RN_CHECK(glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, mask, GL_NEAREST));
+	RN_CHECK(glBlitFramebuffer(0, 0, width, height, 0, 0, targetWidth, targetHeight, mask, filter));
+	RN_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+}
+
+void FBO::blit(FBO &fbo, GLbitfield mask, GLint filter)
+{
+	RN_CHECK(glBindFramebuffer(GL_READ_FRAMEBUFFER, id));
+	RN_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo.id));
+	RN_CHECK(glBlitFramebuffer(0, 0, width, height, 0, 0, fbo.width, fbo.height, mask, filter));
 	RN_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 }
 

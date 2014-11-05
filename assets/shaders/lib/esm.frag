@@ -18,13 +18,15 @@ float esmLogBlur(sampler2D tex, vec2 uv, vec2 scale)
 	blur[5] = 0.09375;
 	blur[6] = 0.015625;
 
-	sample[0] = texture(tex, uv + scale * vec2(-3.0, -3.0)).b;
-	sample[1] = texture(tex, uv + scale * vec2(-2.0, -2.0)).b;
-	sample[2] = texture(tex, uv + scale * vec2(-1.0, -1.0)).b;
-	sample[3] = texture(tex, uv + scale * vec2( 0.0,  0.0)).b;
-	sample[4] = texture(tex, uv + scale * vec2( 1.0,  1.0)).b;
-	sample[5] = texture(tex, uv + scale * vec2( 2.0,  2.0)).b;
-	sample[6] = texture(tex, uv + scale * vec2( 3.0,  3.0)).b;
+	vec2 texelSize = scale / textureSize(tex, 0);
+
+	sample[0] = texture(tex, uv + texelSize * -3.0).b;
+	sample[1] = texture(tex, uv + texelSize * -2.0).b;
+	sample[2] = texture(tex, uv + texelSize * -1.0).b;
+	sample[3] = texture(tex, uv + texelSize *  0.0).b;
+	sample[4] = texture(tex, uv + texelSize *  1.0).b;
+	sample[5] = texture(tex, uv + texelSize *  2.0).b;
+	sample[6] = texture(tex, uv + texelSize *  3.0).b;
 
 	float acc = esmLogConv(blur[0], sample[0], blur[1], sample[1]);
 
