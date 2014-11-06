@@ -34,20 +34,22 @@ namespace win = ngn::window;
 
 int main(int argc, char const* argv[])
 {
-	#if defined(DEBUG) || defined(_DEBUG)
-		cout << "Debug: ON" << endl;
-	#else
-		cout << "Debug: OFF" << endl;
-	#endif
+#if defined(DEBUG) || defined(_DEBUG)
+	cout << "Debug: ON" << endl;
+#else
+	cout << "Debug: OFF" << endl;
+#endif
 
 	try
 	{
-		ngn::init();
 		ngn::ino::init(argc, argv);
+
+		ngn::init();
 
 		UTIL_SCOPE_EXIT([] () {
 			ngn::deinit();
 		});
+
 
 		UTIL_DEBUG
 		{
@@ -56,6 +58,7 @@ int main(int argc, char const* argv[])
 				clog << "Options:" << endl;
 				clog << "  --print-exts    - shows core extensions support" << endl;
 				clog << "  --frames=<num>  - limits number of rendered frames" << endl;
+				clog << "  --log-gl-calls  - logs every OpenGL call" << endl;
 
 				return EXIT_SUCCESS;
 			}

@@ -25,6 +25,7 @@ namespace rn
 {
 
 extern const char *lastGLCall;
+extern bool logGLCalls;
 
 enum Status
 {
@@ -105,6 +106,10 @@ void flushErrors();
 	} while (0)
 
 	#define RN_VALIDATE(fn) do { \
+		if (rn::logGLCalls) \
+		{ \
+			std::clog << "[GL call]:" << __FILE__ << ":" << __LINE__ << ": " << #fn << std::endl; \
+		} \
 		GLenum err = glGetError(); \
 		if (err != GL_NO_ERROR) { \
 			do { \
@@ -116,6 +121,10 @@ void flushErrors();
 	} while(0)
 
 	#define RN_VALIDATE_PARAM(fn, param) do { \
+		if (rn::logGLCalls) \
+		{ \
+			std::clog << "[GL call]:" << __FILE__ << ":" << __LINE__ << ": " << #fn << std::endl; \
+		} \
 		GLenum err = glGetError(); \
 		if (err != GL_NO_ERROR) { \
 			do { \

@@ -7,6 +7,7 @@
 #include "rn/fbo.hpp"
 #include "rn/mesh.hpp"
 #include "ngn.hpp"
+#include "ngn/ino.hpp"
 #include "util/count.hpp"
 
 namespace rn
@@ -15,6 +16,7 @@ namespace rn
 using namespace std;
 
 const char *lastGLCall = nullptr;
+bool logGLCalls = false;
 
 Stats stats = {0, 0};
 Status status = Status::uninited;
@@ -73,6 +75,8 @@ util::InitQ & initQ()
 
 void init()
 {
+	rn::logGLCalls = ngn::ino::has("--log-gl-calls");
+
 	RN_VALIDATE(rn::init());
 	reload();
 
@@ -1437,7 +1441,7 @@ string getEnumName(GLenum value)
 		X(0x93DD, ("{GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR}"))
 		X(0xFFFFFFFF, ("{GL_INVALID_INDEX, GL_ALL_SHADER_BITS, GL_ALL_BARRIER_BITS, GL_TIMEOUT_IGNORED}"))
 		default:
-			return "Unknown";
+			return "{Unknown}";
 	}
 	#undef X
 }
@@ -1446,9 +1450,9 @@ string getBasicInfo()
 {
 	ostringstream oss;
 
-	oss << "Version   \tOpenGL " << glGetString(GL_VERSION) << endl;
-	oss << "Vendor    \t" << glGetString(GL_VENDOR) << endl;
-	oss << "Renderer  \t" << glGetString(GL_RENDERER);
+	oss << "Version     OpenGL " << glGetString(GL_VERSION) << endl;
+	oss << "Vendor      " << glGetString(GL_VENDOR) << endl;
+	oss << "Renderer    " << glGetString(GL_RENDERER);
 
 	return oss.str();
 }
@@ -1517,7 +1521,6 @@ namespace
 {
 	const util::InitQAttacher attach(ngn::initQ(), []
 	{
-
 #ifdef NGN_USE_GLEW
 		rn::flushErrors();
 #endif
