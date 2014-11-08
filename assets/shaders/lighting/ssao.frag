@@ -36,7 +36,7 @@ void main()
 	vec3 bitangent = cross(normal, tangent);
 	mat3 tbn = mat3(tangent, bitangent, normal);
 
-	float sampleRadius = 0.25;
+	float sampleRadius = 0.15;
 	float occlusion = 0.0;
 
 	for (int i = 0; i < kernelSize; ++i)
@@ -52,8 +52,8 @@ void main()
 		vec3 samplePosition = positionReconstruct(sampleDepth, offset.xy);
 
 		float rangeCheck= abs(position.z - samplePosition.z) < sampleRadius ? 1.0 : 0.0;
-		occlusion += (sample.z < samplePosition.z ? 1.0 : 0.0) * rangeCheck;
+		occlusion += (samplePosition.z > sample.z ? 1.0 : 0.0) * rangeCheck;
 	}
 
-	outColor.r = occlusion / kernelSize;
+	outColor = vec4(occlusion / kernelSize);// * pow(1.0 + position.z / 128.0, 4.0);
 }

@@ -24,10 +24,10 @@ public:
 
 	rn::Program progSSAO{};
 	rn::Program progSSAOBlit{};
+	rn::Program progSSAOBlur{};
 
 	rn::Program progFBOBlit{};
 	rn::Program progBlurGaussian7{};
-	rn::Program progBlurBox4{};
 	rn::Program progBlurPreview{};
 	rn::Program progShadowMapPreview{};
 

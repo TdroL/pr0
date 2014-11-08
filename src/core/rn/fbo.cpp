@@ -443,6 +443,67 @@ void FBO::blit(GLuint target, GLbitfield mask, GLint filter, GLsizei targetWidth
 
 void FBO::blit(FBO &fbo, GLbitfield mask, GLint filter)
 {
+#if defined(DEBUG)
+	if (mask & GL_STENCIL_BUFFER_BIT)
+	{
+		if (fbo.depth.type == None || !fbo.depth.id)
+		{
+			throw string{"rn::FBO::blit() - target framebuffer \"" + fbo.fboName +"\" does not have stencil buffer"};
+		}
+
+		if (depth.type == None || !depth.id)
+		{
+			throw string{"rn::FBO::blit() - source framebuffer \"" + fboName +"\" does not have stencil buffer"};
+		}
+
+		if (fbo.depth.internalFormat != GL_DEPTH24_STENCIL8 && fbo.depth.internalFormat != GL_DEPTH32F_STENCIL8)
+		{
+			throw string{"rn::FBO::blit() - target framebuffer \"" + fbo.fboName +"\" stencil buffer/texture have incorrect internal format"};
+		}
+
+		if (depth.internalFormat != GL_DEPTH24_STENCIL8 && depth.internalFormat != GL_DEPTH32F_STENCIL8)
+		{
+			throw string{"rn::FBO::blit() - source framebuffer \"" + fbo.fboName +"\" stencil buffer/texture have incorrect internal format"};
+		}
+	}
+
+	if (mask & GL_DEPTH_BUFFER_BIT)
+	{
+		if (fbo.depth.type == None || !fbo.depth.id)
+		{
+			throw string{"rn::FBO::blit() - target framebuffer \"" + fbo.fboName +"\" does not have depth buffer"};
+		}
+
+		if (depth.type == None || !depth.id)
+		{
+			throw string{"rn::FBO::blit() - source framebuffer \"" + fbo.fboName +"\" does not have depth buffer"};
+		}
+	}
+
+	if (mask & GL_COLOR_BUFFER_BIT)
+	{
+		bool hasColorTex = any_of(begin(fbo.colors), end(fbo.colors), [] (const TexContainer &tex)
+		{
+			return tex.enabled && tex.id;
+		});
+
+		if (!hasColorTex)
+		{
+			throw string{"rn::FBO::blit() - target framebuffer \"" + fbo.fboName +"\" does not have depth buffer"};
+		}
+
+		hasColorTex = any_of(begin(colors), end(colors), [] (const TexContainer &tex)
+		{
+			return tex.enabled && tex.id;
+		});
+
+		if (!hasColorTex)
+		{
+			throw string{"rn::FBO::blit() - source framebuffer \"" + fbo.fboName +"\" does not have depth buffer"};
+		}
+	}
+
+#endif
 	RN_CHECK(glBindFramebuffer(GL_READ_FRAMEBUFFER, id));
 	RN_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo.id));
 	RN_CHECK(glBlitFramebuffer(0, 0, width, height, 0, 0, fbo.width, fbo.height, mask, filter));
