@@ -26,7 +26,6 @@ void main()
 {
 	vec2 encodedNormal = texture(texNormal, uv).xy;
 	float depth = texture(texDepth, uv).x * 2.0 - 1.0;
-	vec3 albedo = texture(texColor, uv).rgb;
 
 	vec3 normal = normalDecode(encodedNormal);
 	vec3 position = positionReconstruct(depth, uv);
@@ -36,7 +35,7 @@ void main()
 	vec3 bitangent = cross(normal, tangent);
 	mat3 tbn = mat3(tangent, bitangent, normal);
 
-	float sampleRadius = 0.15;
+	float sampleRadius = 0.35;
 	float occlusion = 0.0;
 
 	for (int i = 0; i < kernelSize; ++i)

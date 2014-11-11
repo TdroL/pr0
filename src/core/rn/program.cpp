@@ -383,7 +383,7 @@ void Program::reload()
 			}
 			default:
 			{
-				clog << "[warning] rn::Program::reload() - unknown uniform type " << item.second.type << " [" << item.first << "]" << endl;
+				clog << "[warning] rn::Program{" << programName << "}::reload() - unknown uniform type " << item.second.type << " \"" << item.first << "\"" << endl;
 			}
 		}
 	}
@@ -401,14 +401,12 @@ void Program::reset()
 
 void Program::use()
 {
-	#if defined(DEBUG) || defined(_DEBUG)
+#if defined(DEBUG)
 	if (id && ! glIsProgram(id))
 	{
-		clog << "[notice] rn::Program::use() - invalid program id [" << id << "] ("
-			 << ((fragmentShader) ? fragmentShader->name() : string{"Unknown fragment shader"}) << ", "
-			 << ((vertexShader) ? vertexShader->name() : string{"Unknown vertex shader"}) << ")" << endl;
+		clog << "[notice] rn::Program{" << programName << "}::use() - invalid program id \"" << id << "\" (" << (fragmentShader ? fragmentShader->name() : string{"Unknown fragment shader"}) << ", " << (vertexShader ? vertexShader->name() : string{"Unknown vertex shader"}) << ")" << endl;
 	}
-	#endif
+#endif
 	RN_CHECK(glUseProgram(id));
 }
 
@@ -419,6 +417,21 @@ void Program::forgo()
 
 GLint Program::getName(const string &name)
 {
+#if defined(DEBUG)
+	if (id && ! glIsProgram(id))
+	{
+		clog << "[notice] rn::Program{" << programName << "}::getName(\"" << name << "\") - invalid program id \"" << id << "\" ("
+		     << (fragmentShader ? fragmentShader->name() : string{"Unknown fragment shader"}) << ", "
+		     << (vertexShader ? vertexShader->name() : string{"Unknown vertex shader"}) << ")" << endl;
+	}
+	else if ( ! id)
+	{
+		clog << "[notice] rn::Program{" << programName << "}::getName(\"" << name << "\") - program id is 0 ("
+		     << (fragmentShader ? fragmentShader->name() : string{"Unknown fragment shader"}) << ", "
+		     << (vertexShader ? vertexShader->name() : string{"Unknown vertex shader"}) << ")" << endl;
+	}
+#endif
+
 	if (id)
 	{
 		GLint location = glGetUniformLocation(id, name.c_str());
@@ -447,84 +460,244 @@ UniformValue & Program::getValue(const string &name)
 	return uniformValue;
 }
 
-void Program::var(GLint name, GLint value)
+void Program::var(GLint location, GLint value)
 {
-	if (id) RN_CHECK(glProgramUniform1i(id, name, value));
+#if defined(DEBUG)
+	if ( ! id)
+	{
+		clog << "rn::Program{" << programName << "}::var([GLint]) - program id is 0" << endl;
+	}
+#endif
+
+	if (id)
+	{
+		RN_CHECK(glProgramUniform1i(id, location, value));
+	}
 }
 
-void Program::var(GLint name, GLuint value)
+void Program::var(GLint location, GLuint value)
 {
-	if (id) RN_CHECK(glProgramUniform1ui(id, name, value));
+#if defined(DEBUG)
+	if ( ! id)
+	{
+		clog << "rn::Program{" << programName << "}::var([GLuint]) - program id is 0" << endl;
+	}
+#endif
+
+	if (id)
+	{
+		RN_CHECK(glProgramUniform1ui(id, location, value));
+	}
 }
 
-void Program::var(GLint name, GLfloat value)
+void Program::var(GLint location, GLfloat value)
 {
-	if (id) RN_CHECK(glProgramUniform1f(id, name, value));
+#if defined(DEBUG)
+	if ( ! id)
+	{
+		clog << "rn::Program{" << programName << "}::var([GLfloat]) - program id is 0" << endl;
+	}
+#endif
+
+	if (id)
+	{
+		RN_CHECK(glProgramUniform1f(id, location, value));
+	}
 }
 
-void Program::var(GLint name, const glm::vec2 &value)
+void Program::var(GLint location, const glm::vec2 &value)
 {
-	if (id) RN_CHECK(glProgramUniform2fv(id, name, 1, glm::value_ptr(value)));
+#if defined(DEBUG)
+	if ( ! id)
+	{
+		clog << "rn::Program{" << programName << "}::var([glm::vec2]) - program id is 0" << endl;
+	}
+#endif
+
+	if (id)
+	{
+		RN_CHECK(glProgramUniform2fv(id, location, 1, glm::value_ptr(value)));
+	}
 }
 
-void Program::var(GLint name, const glm::vec3 &value)
+void Program::var(GLint location, const glm::vec3 &value)
 {
-	if (id) RN_CHECK(glProgramUniform3fv(id, name, 1, glm::value_ptr(value)));
+#if defined(DEBUG)
+	if ( ! id)
+	{
+		clog << "rn::Program{" << programName << "}::var([glm::vec3]) - program id is 0" << endl;
+	}
+#endif
+
+	if (id)
+	{
+		RN_CHECK(glProgramUniform3fv(id, location, 1, glm::value_ptr(value)));
+	}
 }
 
-void Program::var(GLint name, const glm::vec4 &value)
+void Program::var(GLint location, const glm::vec4 &value)
 {
-	if (id) RN_CHECK(glProgramUniform4fv(id, name, 1, glm::value_ptr(value)));
+#if defined(DEBUG)
+	if ( ! id)
+	{
+		clog << "rn::Program{" << programName << "}::var([glm::vec4]) - program id is 0" << endl;
+	}
+#endif
+
+	if (id)
+	{
+		RN_CHECK(glProgramUniform4fv(id, location, 1, glm::value_ptr(value)));
+	}
 }
 
-void Program::var(GLint name, const glm::mat3 &value)
+void Program::var(GLint location, const glm::mat3 &value)
 {
-	if (id) RN_CHECK(glProgramUniformMatrix3fv(id, name, 1, GL_FALSE, glm::value_ptr(value)));
+#if defined(DEBUG)
+	if ( ! id)
+	{
+		clog << "rn::Program{" << programName << "}::var([glm::mat3]) - program id is 0" << endl;
+	}
+#endif
+
+	if (id)
+	{
+		RN_CHECK(glProgramUniformMatrix3fv(id, location, 1, GL_FALSE, glm::value_ptr(value)));
+	}
 }
 
-void Program::var(GLint name, const glm::mat4 &value)
+void Program::var(GLint location, const glm::mat4 &value)
 {
-	if (id) RN_CHECK(glProgramUniformMatrix4fv(id, name, 1, GL_FALSE, glm::value_ptr(value)));
+#if defined(DEBUG)
+	if ( ! id)
+	{
+		clog << "rn::Program{" << programName << "}::var([glm::mat4]) - program id is 0" << endl;
+	}
+#endif
+
+	if (id)
+	{
+		RN_CHECK(glProgramUniformMatrix4fv(id, location, 1, GL_FALSE, glm::value_ptr(value)));
+	}
 }
 
-void Program::var(GLint name, const GLint *value, GLsizei count)
+void Program::var(GLint location, const GLint *value, GLsizei count)
 {
-	if (id) RN_CHECK(glProgramUniform1iv(id, name, count, value));
+#if defined(DEBUG)
+	if ( ! id)
+	{
+		clog << "rn::Program{" << programName << "}::var([GLint], count) - program id is 0" << endl;
+	}
+#endif
+
+	if (id)
+	{
+		RN_CHECK(glProgramUniform1iv(id, location, count, value));
+	}
 }
 
-void Program::var(GLint name, const GLuint *value, GLsizei count)
+void Program::var(GLint location, const GLuint *value, GLsizei count)
 {
-	if (id) RN_CHECK(glProgramUniform1uiv(id, name, count, value));
+#if defined(DEBUG)
+	if ( ! id)
+	{
+		clog << "rn::Program{" << programName << "}::var([GLuint], count) - program id is 0" << endl;
+	}
+#endif
+
+	if (id)
+	{
+		RN_CHECK(glProgramUniform1uiv(id, location, count, value));
+	}
 }
 
-void Program::var(GLint name, const GLfloat *value, GLsizei count)
+void Program::var(GLint location, const GLfloat *value, GLsizei count)
 {
-	if (id) RN_CHECK(glProgramUniform1fv(id, name, count, value));
+#if defined(DEBUG)
+	if ( ! id)
+	{
+		clog << "rn::Program{" << programName << "}::var([GLfloat], count) - program id is 0" << endl;
+	}
+#endif
+
+	if (id)
+	{
+		RN_CHECK(glProgramUniform1fv(id, location, count, value));
+	}
 }
 
-void Program::var(GLint name, const glm::vec2 *value, GLsizei count)
+void Program::var(GLint location, const glm::vec2 *value, GLsizei count)
 {
-	if (id) RN_CHECK(glProgramUniform2fv(id, name, count, reinterpret_cast<const GLfloat *>(value)));
+#if defined(DEBUG)
+	if ( ! id)
+	{
+		clog << "rn::Program{" << programName << "}::var([glm::vec2], count) - program id is 0" << endl;
+	}
+#endif
+
+	if (id)
+	{
+		RN_CHECK(glProgramUniform2fv(id, location, count, reinterpret_cast<const GLfloat *>(value)));
+	}
 }
 
-void Program::var(GLint name, const glm::vec3 *value, GLsizei count)
+void Program::var(GLint location, const glm::vec3 *value, GLsizei count)
 {
-	if (id) RN_CHECK(glProgramUniform3fv(id, name, count, reinterpret_cast<const GLfloat *>(value)));
+#if defined(DEBUG)
+	if ( ! id)
+	{
+		clog << "rn::Program{" << programName << "}::var([glm::vec3], count) - program id is 0" << endl;
+	}
+#endif
+
+	if (id)
+	{
+		RN_CHECK(glProgramUniform3fv(id, location, count, reinterpret_cast<const GLfloat *>(value)));
+	}
 }
 
-void Program::var(GLint name, const glm::vec4 *value, GLsizei count)
+void Program::var(GLint location, const glm::vec4 *value, GLsizei count)
 {
-	if (id) RN_CHECK(glProgramUniform4fv(id, name, count, reinterpret_cast<const GLfloat *>(value)));
+#if defined(DEBUG)
+	if ( ! id)
+	{
+		clog << "rn::Program{" << programName << "}::var([glm::vec4], count) - program id is 0" << endl;
+	}
+#endif
+
+	if (id)
+	{
+		RN_CHECK(glProgramUniform4fv(id, location, count, reinterpret_cast<const GLfloat *>(value)));
+	}
 }
 
-void Program::var(GLint name, const glm::mat3 *value, GLsizei count)
+void Program::var(GLint location, const glm::mat3 *value, GLsizei count)
 {
-	if (id) RN_CHECK(glProgramUniformMatrix3fv(id, name, count, GL_FALSE, reinterpret_cast<const GLfloat *>(value)));
+#if defined(DEBUG)
+	if ( ! id)
+	{
+		clog << "rn::Program{" << programName << "}::var([glm::mat3], count) - program id is 0" << endl;
+	}
+#endif
+
+	if (id)
+	{
+		RN_CHECK(glProgramUniformMatrix3fv(id, location, count, GL_FALSE, reinterpret_cast<const GLfloat *>(value)));
+	}
 }
 
-void Program::var(GLint name, const glm::mat4 *value, GLsizei count)
+void Program::var(GLint location, const glm::mat4 *value, GLsizei count)
 {
-	if (id) RN_CHECK(glProgramUniformMatrix4fv(id, name, count, GL_FALSE, reinterpret_cast<const GLfloat *>(value)));
+#if defined(DEBUG)
+	if ( ! id)
+	{
+		clog << "rn::Program{" << programName << "}::var([glm::mat4], count) - program id is 0" << endl;
+	}
+#endif
+
+	if (id)
+	{
+		RN_CHECK(glProgramUniformMatrix4fv(id, location, count, GL_FALSE, reinterpret_cast<const GLfloat *>(value)));
+	}
 }
 
 

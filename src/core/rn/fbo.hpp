@@ -85,6 +85,7 @@ public:
 	void blit(FBO &fbo, GLbitfield mask, GLint filter = GL_NEAREST);
 
 	void clear();
+	void clear(GLbitfield mask);
 
 	void use();
 	void forgo();

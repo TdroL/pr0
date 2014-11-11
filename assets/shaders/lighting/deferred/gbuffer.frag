@@ -8,6 +8,7 @@ in vec3 normal;
 
 uniform float matShininess;
 uniform vec4 matDiffuse;
+uniform vec3 color;
 
 vec2 normalEncode(vec3 n);
 

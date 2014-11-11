@@ -2,7 +2,9 @@
 
 layout(location = 0) in vec3 vertPosition;
 
-uniform mat4 M, V, P;
+uniform mat4 M;
+uniform mat4 V;
+uniform mat4 P;
 
 out vec4 position;
 out vec3 normal;

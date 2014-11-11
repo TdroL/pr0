@@ -99,7 +99,7 @@ void flushErrors();
 
 #define RN_CHECK_LOG_ERROR_PARAM(name, error, param) { std::cerr << "[GL error]:" << __FILE__ << ":" << __LINE__ << ": " << #name << " = " << rn::getEnumName(error) << " (err = 0x" << std::hex << error << std::dec << ") -- " << param << std::endl << std::flush; }
 
-#if defined(DEBUG) || defined (_DEBUG)
+#if defined(DEBUG)
 
 	#define RN_SAVE_CALL(fn) do { \
 		rn::lastGLCall = "[" __FILE__  ":" UTIL_STRINGIFY(__LINE__) "] " #fn; \

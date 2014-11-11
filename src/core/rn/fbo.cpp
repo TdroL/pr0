@@ -534,6 +534,24 @@ void FBO::clear()
 	RN_CHECK(glClear(mask));
 }
 
+void FBO::clear(GLbitfield mask)
+{
+	if ((mask & GL_COLOR_BUFFER_BIT) && ! colors.empty())
+	{
+		RN_CHECK(glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a));
+	}
+
+	if ((mask & GL_STENCIL_BUFFER_BIT) && depth.type != None)
+	{
+		if (depth.internalFormat == GL_DEPTH24_STENCIL8 || depth.internalFormat == GL_DEPTH32F_STENCIL8)
+		{
+			RN_CHECK(glClearStencil(0));
+		}
+	}
+
+	RN_CHECK(glClear(mask));
+}
+
 void FBO::use()
 {
 	RN_CHECK(glViewport(0, 0, width, height));

@@ -171,8 +171,8 @@ void App::init()
 	fboGBuffer.setDepthTex(GL_DEPTH24_STENCIL8);
 	fboGBuffer.create();
 
-	fboShadowMapBuffer.width = 1024;
-	fboShadowMapBuffer.height = 1024;
+	fboShadowMapBuffer.width = 2048;
+	fboShadowMapBuffer.height = 2048;
 	fboShadowMapBuffer.clearColor = glm::vec4{numeric_limits<GLfloat>::max()};
 	fboShadowMapBuffer.setColorTex(GL_RGB32F, 0);
 	fboShadowMapBuffer.setDepthTex(GL_DEPTH_COMPONENT32F);
@@ -282,13 +282,10 @@ void App::init()
 	}
 
 	// create models
-	ecs::Entity suzanneId = ecs::create();
-	ecs::Entity dragonId = ecs::create();
-	ecs::Entity venusId = ecs::create();
-	ecs::Entity planeId = ecs::create();
 
 	// monkey
 	{
+		ecs::Entity suzanneId = ecs::create();
 		ecs::enable<Name, Transform, Mesh, Material, Occluder, Stencil>(suzanneId);
 
 		auto &name = ecs::get<Name>(suzanneId);
@@ -309,6 +306,7 @@ void App::init()
 
 	// statue
 	{
+		ecs::Entity venusId = ecs::create();
 		ecs::enable<Name, Transform, Mesh, Material, Occluder, Stencil>(venusId);
 
 		auto &name = ecs::get<Name>(venusId);
@@ -329,6 +327,7 @@ void App::init()
 
 	// dragon
 	{
+		ecs::Entity dragonId = ecs::create();
 		ecs::enable<Name, Transform, Mesh, Material, Occluder, Stencil>(dragonId);
 
 		auto &name = ecs::get<Name>(dragonId);
@@ -350,6 +349,7 @@ void App::init()
 
 	// floor
 	{
+		ecs::Entity planeId = ecs::create();
 		ecs::enable<Name, Transform, Mesh, Material, Occluder, Stencil>(planeId);
 
 		auto &name = ecs::get<Name>(planeId);
@@ -592,7 +592,7 @@ void App::render()
 
 	gBufferPass();
 
-	fboGBuffer.blit(0, GL_STENCIL_BUFFER_BIT);
+	fboGBuffer.blit(0, GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	directionalLightsPass();
 	// pointLightsPass();
@@ -613,12 +613,11 @@ void App::render()
 
 void App::gBufferPass()
 {
+	RN_SCOPE_DISABLE(GL_BLEND);
 	RN_SCOPE_ENABLE(GL_STENCIL_TEST);
 
 	RN_CHECK(glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE));
 	RN_CHECK(glStencilMask(0xF));
-
-	RN_SCOPE_DISABLE(GL_BLEND);
 
 	RN_FBO_USE(fboGBuffer);
 	fboGBuffer.clear();
@@ -637,23 +636,20 @@ void App::gBufferPass()
 		proc::MeshRenderer::render(entity, progGBuffer);
 	}
 
-	progGBuffer.forgo();
-
 	// draw light meshes
-	progGBuffer.use();
-	progGBuffer.var("V", V);
-
 	RN_CHECK(glStencilFunc(GL_ALWAYS, Shader::flat, 0xF));
+
+	progGBuffer.var("matShininess", 0.f);
 
 	for (auto &entity : ecs::findWith<Transform, Mesh, PointLight>())
 	{
-		progGBuffer.var("color", glm::vec3(ecs::get<PointLight>(entity).color));
+		progGBuffer.var("matDiffuse", ecs::get<PointLight>(entity).color);
 		proc::MeshRenderer::render(entity, progGBuffer);
 	}
 
 	for (auto &entity : ecs::findWith<Transform, Mesh, DirectionalLight>())
 	{
-		progGBuffer.var("color", glm::vec3(ecs::get<DirectionalLight>(entity).color));
+		progGBuffer.var("matDiffuse", ecs::get<DirectionalLight>(entity).color);
 		proc::MeshRenderer::render(entity, progGBuffer);
 	}
 
@@ -733,7 +729,6 @@ void App::pointLightsPass()
 
 		{
 			RN_SCOPE_ENABLE(GL_STENCIL_TEST);
-
 			RN_CHECK(glStencilFunc(GL_EQUAL, Shader::global, Shader::MASK));
 			RN_CHECK(glStencilMask(0x0));
 
@@ -767,7 +762,6 @@ void App::pointLightsPass()
 void App::flatLightPass()
 {
 	RN_SCOPE_ENABLE(GL_STENCIL_TEST);
-
 	RN_CHECK(glStencilFunc(GL_EQUAL, Shader::flat, Shader::MASK));
 	RN_CHECK(glStencilMask(0x0));
 
@@ -782,17 +776,13 @@ void App::flatLightPass()
 
 void App::ssao()
 {
-	// RN_SCOPE_ENABLE(GL_STENCIL_TEST);
-	// RN_CHECK(glStencilFunc(GL_EQUAL, Shader::global, Shader::MASK));
-	// RN_CHECK(glStencilMask(0x0));
-
-	// fboGBuffer.blit(fboSSAOBuffer, GL_STENCIL_BUFFER_BIT);
+	RN_SCOPE_DISABLE(GL_DEPTH_TEST);
 
 	{
 		RN_SCOPE_DISABLE(GL_BLEND);
 
 		RN_FBO_USE(fboSSAOBuffer);
-		fboSSAOBuffer.clear();
+		fboSSAOBuffer.clear(GL_COLOR_BUFFER_BIT);
 
 		progSSAO.use();
 
@@ -808,26 +798,12 @@ void App::ssao()
 		progSSAO.forgo();
 	}
 
-	if (!true)
-	{
-		RN_SCOPE_DISABLE(GL_BLEND);
-		progFBOBlit.use();
-
-		progFBOBlit.var("texSource", fboSSAOBuffer.bindColorTex(0, 0));
-
-		rn::FBO::mesh.render();
-
-		progFBOBlit.forgo();
-
-		return;
-	}
-
 	// blur: x pass
 	{
 		RN_SCOPE_DISABLE(GL_BLEND);
 
 		RN_FBO_USE(fboSSAOBlurBuffer);
-		fboSSAOBlurBuffer.clear();
+		fboSSAOBlurBuffer.clear(GL_COLOR_BUFFER_BIT);
 
 		progSSAOBlur.use();
 
@@ -841,26 +817,12 @@ void App::ssao()
 		progSSAOBlur.forgo();
 	}
 
-	if (!true)
-	{
-		RN_SCOPE_DISABLE(GL_BLEND);
-		progFBOBlit.use();
-
-		progFBOBlit.var("texSource", fboSSAOBlurBuffer.bindColorTex(0, 0));
-
-		rn::FBO::mesh.render();
-
-		progFBOBlit.forgo();
-
-		return;
-	}
-
 	// blur: y pass
 	{
 		RN_SCOPE_DISABLE(GL_BLEND);
 
 		RN_FBO_USE(fboSSAOBuffer);
-		fboSSAOBuffer.clear();
+		fboSSAOBuffer.clear(GL_COLOR_BUFFER_BIT);
 
 		progSSAOBlur.use();
 
@@ -888,20 +850,29 @@ void App::ssao()
 		return;
 	}
 
-	progSSAOBlit.use();
+	{
+		RN_SCOPE_ENABLE(GL_STENCIL_TEST);
+		RN_CHECK(glStencilFunc(GL_EQUAL, Shader::global, Shader::MASK));
+		RN_CHECK(glStencilMask(0x0));
 
-	progSSAOBlit.var("texSource", fboSSAOBuffer.bindColorTex(0, 0));
+		progSSAOBlit.use();
 
-	rn::FBO::mesh.render();
+		progSSAOBlit.var("texSource", fboSSAOBuffer.bindColorTex(0, 0));
+		progSSAOBlit.var("texColor", fboGBuffer.bindColorTex(1, 0));
+		progSSAOBlit.var("texNormal", fboGBuffer.bindColorTex(2, 1));
+		progSSAOBlit.var("texDepth", fboGBuffer.bindDepthTex(3));
 
-	progSSAOBlit.forgo();
+		rn::FBO::mesh.render();
+
+		progSSAOBlit.forgo();
+	}
 }
 
 glm::mat4 App::genShadowMap(ecs::Entity lightId)
 {
 	const auto &light = ecs::get<DirectionalLight>(lightId);
 
-	glm::mat4 shadowMapP = glm::ortho(-10.f, 10.f, -10.f, 10.f, -10.f, 20.f);
+	glm::mat4 shadowMapP = glm::ortho(-25.f, 25.f, -25.f, 25.f, -25.f, 50.f);
 	glm::mat4 shadowMapV = glm::lookAt(glm::normalize(light.direction), glm::vec3{0.f, 0.f, 0.f}, glm::vec3{0.f, 1.f, 0.f});
 	glm::mat4 shadowMapM{1.f};
 	glm::mat4 shadowMapMVP = shadowMapP * shadowMapV * shadowMapM;
