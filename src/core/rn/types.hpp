@@ -7,7 +7,8 @@
 namespace rn
 {
 
-struct LayoutLocation {
+struct LayoutLocation
+{
 	static const GLuint vert;
 	static const GLuint tex;
 	static const GLuint norm;
@@ -131,7 +132,8 @@ struct UniformValue
 	UniformValue::Type type;
 	GLint id;
 
-	union {
+	union
+	{
 		GLint i;
 		GLuint ui;
 		GLfloat f;
@@ -189,6 +191,37 @@ struct TexParams
 		: internalFormat{internalFormat}, format{format}, type{type}
 	{}
 };
+
+
+enum MinFilter
+{
+	MIN_NEAREST         = GL_NEAREST,
+	MIN_LINEAR          = GL_LINEAR,
+	MIN_NEAREST_NEAREST = GL_NEAREST_MIPMAP_NEAREST,
+	MIN_LINEAR_NEAREST  = GL_LINEAR_MIPMAP_NEAREST,
+	MIN_NEAREST_LINEAR  = GL_NEAREST_MIPMAP_LINEAR,
+	MIN_LINEAR_LINEAR   = GL_LINEAR_MIPMAP_LINEAR
+};
+
+enum MagFilter
+{
+	MAG_NEAREST = GL_NEAREST,
+	MAG_LINEAR  = GL_LINEAR
+};
+
+enum Wrap
+{
+	WRAP_CLAMP  = GL_CLAMP_TO_EDGE,
+	WRAP_MIRROR = GL_MIRRORED_REPEAT,
+	WRAP_REPEAT = GL_REPEAT,
+	WRAP_BORDER = GL_CLAMP_TO_BORDER
+};
+
+static const GLenum BUFFER_DEPTH   = GL_DEPTH_BUFFER_BIT;
+static const GLenum BUFFER_STENCIL = GL_STENCIL_BUFFER_BIT;
+static const GLenum BUFFER_COLOR   = GL_COLOR_BUFFER_BIT;
+
+typedef GLbitfield BuffersMask;
 
 } // rn
 

@@ -3,10 +3,9 @@
 #include <iostream>
 #include <iomanip>
 
-// #include <core/cam/basic.hpp>
 #include <core/rn.hpp>
-// #include <core/rn/fbo.hpp>
 #include <core/rn/ext.hpp>
+#include <core/rn/fb.hpp>
 #include <core/rn/font.hpp>
 // #include <core/rn/mesh.hpp>
 // #include <core/rn/program.hpp>
@@ -15,6 +14,7 @@
 #include <core/util/count.hpp>
 #include <core/util/scope.hpp>
 // #include <core/util/initq.hpp>
+#include <core/util/toggle.hpp>
 #include <core/ngn.hpp>
 #include <core/ngn/fs.hpp>
 #include <core/ngn/key.hpp>
@@ -46,7 +46,8 @@ int main(int argc, char const* argv[])
 
 		ngn::init();
 
-		UTIL_SCOPE_EXIT([] () {
+		UTIL_SCOPE_EXIT([] ()
+		{
 			ngn::deinit();
 		});
 
@@ -173,28 +174,36 @@ int main(int argc, char const* argv[])
 		rn::Font font{"DejaVuSansMono"};
 		font.load("DejaVu/DejaVuSansMono.ttf");
 
-		const win::Mode modes[] {
+		const win::Mode modes[]
+		{
 			win::Mode::windowed,
 			win::Mode::borderless,
 			win::Mode::fullscreen
 		};
-		const string modeNames[] {
+
+		const string modeNames[]
+		{
 			"windowed",
 			"borderless",
 			"fullscreen",
 		};
+
 		size_t currentMode = 0;
 
-		const int vsyncs[] {
+		const int vsyncs[]
+		{
 			-1, // progressive
 			 0, // off
 			 1, // on
 		};
-		const string vsyncNames[] {
+
+		const string vsyncNames[]
+		{
 			"progressive",
 			"off",
 			"on",
 		};
+
 		size_t currentVsync = 0;
 
 		/* Test: switch to window mode */
@@ -205,8 +214,7 @@ int main(int argc, char const* argv[])
 
 			clog << "Test: switching to " << modeNames[currentMode] << " " << vsyncNames[currentVsync] << endl;
 
-			win::switchMode(modes[currentMode]);
-			win::vsync(vsyncs[currentVsync]);
+			win::switchMode(modes[currentMode], vsyncs[currentVsync]);
 			rn::reloadSoftAll();
 		}
 
@@ -218,9 +226,24 @@ int main(int argc, char const* argv[])
 		{
 			NGN_LOOP;
 
-			if (key::hit(KEY_ESC))
+			if (key::hit(KEY_ESCAPE))
 			{
 				win::close();
+			}
+
+			if (key::hit(KEY_F4))
+			{
+				cout << "Reloading scene..." << endl;
+
+				try
+				{
+					app.scene.reload();
+					cout << "done" << endl;
+				}
+				catch (const string &e)
+				{
+					cerr << e << endl;
+				}
 			}
 
 			if (key::hit(KEY_F5))
@@ -253,8 +276,8 @@ int main(int argc, char const* argv[])
 
 			if (key::hit(KEY_F8))
 			{
-				cout << "Reloading FBOs..." << endl;
-				rn::FBO::reloadAll();
+				cout << "Reloading FBs..." << endl;
+				rn::FB::reloadAll();
 				cout << "done" << endl;
 			}
 
@@ -270,8 +293,7 @@ int main(int argc, char const* argv[])
 				currentVsync = (currentVsync + 1) % util::countOf(vsyncs);
 
 				cout << "Switching vsync mode to \"" << vsyncNames[currentVsync] << "\" (" << vsyncs[currentVsync] << ") ..." << endl;
-				win::switchMode(modes[currentMode]);
-				win::vsync(vsyncs[currentVsync]);
+				win::switchMode(modes[currentMode], vsyncs[currentVsync]);
 				rn::reloadSoftAll();
 				cout << "done" << endl;
 			}
@@ -280,8 +302,7 @@ int main(int argc, char const* argv[])
 			{
 				cout << "Switching window mode..." << endl;
 				currentMode = (currentMode + 1) % util::countOf(modes);
-				win::switchMode(modes[currentMode]);
-				win::vsync(vsyncs[currentVsync]);
+				win::switchMode(modes[currentMode], vsyncs[currentVsync]);
 				cout << "done" << endl;
 
 				cout << "Soft reloading GL..." << endl;
@@ -289,7 +310,7 @@ int main(int argc, char const* argv[])
 				cout << "done" << endl;
 			}
 
-			if (key::hit(KEY_ESC))
+			if (key::hit(KEY_ESCAPE))
 			{
 				win::close();
 				continue;
@@ -305,12 +326,26 @@ int main(int argc, char const* argv[])
 				{
 					ostringstream oss;
 					oss << setprecision(4) << fixed;
-					oss << "dt=" << ngn::dt * 1000.0 << " ms\n";
-					oss << "ft=" << ft * 1000.0 << " ms\n";
-					oss << "fps=" << 1.0/ngn::dt << "\n";
-					oss << "fps=" << 1.0/ft << " (frame)\n";
+					oss << "dt=" << ngn::dt * 1000.0 << "ms\n";
+					oss << "ft=" << ft * 1000.0 << "ms\n";
+					oss << "fps=" << 1.0 / ngn::dt << "\n";
+					oss << "fps=" << 1.0 / ft << " (frame)\n";
 					oss << "triangles=" << rn::stats.triangles << "\n";
 					oss << "\n";
+
+					oss << "render=" << app.profRender.ms() << "ms (" << 1000.0 / app.profRender.ms() << ")\n";
+					oss << "  GBuffer=" << app.profGBuffer.ms() << "ms\n";
+					oss << "  DirectionalLight=" << app.profDirectionalLight.ms() << "ms\n";
+					oss << "  PointLight=" << app.profPointLight.ms() << "ms\n";
+					oss << "  FlatLight=" << app.profFlatLight.ms() << "ms\n";
+					oss << "  SSAO=" << app.profSSAO.ms() << "ms\n";
+					oss << "    Z=" << app.ssao.profZ.ms() << "ms\n";
+					oss << "    MipMaps=" << app.ssao.profMipMaps.ms() << "ms\n";
+					oss << "    AO=" << app.ssao.profAO.ms() << "ms\n";
+					oss << "    Blur=" << app.ssao.profBlur.ms() << "ms\n";
+
+					oss << "\n";
+					oss << "F4 - reload scene\n";
 					oss << "F5 - reload shaders\n";
 					oss << "F6 - reload meshes\n";
 					oss << "F7 - reload fonts\n";
@@ -321,7 +356,14 @@ int main(int argc, char const* argv[])
 					oss << "\n";
 					oss << "Movement: W, A, S, D\n";
 					oss << "Camera: arrows\n";
-					oss << "Point Light: Keypad 8, 4, 5, 6\n";
+					oss << "Point Light: Keypad 8, 4, 5, 6\n\n";
+					oss << "Toggles:\n";
+
+					for (auto &toggle : util::Toggle::collection)
+					{
+						oss << "  " << toggle->toggleName << " = " << toggle->value << "\n";
+					}
+
 					font.render(oss.str());
 				}
 			}

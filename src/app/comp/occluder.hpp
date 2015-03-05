@@ -1,5 +1,5 @@
-#ifndef app_comp_occluder_HPP
-#define app_comp_occluder_HPP
+#ifndef APP_COMP_OCCLUDER_HPP
+#define APP_COMP_OCCLUDER_HPP
 
 #include <core/ecs/component.hpp>
 #include <glm/glm.hpp>

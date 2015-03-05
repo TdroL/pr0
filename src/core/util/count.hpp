@@ -3,7 +3,8 @@
 
 #include <array>
 
-namespace util {
+namespace util
+{
 
 template<typename T, size_t N>
 constexpr size_t countOf(const T (&)[N])
@@ -17,6 +18,6 @@ constexpr size_t countOf(const std::array<T, N> (&))
 	return N;
 }
 
-}
+} // util
 
 #endif

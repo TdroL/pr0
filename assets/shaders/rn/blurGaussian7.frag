@@ -2,10 +2,6 @@
 
 // From http://fabiensanglard.net/shadowmappingVSM/index.php
 
-/////////////////////////////////////////////////
-// 7x1 gaussian blur fragment shader
-/////////////////////////////////////////////////
-
 layout(location = 0) out vec4 outColor;
 
 in vec2 uv;

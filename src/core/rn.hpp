@@ -101,51 +101,67 @@ void flushErrors();
 
 #if defined(DEBUG)
 
-	#define RN_SAVE_CALL(fn) do { \
+	#define RN_SAVE_CALL(fn) do \
+	{ \
 		rn::lastGLCall = "[" __FILE__  ":" UTIL_STRINGIFY(__LINE__) "] " #fn; \
-	} while (0)
+	} \
+	while (0)
 
-	#define RN_VALIDATE(fn) do { \
+	#define RN_VALIDATE(fn) do \
+	{ \
 		if (rn::logGLCalls) \
 		{ \
 			std::clog << "[GL call]:" << __FILE__ << ":" << __LINE__ << ": " << #fn << std::endl; \
 		} \
 		GLenum err = glGetError(); \
-		if (err != GL_NO_ERROR) { \
-			do { \
+		if (err != GL_NO_ERROR) \
+		{ \
+			do \
+			{ \
 				RN_CHECK_LOG_ERROR(fn, err); \
 				err = glGetError(); \
-			} while (err != GL_NO_ERROR); \
+			} \
+			while (err != GL_NO_ERROR); \
 			exit(1); \
 		} \
-	} while(0)
+	} \
+	while(0)
 
-	#define RN_VALIDATE_PARAM(fn, param) do { \
+	#define RN_VALIDATE_PARAM(fn, param) do \
+	{ \
 		if (rn::logGLCalls) \
 		{ \
 			std::clog << "[GL call]:" << __FILE__ << ":" << __LINE__ << ": " << #fn << std::endl; \
 		} \
 		GLenum err = glGetError(); \
-		if (err != GL_NO_ERROR) { \
-			do { \
+		if (err != GL_NO_ERROR) \
+		{ \
+			do \
+			{ \
 				RN_CHECK_LOG_ERROR_PARAM(fn, err, param); \
 				err = glGetError(); \
-			} while (err != GL_NO_ERROR); \
+			} \
+			while (err != GL_NO_ERROR); \
 			exit(1); \
 		} \
-	} while(0)
+	} \
+	while(0)
 
-	#define RN_CHECK(fn) do { \
+	#define RN_CHECK(fn) do \
+	{ \
 		RN_SAVE_CALL(fn); \
 		fn; \
 		RN_VALIDATE(fn); \
-	} while (0)
+	} \
+	while (0)
 
-	#define RN_CHECK_PARAM(fn, param) do { \
+	#define RN_CHECK_PARAM(fn, param) do \
+	{ \
 		RN_SAVE_CALL(fn); \
 		fn; \
 		RN_VALIDATE_PARAM(fn, param); \
-	} while (0)
+	} \
+	while (0)
 
 #else
 

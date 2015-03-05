@@ -11,11 +11,12 @@
 
 #include <cassert>
 #include <algorithm>
-#include <glm/glm.hpp>
 #include <iostream>
 
 namespace rn
 {
+
+namespace win = ngn::window;
 
 using namespace std;
 
@@ -25,7 +26,7 @@ namespace
 	rn::Program prog{};
 }
 
-list<Font *> Font::collection{};
+vector<Font *> Font::collection{};
 
 void Font::reloadAll()
 {
@@ -68,6 +69,15 @@ void Font::init()
 	{
 		prog.load("rn/font.frag", "rn/font.vert");
 	}
+
+	event::subscribe<win::WindowResizeEvent>([] (const win::WindowResizeEvent &)
+	{
+		for (Font *font : Font::collection)
+		{
+			font->sx = win::width ? 2.0f / win::width : 0.f;
+			font->sy = win::height ? 2.0f / win::height : 0.f;
+		}
+	});
 }
 
 Font::Font()
@@ -83,7 +93,8 @@ Font::Font(string &&name)
 
 Font::~Font()
 {
-	Font::collection.remove(this);
+	// Font::collection.remove(this);
+	Font::collection.erase(remove(begin(Font::collection), end(Font::collection), this), end(Font::collection));
 }
 
 void Font::load(std::string &&source)
@@ -143,8 +154,8 @@ void Font::reload()
 
 	FT_Set_Pixel_Sizes(face, 0, fontSize);
 
-	sx = sx ? sx : 2.0f / ngn::window::width;
-	sy = sy ? sy : 2.0f / ngn::window::height;
+	sx = 2.0f / win::width;
+	sy = 2.0f / win::height;
 
 	RN_CHECK(glGenVertexArrays(1, &vao));
 	RN_CHECK(glGenBuffers(1, &vbo));
@@ -162,7 +173,7 @@ void Font::reload()
 
 	assert(face->glyph);
 
-	FT_GlyphSlot g = face->glyph;
+	const auto g = face->glyph;
 	int w = 0;
 	int h = 0;
 
@@ -197,8 +208,8 @@ void Font::reload()
 	atlasWidth = w;
 	atlasHeight = h;
 
-	// RN_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr));
-	RN_CHECK_PARAM(glTexStorage2D(GL_TEXTURE_2D, 1, GL_R8, w, h), rn::getEnumName(GL_R8));
+	RN_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr));
+	// RN_CHECK_PARAM(glTexStorage2D(GL_TEXTURE_2D, 1, GL_R8, w, h), rn::getEnumName(GL_R8));
 
 	int ox = 0;
 	int oy = 0;
@@ -224,7 +235,9 @@ void Font::reload()
 		if (g->bitmap.buffer)
 		{
 			RN_CHECK(glTexSubImage2D(GL_TEXTURE_2D, 0, ox, oy, g->bitmap.width, g->bitmap.rows, GL_RED, GL_UNSIGNED_BYTE, g->bitmap.buffer));
-		} else {
+		}
+		else
+		{
 			// clog << i << " [" << static_cast<char>(i) << "] skipping glTexSubImage2D" << endl;
 		}
 
@@ -249,7 +262,7 @@ void Font::reload()
 	UTIL_DEBUG
 	{
 		clog << fixed;
-		clog << "  [Font:" << fontName << " {" << source->name() << "}:" << (ngn::time() - timer) << "s]" << endl;
+		clog << "  [Font \"" << fontName << "\" {" << source->name() << "}:" << (ngn::time() - timer) << "s]" << endl;
 		clog.unsetf(ios::floatfield);
 	}
 }
@@ -329,7 +342,7 @@ void Font::render(const string &text)
 			continue;
 		}
 
-		const FontChar &fc = chars[c];
+		const auto &fc = chars[c];
 
 		float x2 =  x + fc.bl * sx;
 		float y2 = -y - fc.bt * sy;
@@ -359,7 +372,10 @@ void Font::render(const string &text)
 
 	RN_CHECK(glBindVertexArray(0));
 
-	if (cullFace) {
+	prog.forgo();
+
+	if (cullFace)
+	{
 		RN_CHECK(glEnable(GL_CULL_FACE));
 	}
 }
@@ -368,7 +384,8 @@ namespace
 {
 	const util::InitQAttacher attach(rn::initQ(), []
 	{
-		if ( ! rn::ext::ARB_texture_storage) {
+		if ( ! rn::ext::ARB_texture_storage)
+		{
 			throw string{"rn::Font initQ - rn::Font requires GL_ARB_texture_storage"};
 		}
 

@@ -69,10 +69,8 @@ size_t load(const string &name)
 	return id;
 }
 
-
 rn::Mesh & get(const size_t id)
 {
-
 	if (id == 0 || meshes.size() < id)
 	{
 		throw string{"asset::mesh::get() - invalid id (" + to_string(id) + ")"};

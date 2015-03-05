@@ -1,6 +1,7 @@
 #include "types.hpp"
 
-namespace rn {
+namespace rn
+{
 
 const GLuint LayoutLocation::vert = 0;
 const GLuint LayoutLocation::tex = 1;
@@ -144,7 +145,8 @@ glm::mat4 * UniformValue::set(glm::mat4 *vm4, GLsizei count)
 
 void UniformValue::reset()
 {
-	switch (type) {
+	switch (type)
+	{
 		case Type::uniform_v_int:
 			if (vi.first)
 			{

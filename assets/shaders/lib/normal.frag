@@ -3,7 +3,7 @@
 vec2 normalEncode(vec3 n)
 {
 	float scale = 1.7777;
-	return (n.xy / (n.z+1)) / scale * 0.5 + 0.5;
+	return (n.xy / (n.z + 1.0)) / scale * 0.5 + 0.5;
 }
 
 vec3 normalDecode(vec2 enc)

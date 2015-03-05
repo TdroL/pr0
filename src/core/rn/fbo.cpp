@@ -1,16 +1,15 @@
 #include "fbo.hpp"
 
 #include "../rn.hpp"
+#include "../rn/ext.hpp"
 #include "../util.hpp"
 #include "../util/align.hpp"
 #include "../util/str.hpp"
 #include "../src/mem.hpp"
 #include "../ngn.hpp"
-#include "../rn/ext.hpp"
 #include "../ngn/window.hpp"
 
 #include <limits>
-#include <string>
 #include <cassert>
 #include <iostream>
 #include <algorithm>
@@ -20,7 +19,7 @@ namespace rn
 
 using namespace std;
 
-list<FBO *> FBO::collection{};
+vector<FBO *> FBO::collection{};
 vector<FBO *> FBO::activeStack{};
 
 rn::Mesh FBO::mesh{"FBO mesh"};
@@ -90,12 +89,13 @@ FBO::FBO(string &&name)
 
 FBO::~FBO()
 {
-	FBO::collection.remove(this);
+	// FBO::collection.remove(this);
 
+	FBO::collection.erase(remove(begin(FBO::collection), end(FBO::collection), this), end(FBO::collection));
 	FBO::activeStack.erase(remove(begin(FBO::activeStack), end(FBO::activeStack), this), end(FBO::activeStack));
 }
 
-void FBO::setColorTex(GLint internalFormat, size_t i)
+void FBO::setColorTex(size_t i, GLint internalFormat, GLsizei levels, GLint minFilter, GLint magFilter)
 {
 	if (colors.size() <= i)
 	{
@@ -111,6 +111,12 @@ void FBO::setColorTex(GLint internalFormat, size_t i)
 	{
 		colors[i].enabled = false;
 	}
+
+	colors[i].levels = levels;
+	colors[i].layer = 0;
+	colors[i].minFilter = minFilter;
+	colors[i].magFilter = magFilter;
+	colors[i].owning = true;
 }
 
 void FBO::setDepthTex(GLint internalFormat)
@@ -143,6 +149,14 @@ void FBO::setDepthBuf(GLint internalFormat)
 	}
 }
 
+void FBO::attachColorTex(size_t i, GLuint id, GLint layer)
+{
+	colors[i].id = id;
+	colors[i].owning = false;
+	colors[i].enabled = true;
+	colors[i].layer = layer;
+}
+
 void FBO::clone(const FBO &fbo)
 {
 	reset();
@@ -151,7 +165,10 @@ void FBO::clone(const FBO &fbo)
 
 	for (auto &color : colors)
 	{
-		color.id = 0;
+		if (color.owning)
+		{
+			color.id = 0;
+		}
 	}
 
 	depth.internalFormat = fbo.depth.internalFormat;
@@ -194,7 +211,7 @@ void FBO::resetColorStorages()
 {
 	for (auto &color : colors)
 	{
-		if (color.id)
+		if (color.id && color.owning)
 		{
 			RN_CHECK(glDeleteTextures(1, &color.id));
 			color.id = 0;
@@ -230,7 +247,7 @@ void FBO::reload()
 
 	for (auto &color : colors)
 	{
-		if ( ! color.enabled)
+		if ( ! color.enabled || ! color.owning)
 		{
 			continue;
 		}
@@ -239,12 +256,12 @@ void FBO::reload()
 
 		RN_CHECK(glBindTexture(GL_TEXTURE_2D, color.id));
 
-		RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
-		RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+		RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, color.minFilter));
+		RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, color.minFilter));
 		RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
 		RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 
-		RN_CHECK_PARAM(glTexStorage2D(GL_TEXTURE_2D, 1, color.internalFormat, width, height), rn::getEnumName(color.internalFormat));
+		RN_CHECK_PARAM(glTexStorage2D(GL_TEXTURE_2D, color.levels, color.internalFormat, width, height), rn::getEnumName(color.internalFormat));
 
 		RN_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
 	}
@@ -283,7 +300,7 @@ void FBO::reload()
 	UTIL_DEBUG
 	{
 		clog << fixed;
-		clog << "  [FBO {" <<  fboName << "}:" << (ngn::time() - timer) << "s]" << endl;
+		clog << "  [FBO \"" <<  fboName << "\":" << (ngn::time() - timer) << "s]" << endl;
 		clog.unsetf(ios::floatfield);
 		// for (size_t i = 0; i < colors.size(); i++)
 		// {
@@ -323,7 +340,7 @@ void FBO::reloadSoft()
 
 			RN_CHECK(glBindTexture(GL_TEXTURE_2D, colors[i].id));
 
-			RN_CHECK(glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, colors[i].id, 0));
+			RN_CHECK(glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, colors[i].id, colors[i].layer));
 
 			drawBuffers.push_back(GL_COLOR_ATTACHMENT0 + i);
 		}
@@ -427,11 +444,13 @@ GLsizei FBO::bindDepthTex(GLsizei unit)
 
 void FBO::blit(GLuint target, GLbitfield mask, GLint filter, GLsizei targetWidth, GLsizei targetHeight)
 {
-	if ( ! targetWidth) {
+	if ( ! targetWidth)
+	{
 		targetWidth = width;
 	}
 
-	if ( ! targetHeight) {
+	if ( ! targetHeight)
+	{
 		targetHeight = height;
 	}
 
@@ -581,7 +600,8 @@ namespace
 {
 	const util::InitQAttacher attach(rn::initQ(), []
 	{
-		if ( ! rn::ext::ARB_texture_storage) {
+		if ( ! rn::ext::ARB_texture_storage)
+		{
 			throw string{"rn::FBO initQ - rn::FBO requires GL_ARB_texture_storage"};
 		}
 

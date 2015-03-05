@@ -9,6 +9,12 @@ namespace comp
 
 struct Stencil : public ecs::Component<Stencil>
 {
+	enum {
+		MASK_SHADED = 1,
+		MASK_FLAT = 2,
+		MASK_ALL = 1 | 2
+	};
+
 	GLint ref = 0;
 };
 

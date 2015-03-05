@@ -5,7 +5,8 @@
 #include <string>
 #include <functional>
 
-namespace util {
+namespace util
+{
 
 class InitQ
 {
@@ -28,6 +29,6 @@ public:
 	InitQAttacher(InitQ &container, std::function<void()> &&fn);
 };
 
-}
+} // util
 
 #endif

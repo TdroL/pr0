@@ -4,7 +4,6 @@
 #include <string>
 #include <memory>
 #include <vector>
-#include <list>
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include "../rn.hpp"
@@ -31,7 +30,7 @@ struct FontChar
 class Font
 {
 public:
-	static std::list<Font *> collection;
+	static std::vector<Font *> collection;
 	static void reloadAll();
 	static void reloadSoftAll();
 	static void init();

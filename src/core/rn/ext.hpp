@@ -4,7 +4,8 @@
 namespace rn
 {
 
-class Ext {
+class Ext
+{
 public:
 	const char * name;
 

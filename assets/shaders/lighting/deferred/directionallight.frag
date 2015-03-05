@@ -13,6 +13,7 @@ uniform float far;
 uniform sampler2D texNormal;
 uniform sampler2D texColor;
 uniform sampler2D texDepth;
+uniform sampler2D texAO;
 uniform sampler2D shadowMoments;
 uniform sampler2D shadowDepth;
 
@@ -20,6 +21,8 @@ uniform mat4 shadowmapMVP;
 
 uniform vec3 lightDirection;
 uniform vec4 lightColor;
+uniform float lightIntensity;
+uniform uint useColor;
 
 vec3 normalDecode(vec2 enc);
 vec3 positionReconstruct(float z, vec2 uv);
@@ -34,8 +37,16 @@ void main()
 	vec3 albedo = diffuseShininess.rgb;
 	float shininess = diffuseShininess.a;
 
+	if (useColor == 0u) {
+		albedo = vec3(0.5);
+	}
+
 	vec3 normal = normalDecode(encodedNormal);
 	vec3 position = positionReconstruct(depth, uv);
+
+	float occlusion = texture(texAO, uv).r;
+
+	albedo *= occlusion;
 
 	vec4 shadowCoord = shadowmapMVP * invV * vec4(position, 1.0) * 0.5 + 0.5;
 	shadowCoord /= shadowCoord.w;
@@ -54,9 +65,9 @@ void main()
 	float exponent = acos(n_h) / shininess;
 	float gauss = sign(theta) * exp(-(exponent * exponent));
 
-	vec3 lightColorG = pow(lightColor.rgb, vec3(2.2));
+	vec3 lightColorG = pow(lightColor.rgb, vec3(2.2)) * lightIntensity;
 
-	vec3 ambient  = lightColorG * albedo / 512.0;
+	vec3 ambient  = lightColorG * albedo / 16.0;
 	vec3 diffuse  = lightColorG * albedo * theta;
 	vec3 specular = lightColorG * gauss;
 
@@ -65,7 +76,7 @@ void main()
 	vec2 moments = texture(shadowMoments, shadowCoord.xy).rg;
 	visibility = vsmVisibility(min(shadowCoord.z, 1.0), moments);
 
-	outColor.rgb = pow(ambient + (diffuse + specular) * visibility, vec3(1/2.2));
-	// outColor.rgb = albedo;
+	outColor.rgb = ambient + (diffuse + specular) * visibility;
+	outColor.rgb = pow(outColor.rgb, vec3(1.0 / 2.2));
 	outColor.a = 1.0;
 }

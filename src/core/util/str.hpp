@@ -9,6 +9,10 @@ namespace util
 namespace str
 {
 
+void lowercase(std::string &s);
+
+void uppercase(std::string &s);
+
 void ltrim(std::string &s);
 
 void rtrim(std::string &s);

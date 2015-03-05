@@ -3,13 +3,17 @@
 #include "../util.hpp"
 #include "../ngn.hpp"
 #include "../ngn/fs.hpp"
+#include "../src/mem.hpp"
 #include <iostream>
+#include <algorithm>
 
 namespace rn
 {
 using namespace std;
 
-list<Mesh *> Mesh::collection{};
+vector<Mesh *> Mesh::collection{};
+
+Mesh Mesh::quad{"Mesh quad"};
 
 void Mesh::reloadAll()
 {
@@ -77,7 +81,8 @@ Mesh::Mesh(string &&name)
 
 Mesh::~Mesh()
 {
-	Mesh::collection.remove(this);
+	// Mesh::collection.remove(this);
+	Mesh::collection.erase(remove(begin(Mesh::collection), end(Mesh::collection), this), end(Mesh::collection));
 }
 
 Mesh & Mesh::operator=(Mesh &&rhs)
@@ -154,7 +159,7 @@ void Mesh::reload()
 	UTIL_DEBUG
 	{
 		clog << fixed;
-		clog << "  [Mesh:" << meshName << " {" << source->name() << "}:" << (ngn::time() - timer) << "s]" << endl;
+		clog << "  [Mesh \"" << meshName << "\" {\"" << source->name() << "\"}:" << (ngn::time() - timer) << "s]" << endl;
 		clog.unsetf(ios::floatfield);
 		// clog << "    layouts=" << layouts.size() << endl;
 		// clog << "    indices=" << indices.size() << endl;
@@ -230,6 +235,28 @@ void Mesh::render()
 
 		RN_CHECK(glBindVertexArray(0));
 	}
+}
+
+namespace
+{
+	const util::InitQAttacher attach(rn::initQ(), []
+	{
+		auto &&source = src::mem::mesh({
+			-1.0f,  1.0f,  0.0f, 1.0f,
+			-1.0f, -1.0f,  0.0f, 0.0f,
+			 1.0f,  1.0f,  1.0f, 1.0f,
+			 1.0f, -1.0f,  1.0f, 0.0f,
+		});
+
+		assert(source.get() != nullptr);
+
+		source->arrays.emplace_back(GL_TRIANGLE_STRIP, 0, 4);
+		source->layouts.emplace_back(0, 4, GL_FLOAT, 0, 0);
+
+		reinterpret_cast<src::mem::Mesh *>(source.get())->setName("Mesh quad");
+
+		Mesh::quad.load(move(source));
+	});
 }
 
 } // rn

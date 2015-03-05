@@ -1,9 +1,10 @@
 #include "ngn.hpp"
 
 #include "rn.hpp"
+#include "rn/prof.hpp"
 
-#include "ngn/window.hpp"
 #include "ngn/key.hpp"
+#include "ngn/window.hpp"
 
 #include <iostream>
 
@@ -30,7 +31,8 @@ void init()
 			throw string{"ngn::init() - glfwInit() - failed to initialize GLFW"};
 		}
 
-		glfwSetErrorCallback([](int code, const char *message) {
+		glfwSetErrorCallback([](int code, const char *message)
+		{
 			throw string{"GLFW error [" + to_string(code) + "] - " + string{message}};
 		});
 	}
@@ -52,7 +54,8 @@ void init()
 		throw string{"ngn::init() - gl3wInit() - Failed to initialize OpenGL"};
 	}
 
-	if ( ! gl3wIsSupported(window::contextMajor, window::contextMinor)) {
+	if ( ! gl3wIsSupported(window::contextMajor, window::contextMinor))
+	{
 		int versionMajor;
 		int versionMinor;
 		rn::get(GL_MAJOR_VERSION, versionMajor);
@@ -67,8 +70,6 @@ void init()
 		clog << "OpenGL info:" << endl;
 		clog << rn::getBasicInfo() << endl;
 	}
-
-	window::vsync(1);
 
 	initQ().run();
 }
@@ -98,6 +99,7 @@ void startLoop()
 
 void endLoop()
 {
+	rn::Prof::swapAll();
 	rn::stats.reset();
 	ngn::window::swapBuffers();
 }

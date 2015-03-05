@@ -6,7 +6,6 @@
 #include <array>
 #include <memory>
 #include <map>
-#include <list>
 #include "../rn.hpp"
 #include "types.hpp"
 #include "../src/file.hpp"
@@ -21,7 +20,7 @@ class Program
 public:
 	typedef src::Stream Source;
 
-	static std::list<Program *> collection;
+	static std::vector<Program *> collection;
 
 	static void init();
 	static void reloadLibs();
@@ -33,6 +32,8 @@ public:
 	static GLuint createProgram(const std::vector<GLuint> &shaders);
 
 	GLuint id = 0;
+
+	bool hasCompileErrors = false;
 
 	std::map<std::string, UniformValue> uniforms{};
 	std::unique_ptr<Source> fragmentShader{nullptr};
@@ -107,7 +108,8 @@ public:
 	{
 		UniformValue &uniformValue = getValue(name);
 
-		if (value) {
+		if (value)
+		{
 			var(uniformValue.id, uniformValue.set(value.release(), count), count);
 		}
 

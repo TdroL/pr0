@@ -20,7 +20,8 @@ void init(int argc, char const* argv[])
 
 		auto separator = name.find('=');
 
-		if (separator != string::npos) {
+		if (separator != string::npos)
+		{
 			name = name.substr(0, separator);
 			value = value.substr(separator + 1);
 		}

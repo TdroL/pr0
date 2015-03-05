@@ -3,10 +3,12 @@
 
 #include "../util.hpp"
 
-namespace util {
+namespace util
+{
 
 template <typename F>
-class ScopeExit {
+class ScopeExit
+{
 public:
 	bool active = true;
 	F fn;
@@ -31,12 +33,13 @@ public:
 };
 
 template <typename F>
-ScopeExit<F> makeScopeExit(F f) {
+ScopeExit<F> makeScopeExit(F f)
+{
 	return ScopeExit<F>{std::move(f)};
-};
+}
 
 #define UTIL_SCOPE_EXIT(fn) auto UTIL_CONCAT2(scopeExit, __COUNTER__) = util::makeScopeExit(fn)
 
-}
+} // util
 
 #endif

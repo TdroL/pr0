@@ -4,8 +4,9 @@
 #include "rn.hpp"
 #include "rn/ext.hpp"
 #include "rn/font.hpp"
-#include "rn/fbo.hpp"
+#include "rn/fb.hpp"
 #include "rn/mesh.hpp"
+#include "rn/prof.hpp"
 #include "ngn.hpp"
 #include "ngn/ino.hpp"
 #include "util/count.hpp"
@@ -106,7 +107,8 @@ void reload()
 	RN_CHECK(glEnable(GL_BLEND));
 	RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
-	const GLuint ignoreMessages[] = {
+	const GLuint ignoreMessages[] =
+	{
 		131076 // glVertexAttribPointer(..., **12**) - Usage warning: Generic vertex attribute array 2 uses a pointer with a small value (0x000000000000000C). Is this intended to be used as an offset into a buffer object?
 	};
 
@@ -137,7 +139,8 @@ void reloadAll()
 
 	rn::Mesh::reloadAll();
 	rn::Font::reloadAll();
-	rn::FBO::reloadAll();
+	rn::FB::reloadAll();
+	rn::Prof::reloadAll();
 }
 
 void reloadSoftAll()
@@ -146,7 +149,8 @@ void reloadSoftAll()
 
 	rn::Mesh::reloadSoftAll();
 	rn::Font::reloadSoftAll();
-	rn::FBO::reloadSoftAll();
+	rn::FB::reloadSoftAll();
+	rn::Prof::reloadSoftAll();
 }
 
 string getEnumName(GLenum value)

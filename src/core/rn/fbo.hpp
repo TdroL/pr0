@@ -1,7 +1,6 @@
 #ifndef RN_FBO_HPP
 #define RN_FBO_HPP
 
-#include <list>
 #include <vector>
 #include <string>
 #include <initializer_list>
@@ -28,8 +27,13 @@ public:
 	struct TexContainer
 	{
 		GLuint id = 0;
+		GLsizei levels = 1;
+		GLint layer = 0;
 		GLint internalFormat = GL_RGBA8;
+		GLint minFilter = GL_LINEAR;
+		GLint magFilter = GL_LINEAR;
 		bool enabled = false;
+		bool owning = true;
 	};
 
 	struct DepthContainer
@@ -39,7 +43,7 @@ public:
 		DepthType type{None};
 	};
 
-	static std::list<FBO *> collection;
+	static std::vector<FBO *> collection;
 	static std::vector<FBO *> activeStack;
 	static rn::Mesh mesh;
 	static rn::Program prog;
@@ -64,9 +68,11 @@ public:
 	explicit FBO(std::string &&name);
 	~FBO();
 
-	void setColorTex(GLint internalFormat, size_t i);
+	void setColorTex(size_t i, GLint internalFormat, GLsizei levels = 1, GLint minFilter = GL_LINEAR, GLint magFilter = GL_LINEAR);
 	void setDepthTex(GLint internalFormat);
 	void setDepthBuf(GLint internalFormat);
+
+	void attachColorTex(size_t i, GLuint id, GLint layer = 0);
 
 	void clone(const FBO &fbo);
 

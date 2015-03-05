@@ -17,15 +17,28 @@ namespace str
 
 using namespace std;
 
-void ltrim(string &s) {
+void lowercase(string &s)
+{
+	transform(begin(s), end(s), begin(s), ::tolower);
+}
+
+void uppercase(string &s)
+{
+	transform(begin(s), end(s), begin(s), ::toupper);
+}
+
+void ltrim(string &s)
+{
 	s.erase(begin(s), find_if(begin(s), end(s), not1(ptr_fun<int, int>(isspace))));
 }
 
-void rtrim(string &s) {
+void rtrim(string &s)
+{
 	s.erase(find_if(s.rbegin(), s.rend(), not1(ptr_fun<int, int>(isspace))).base(), end(s));
 }
 
-void trim(string &s) {
+void trim(string &s)
+{
 	ltrim(s);
 	rtrim(s);
 }
@@ -39,25 +52,27 @@ bool isNumeric(const string &s)
 {
 	int dots = 0;
 	return !s.empty() && end(s) == find_if(begin(s), end(s), [&dots](char c)
+	{
+		if (c == '.')
 		{
-			if (c == '.') {
-				dots++;
+			dots++;
 
-				if (dots > 1) {
-					return true;
-				}
-
-				return false;
+			if (dots > 1)
+			{
+				return true;
 			}
 
-			return !isdigit(c);
-		});
+			return false;
+		}
+
+		return !isdigit(c);
+	});
 }
 
 #ifdef __GNUG__
 
-string demangle(const char* name) {
-
+string demangle(const char* name)
+{
 	int status = -1;
 
 	unique_ptr<char, void(*)(void*)> res{abi::__cxa_demangle(name, nullptr, nullptr, &status), free};
@@ -67,8 +82,8 @@ string demangle(const char* name) {
 
 #else
 
-// does nothing if not g++
-string demangle(const char* name) {
+string demangle(const char* name)
+{
 	return name;
 }
 

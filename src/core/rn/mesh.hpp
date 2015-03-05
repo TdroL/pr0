@@ -3,7 +3,6 @@
 
 #include <string>
 #include <memory>
-#include <list>
 #include <vector>
 
 #include "../rn.hpp"
@@ -18,7 +17,9 @@ class Mesh
 public:
 	typedef src::Mesh Source;
 
-	static std::list<Mesh *> collection;
+	static std::vector<Mesh *> collection;
+	static Mesh quad;
+
 	static void reloadAll();
 	static void reloadSoftAll();
 

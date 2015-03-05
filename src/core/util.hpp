@@ -1,7 +1,8 @@
 #ifndef UTIL_HPP
 #define UTIL_HPP
 
-namespace util {
+namespace util
+{
 
 #define UTIL_STRINGIFY_IMPL(x) #x
 #define UTIL_STRINGIFY(x) UTIL_STRINGIFY_IMPL(x)

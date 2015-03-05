@@ -94,6 +94,8 @@ void enable(const Entity &entity)
 		data.resize(std::max(static_cast<size_t>(entity), static_cast<size_t>(32)));
 	}
 
+	data[entity] = C{};
+
 	event::emit(EntityEnableEvent<C>{entity});
 }
 
@@ -154,6 +156,17 @@ C & get(const Entity &entity)
 	}
 
 	return components[entity];
+}
+
+template <typename C>
+C & getOrCreate(const Entity &entity)
+{
+	if ( ! has<C>(entity))
+	{
+		enable<C>(entity);
+	}
+
+	return get<C>(entity);
 }
 
 /* /Core */

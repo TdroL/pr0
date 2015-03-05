@@ -3,9 +3,8 @@
 #include "../rn/ext.hpp"
 #include "../src/file.hpp"
 #include "../util/initq.hpp"
-#include <memory>
-#include <string>
 #include <iostream>
+#include <algorithm>
 
 namespace rn
 {
@@ -14,7 +13,7 @@ using namespace std;
 
 typedef src::Stream Source;
 
-list<Program *> Program::collection{};
+vector<Program *> Program::collection{};
 
 struct Lib
 {
@@ -40,9 +39,11 @@ void Program::init()
 {
 	fragLibs.emplace_back(src::file::stream("lib/normal.frag"));
 	fragLibs.emplace_back(src::file::stream("lib/position.frag"));
+	fragLibs.emplace_back(src::file::stream("lib/depth.frag"));
 	fragLibs.emplace_back(src::file::stream("lib/blur.frag"));
 	fragLibs.emplace_back(src::file::stream("lib/vsm.frag"));
 	fragLibs.emplace_back(src::file::stream("lib/esm.frag"));
+	fragLibs.emplace_back(src::file::stream("lib/util.frag"));
 
 	reloadLibs();
 }
@@ -134,7 +135,7 @@ GLuint Program::createShader(GLenum type, const GLchar *sourceCstr, GLint source
 			break;
 		}
 
-		throw string{"rn::Program::createShader() - compile failure in "} + typeVerbose + " shader:\n" + logCstr.get() + "\n" + string{sourceCstr, static_cast<size_t>(sourceLength)};
+		throw string{"rn::Program::createShader() - compile failure in "} + typeVerbose + " shader:\n" + string{sourceCstr, static_cast<size_t>(sourceLength)} + "\n" + logCstr.get();
 	}
 
 	return shader;
@@ -236,7 +237,8 @@ Program::Program(string &&name)
 
 Program::~Program()
 {
-	Program::collection.remove(this);
+	// Program::collection.remove(this);
+	Program::collection.erase(remove(begin(Program::collection), end(Program::collection), this), end(Program::collection));
 }
 
 void Program::load(const string &fragmentShader, const string &vertexShader)
@@ -280,12 +282,22 @@ void Program::reload()
 	SRC_STREAM_OPEN(fragmentShader);
 	SRC_STREAM_OPEN(vertexShader);
 
-	vector<GLuint> shaders{
-		Program::createShader(GL_FRAGMENT_SHADER, fragmentShader->contents),
-		Program::createShader(GL_VERTEX_SHADER, vertexShader->contents)
-	};
+	hasCompileErrors = false;
 
-	id = Program::createProgram(shaders);
+	try
+	{
+		vector<GLuint> shaders{
+			Program::createShader(GL_FRAGMENT_SHADER, fragmentShader->contents),
+			Program::createShader(GL_VERTEX_SHADER, vertexShader->contents)
+		};
+
+		id = Program::createProgram(shaders);
+	}
+	catch (...)
+	{
+		hasCompileErrors = true;
+		throw;
+	}
 
 	if ( ! glIsProgram(id))
 	{
@@ -397,12 +409,13 @@ void Program::reset()
 	}
 
 	id = 0;
+	hasCompileErrors = false;
 }
 
 void Program::use()
 {
 #if defined(DEBUG)
-	if (id && ! glIsProgram(id))
+	if ( ! hasCompileErrors && id && ! glIsProgram(id))
 	{
 		clog << "[notice] rn::Program{" << programName << "}::use() - invalid program id \"" << id << "\" (" << (fragmentShader ? fragmentShader->name() : string{"Unknown fragment shader"}) << ", " << (vertexShader ? vertexShader->name() : string{"Unknown vertex shader"}) << ")" << endl;
 	}
@@ -418,13 +431,13 @@ void Program::forgo()
 GLint Program::getName(const string &name)
 {
 #if defined(DEBUG)
-	if (id && ! glIsProgram(id))
+	if ( ! hasCompileErrors && id && ! glIsProgram(id))
 	{
 		clog << "[notice] rn::Program{" << programName << "}::getName(\"" << name << "\") - invalid program id \"" << id << "\" ("
 		     << (fragmentShader ? fragmentShader->name() : string{"Unknown fragment shader"}) << ", "
 		     << (vertexShader ? vertexShader->name() : string{"Unknown vertex shader"}) << ")" << endl;
 	}
-	else if ( ! id)
+	else if ( ! hasCompileErrors && ! id)
 	{
 		clog << "[notice] rn::Program{" << programName << "}::getName(\"" << name << "\") - program id is 0 ("
 		     << (fragmentShader ? fragmentShader->name() : string{"Unknown fragment shader"}) << ", "
@@ -463,7 +476,7 @@ UniformValue & Program::getValue(const string &name)
 void Program::var(GLint location, GLint value)
 {
 #if defined(DEBUG)
-	if ( ! id)
+	if ( ! hasCompileErrors && ! id)
 	{
 		clog << "rn::Program{" << programName << "}::var([GLint]) - program id is 0" << endl;
 	}
@@ -478,7 +491,7 @@ void Program::var(GLint location, GLint value)
 void Program::var(GLint location, GLuint value)
 {
 #if defined(DEBUG)
-	if ( ! id)
+	if ( ! hasCompileErrors && ! id)
 	{
 		clog << "rn::Program{" << programName << "}::var([GLuint]) - program id is 0" << endl;
 	}
@@ -493,7 +506,7 @@ void Program::var(GLint location, GLuint value)
 void Program::var(GLint location, GLfloat value)
 {
 #if defined(DEBUG)
-	if ( ! id)
+	if ( ! hasCompileErrors && ! id)
 	{
 		clog << "rn::Program{" << programName << "}::var([GLfloat]) - program id is 0" << endl;
 	}
@@ -508,7 +521,7 @@ void Program::var(GLint location, GLfloat value)
 void Program::var(GLint location, const glm::vec2 &value)
 {
 #if defined(DEBUG)
-	if ( ! id)
+	if ( ! hasCompileErrors && ! id)
 	{
 		clog << "rn::Program{" << programName << "}::var([glm::vec2]) - program id is 0" << endl;
 	}
@@ -523,7 +536,7 @@ void Program::var(GLint location, const glm::vec2 &value)
 void Program::var(GLint location, const glm::vec3 &value)
 {
 #if defined(DEBUG)
-	if ( ! id)
+	if ( ! hasCompileErrors && ! id)
 	{
 		clog << "rn::Program{" << programName << "}::var([glm::vec3]) - program id is 0" << endl;
 	}
@@ -538,7 +551,7 @@ void Program::var(GLint location, const glm::vec3 &value)
 void Program::var(GLint location, const glm::vec4 &value)
 {
 #if defined(DEBUG)
-	if ( ! id)
+	if ( ! hasCompileErrors && ! id)
 	{
 		clog << "rn::Program{" << programName << "}::var([glm::vec4]) - program id is 0" << endl;
 	}
@@ -553,7 +566,7 @@ void Program::var(GLint location, const glm::vec4 &value)
 void Program::var(GLint location, const glm::mat3 &value)
 {
 #if defined(DEBUG)
-	if ( ! id)
+	if ( ! hasCompileErrors && ! id)
 	{
 		clog << "rn::Program{" << programName << "}::var([glm::mat3]) - program id is 0" << endl;
 	}
@@ -568,7 +581,7 @@ void Program::var(GLint location, const glm::mat3 &value)
 void Program::var(GLint location, const glm::mat4 &value)
 {
 #if defined(DEBUG)
-	if ( ! id)
+	if ( ! hasCompileErrors && ! id)
 	{
 		clog << "rn::Program{" << programName << "}::var([glm::mat4]) - program id is 0" << endl;
 	}
@@ -583,7 +596,7 @@ void Program::var(GLint location, const glm::mat4 &value)
 void Program::var(GLint location, const GLint *value, GLsizei count)
 {
 #if defined(DEBUG)
-	if ( ! id)
+	if ( ! hasCompileErrors && ! id)
 	{
 		clog << "rn::Program{" << programName << "}::var([GLint], count) - program id is 0" << endl;
 	}
@@ -598,7 +611,7 @@ void Program::var(GLint location, const GLint *value, GLsizei count)
 void Program::var(GLint location, const GLuint *value, GLsizei count)
 {
 #if defined(DEBUG)
-	if ( ! id)
+	if ( ! hasCompileErrors && ! id)
 	{
 		clog << "rn::Program{" << programName << "}::var([GLuint], count) - program id is 0" << endl;
 	}
@@ -613,7 +626,7 @@ void Program::var(GLint location, const GLuint *value, GLsizei count)
 void Program::var(GLint location, const GLfloat *value, GLsizei count)
 {
 #if defined(DEBUG)
-	if ( ! id)
+	if ( ! hasCompileErrors && ! id)
 	{
 		clog << "rn::Program{" << programName << "}::var([GLfloat], count) - program id is 0" << endl;
 	}
@@ -628,7 +641,7 @@ void Program::var(GLint location, const GLfloat *value, GLsizei count)
 void Program::var(GLint location, const glm::vec2 *value, GLsizei count)
 {
 #if defined(DEBUG)
-	if ( ! id)
+	if ( ! hasCompileErrors && ! id)
 	{
 		clog << "rn::Program{" << programName << "}::var([glm::vec2], count) - program id is 0" << endl;
 	}
@@ -643,7 +656,7 @@ void Program::var(GLint location, const glm::vec2 *value, GLsizei count)
 void Program::var(GLint location, const glm::vec3 *value, GLsizei count)
 {
 #if defined(DEBUG)
-	if ( ! id)
+	if ( ! hasCompileErrors && ! id)
 	{
 		clog << "rn::Program{" << programName << "}::var([glm::vec3], count) - program id is 0" << endl;
 	}
@@ -658,7 +671,7 @@ void Program::var(GLint location, const glm::vec3 *value, GLsizei count)
 void Program::var(GLint location, const glm::vec4 *value, GLsizei count)
 {
 #if defined(DEBUG)
-	if ( ! id)
+	if ( ! hasCompileErrors && ! id)
 	{
 		clog << "rn::Program{" << programName << "}::var([glm::vec4], count) - program id is 0" << endl;
 	}
@@ -673,7 +686,7 @@ void Program::var(GLint location, const glm::vec4 *value, GLsizei count)
 void Program::var(GLint location, const glm::mat3 *value, GLsizei count)
 {
 #if defined(DEBUG)
-	if ( ! id)
+	if ( ! hasCompileErrors && ! id)
 	{
 		clog << "rn::Program{" << programName << "}::var([glm::mat3], count) - program id is 0" << endl;
 	}
@@ -688,7 +701,7 @@ void Program::var(GLint location, const glm::mat3 *value, GLsizei count)
 void Program::var(GLint location, const glm::mat4 *value, GLsizei count)
 {
 #if defined(DEBUG)
-	if ( ! id)
+	if ( ! hasCompileErrors && ! id)
 	{
 		clog << "rn::Program{" << programName << "}::var([glm::mat4], count) - program id is 0" << endl;
 	}
@@ -817,7 +830,8 @@ namespace
 {
 	const util::InitQAttacher attach(rn::initQ(), []
 	{
-		if ( ! rn::ext::ARB_separate_shader_objects) {
+		if ( ! rn::ext::ARB_separate_shader_objects)
+		{
 			throw string{"rn::Program initQ - rn::Program requires GL_ARB_separate_shader_objects"};
 		}
 

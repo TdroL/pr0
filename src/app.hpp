@@ -6,8 +6,11 @@
 #include <core/rn/mesh.hpp>
 #include <core/rn/program.hpp>
 
-#include <core/rn/fbo.hpp>
-#include <core/rn/tex2d.hpp>
+#include <core/rn/fb.hpp>
+#include <core/rn/prof.hpp>
+
+#include <app/fx/ssao.hpp>
+#include <app/scene.hpp>
 
 class App
 {
@@ -22,27 +25,37 @@ public:
 	rn::Program progPointLight{};
 	rn::Program progFlatLight{};
 
-	rn::Program progSSAO{};
 	rn::Program progSSAOBlit{};
-	rn::Program progSSAOBlur{};
 
 	rn::Program progFBOBlit{};
 	rn::Program progBlurGaussian7{};
 	rn::Program progBlurPreview{};
 	rn::Program progShadowMapPreview{};
+	rn::Program progTexPreview{};
 
-	rn::FBO fboGBuffer{"gBuffer"};
-	rn::FBO fboShadowMapBuffer{"shadowMapBuffer"};
-	rn::FBO fboShadowMapBlurBuffer{"fboShadowMapBlurBuffer"};
-	rn::FBO fboSSAOBuffer{"fboSSAOBuffer"};
-	rn::FBO fboSSAOBlurBuffer{"fboSSAOBlurBuffer"};
+	rn::FB fbGBuffer{"App::fbGBuffer"};
+	rn::FB fbShadowMap{"App::fbShadowMap"};
+	rn::FB fbShadowMapBlur{"App::fbShadowMapBlur"};
 
-	rn::Tex2D texNoise{"SSAO noise", GL_RGB8, GL_LINEAR, GL_REPEAT};
+	fx::SSAO ssao{};
+
+	rn::Prof profRender{};
+	rn::Prof profGBuffer{};
+	rn::Prof profDirectionalLight{};
+	rn::Prof profPointLight{};
+	rn::Prof profFlatLight{};
+	rn::Prof profSSAO{};
+
+	app::Scene scene{};
 
 	App() {};
 	~App() {};
 
 	void init();
+
+	void initProg();
+	void initFB();
+	void initScene();
 
 	void update();
 
@@ -53,7 +66,7 @@ public:
 	void pointLightsPass();
 	void flatLightPass();
 
-	void ssao();
+	void ssaoPass();
 
 	glm::mat4 genShadowMap(ecs::Entity lightId);
 };

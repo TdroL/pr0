@@ -17,6 +17,9 @@ int height = -1;
 const int contextMajor = 3;
 const int contextMinor = 3;
 
+Mode currentMode = Mode::windowed;
+int currentVsync = 0;
+
 namespace
 {
 	void errorCallback(int error, const char* description)
@@ -78,6 +81,14 @@ namespace
 
 		cerr << ": " << description << endl;
 	}
+
+	void resizeCallback(GLFWwindow*, int width, int height)
+	{
+		window::width = width;
+		window::height = height;
+
+		event::emit(WindowResizeEvent{width, height});
+	}
 }
 
 void resetHints()
@@ -95,6 +106,12 @@ void resetHints()
 #endif
 
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+
+	glfwWindowHint(GLFW_REFRESH_RATE, GL_DONT_CARE);
+
+	glfwWindowHint(GLFW_RED_BITS, GL_DONT_CARE);
+	glfwWindowHint(GLFW_GREEN_BITS, GL_DONT_CARE);
+	glfwWindowHint(GLFW_BLUE_BITS, GL_DONT_CARE);
 }
 
 void create(int width, int height)
@@ -104,22 +121,7 @@ void create(int width, int height)
 	window::width = width;
 	window::height = height;
 
-	resetHints();
-
-	glfwWindowHint(GLFW_DECORATED, GL_TRUE);
-	glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
-
-	handler = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
-
-	if ( ! handler)
-	{
-		throw string{"ngn::window::create() - failed to create new window"};
-	}
-
-	glfwSetWindowPos(handler, 10, 30);
-	glfwMakeContextCurrent(handler);
-
-	glfwSetErrorCallback(errorCallback);
+	switchMode(currentMode, currentVsync);
 }
 
 void release()
@@ -131,14 +133,14 @@ void release()
 	}
 }
 
-void switchMode(Mode mode)
+void switchMode(Mode mode, int vsync)
 {
 	resetHints();
 
-	/**/
 	GLFWmonitor *monitor = nullptr;
 
-	switch (mode) {
+	switch (mode)
+	{
 		case Mode::borderless:
 			glfwWindowHint(GLFW_DECORATED, GL_FALSE);
 			glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
@@ -150,36 +152,36 @@ void switchMode(Mode mode)
 		break;
 
 		case Mode::fullscreen:
-			glfwWindowHint(GLFW_DECORATED, GL_TRUE);
+			if (handler && mode == currentMode)
+			{
+				// Create temporary window, so switching vsync in fullscreen wont end as borderless mode
+				GLFWwindow *tempHandler = glfwCreateWindow(width, height, "Temporary window", nullptr, handler);
+
+				if ( ! tempHandler)
+				{
+					throw string{"ngn::window::switchMode() - failed to create temporary window"};
+				}
+
+				glfwMakeContextCurrent(tempHandler);
+
+				glfwDestroyWindow(handler);
+
+				handler = tempHandler;
+			}
+
+			glfwWindowHint(GLFW_DECORATED, GL_DONT_CARE);
 			glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 			monitor = glfwGetPrimaryMonitor();
+
+			const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+			glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+			glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+			glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+			glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
 		break;
 	}
-	/*/
-	if (mode == Mode::borderless)
-	{
-		glfwWindowHint(GLFW_DECORATED, GL_FALSE);
-	}
-	else
-	{
-		glfwWindowHint(GLFW_DECORATED, GL_TRUE);
-	}
 
-	GLFWmonitor *monitor = nullptr;
-	if (mode == Mode::fullscreen)
-	{
-		monitor = glfwGetPrimaryMonitor();
-	}
-
-	if (mode == Mode::windowed)
-	{
-		glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
-	}
-	else
-	{
-		glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-	}
-	*/
+	glfwWindowHint(GLFW_DOUBLEBUFFER, GL_TRUE);
 
 	GLFWwindow *newHandler = glfwCreateWindow(width, height, title.c_str(), monitor, handler);
 
@@ -204,7 +206,15 @@ void switchMode(Mode mode)
 		glfwDestroyWindow(handler);
 	}
 
+	glfwSetErrorCallback(errorCallback);
+	glfwSetWindowSizeCallback(newHandler, resizeCallback);
+
+	glfwSwapInterval(vsync);
+
 	handler = newHandler;
+
+	currentMode = mode;
+	currentVsync = vsync;
 }
 
 void setTitle(const string &title)
@@ -219,11 +229,6 @@ void setTitle(string &&title)
 	assert(handler != nullptr);
 	window::title = move(title);
 	glfwSetWindowTitle(handler, title.c_str());
-}
-
-void vsync(int mode)
-{
-	glfwSwapInterval(mode);
 }
 
 bool shouldClose()

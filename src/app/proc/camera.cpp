@@ -76,6 +76,7 @@ void Camera::update(const ecs::Entity &entity, const glm::vec3 &translate, const
 		glm::quat orientation = glm::normalize(orientX * orientY * orientZ);
 
 		view.matrix = glm::translate(glm::mat4_cast(orientation), -position);
+		view.invMatrix = glm::inverse(view.matrix);
 	}
 }
 

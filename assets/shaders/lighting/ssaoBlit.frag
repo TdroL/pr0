@@ -5,11 +5,18 @@ layout(location = 0) out vec4 outColor;
 in vec2 uv;
 
 uniform sampler2D texSource;
-uniform sampler2D texColor;
+uniform sampler2D texZ;
 
 void main()
 {
-	vec3 albedo = texture(texColor, uv).rgb;
-	outColor.rgb = pow(albedo, vec3(2.2));
-	outColor.a = texture(texSource, uv).r;
+	/**/
+	outColor.rgb = texture(texSource, uv).rrr;
+	/*/
+	outColor.rgb = texture(texSource, uv).rgb;
+	/**/
+
+	int level = 0;
+	outColor.rgb = texelFetch(texZ, ivec2(uv * textureSize(texZ, level)), level).rrr;
+	outColor.rgb = texelFetch(texSource, ivec2(gl_FragCoord.xy), 0).rgb;
+	outColor.a = 1.0;
 }

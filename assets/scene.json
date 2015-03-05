@@ -1,0 +1,151 @@
+[
+	{
+		"name": {
+			"name": "Input-controlled sphere"
+		},
+		"input": {
+			"keyCommands": [
+				["*i", "MoveForward"],
+				["*k", "MoveBackward"],
+				["*j", "StrafeLeft"],
+				["*l", "StrafeRight"],
+				["*u", "MoveUpward"],
+				["*o", "MoveDownward"]
+			]
+		},
+		"temporalTransform": {
+			"translationSpeed": [10.0],
+			"translationNormalized": true,
+			"rotationSpeed": [90.0]
+		},
+		"transform": {
+			"translation": [0.0, 0.0, -1.0]
+		},
+		"mesh": {
+			"id": "sphere.sbm"
+		},
+		"material": {
+			"diffuse": [0.25, 0.5, 0.75, 1.0],
+			"shininess": 0.0
+		},
+		"stencil": {
+			"ref": "flat"
+		}
+	},
+	{
+		"name": {
+			"name": "Cube"
+		},
+		"transform": {
+			"translation": [0.0, 0.0, -3.0]
+		},
+		"material": {
+			"diffuse": [0.75, 0.75, 0.75, 1.0],
+			"shininess": 0.0675
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"mesh": {
+			"id": "cube.sbm"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Monkey"
+		},
+		"transform": {
+			"translation": [2.0, 0.0, 0.0]
+		},
+		"material": {
+			"diffuse": [0.19, 0.15, 0.11, 1.0],
+			"shininess": 0.5
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"mesh": {
+			"id": "suzanne.sbm"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Venus"
+		},
+		"transform": {
+			"translation": [-2.0, -0.25, 0.0]
+		},
+		"material": {
+			"diffuse": [0.16, 0.04, 0.16, 1.0],
+			"shininess": 0.25
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"mesh": {
+			"id": "venus.sbm"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Dragon"
+		},
+		"transform": {
+			"translation": [0.0, -1.5, -2.0],
+			"scale": [3.0]
+		},
+		"material": {
+			"diffuse": [0.16, 0.16, 0.04, 1.0],
+			"shininess": 0.125
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"mesh": {
+			"id": "dragon.sbm"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Floor"
+		},
+		"transform": {
+			"translation": [0.0, -1.5, 0.0],
+			"scale": [100.0]
+		},
+		"material": {
+			"diffuse": [0.04, 0.16, 0.04, 1.0],
+			"shininess": 0.0675
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"mesh": {
+			"id": "plane.sbm"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Cornell Box"
+		},
+		"transform": {
+			"translation": [-4.0, -1.48, 0.0]
+		},
+		"material": {
+			"diffuse": [0.18, 0.18, 0.18, 1.0],
+			"shininess": 0.03375
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"mesh": {
+			"id": "cornell-box-cycles.sbm"
+		},
+		"occluder": {}
+	}
+]

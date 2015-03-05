@@ -6,16 +6,18 @@
 namespace ecs
 {
 
-std::vector<std::bitset<ecs::MAX_COMPONENTS>> entityComponentMasks{};
+using namespace std;
+
+vector<bitset<ecs::MAX_COMPONENTS>> entityComponentMasks{};
 
 namespace
 {
-	std::vector<unsigned int> freeIds{};
+	vector<unsigned int> freeIds{};
 }
 
 /* #Iterators */
 
-EntityIteratorWrapper::Iterator::Iterator(const std::bitset<MAX_COMPONENTS> &bitmask, const Entity &entity)
+EntityIteratorWrapper::Iterator::Iterator(const bitset<MAX_COMPONENTS> &bitmask, const Entity &entity)
 	: bitmask{bitmask}, entity{entity}
 {}
 
@@ -46,7 +48,7 @@ bool EntityIteratorWrapper::Iterator::operator!=(const EntityIteratorWrapper::It
 	return entity != rhs.entity;
 }
 
-EntityIteratorWrapper::EntityIteratorWrapper(const std::bitset<MAX_COMPONENTS> &bitmask)
+EntityIteratorWrapper::EntityIteratorWrapper(const bitset<MAX_COMPONENTS> &bitmask)
 	: bitmask{bitmask}
 {}
 
@@ -98,16 +100,17 @@ void destroy(Entity &entity)
 {
 	event::emit(EntityDestroyEvent{entity});
 
+	entityComponentMasks[entity].reset();
+
 	freeIds.push_back(entity);
-	entity = 0;
 }
 
-bool has(const Entity &entity, const std::bitset<MAX_COMPONENTS> &bitmask)
+bool has(const Entity &entity, const bitset<MAX_COMPONENTS> &bitmask)
 {
 	return (entityComponentMasks[entity] & bitmask) == bitmask;
 }
 
-EntityIteratorWrapper findWith(const std::bitset<MAX_COMPONENTS> &bitmask)
+EntityIteratorWrapper findWith(const bitset<MAX_COMPONENTS> &bitmask)
 {
 	return EntityIteratorWrapper{bitmask};
 }

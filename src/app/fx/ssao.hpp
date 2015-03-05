@@ -2,11 +2,14 @@
 #define APP_FX_SSAO_HPP
 
 #include <core/rn.hpp>
-#include <core/rn/fbo.hpp>
+#include <core/rn/fb.hpp>
 #include <core/rn/program.hpp>
+#include <core/rn/prof.hpp>
 
-namespace app
-{
+#include <string>
+#include <vector>
+
+#include "../comp/projection.hpp"
 
 namespace fx
 {
@@ -14,23 +17,37 @@ namespace fx
 class SSAO
 {
 public:
-	GLfloat radius = 0.f;
-	GLfloat bias = 0.f;
-	GLfloat intensity = 0.f;
+	GLfloat radius = 0.25;
+	GLfloat intensity = 0.75;
 
 	GLsizei zMipLevels = 5;
 
-	rn::FBO fboZ{"app::fx::SSAO::fboZ"};
-	rn::FBO fboBuffer{"app::fx::SSAO::fboBuffer"};
+	comp::Projection projection{};
 
+	rn::FB fbZ{"fx::SSAO::fbZ"};
+	std::vector<rn::FB> fbZMipMaps{};
+	rn::FB fbAO{"fx::SSAO::fbAO"};
+	rn::FB fbBlur{"fx::SSAO::fbBlur"};
+
+	rn::Program progReconstructZ{};
+	rn::Program progMinify{};
 	rn::Program progSAO{};
 	rn::Program progBlur{};
 
-	void init();
+	rn::Prof profZ{};
+	rn::Prof profMipMaps{};
+	rn::Prof profAO{};
+	rn::Prof profBlur{};
+
+	void init(const comp::Projection &projection);
+
+	void clear();
+
+	void genMipMaps(rn::FB &fbGBuffer);
+	void computeAO(rn::FB &fbGBuffer);
+	void blur(rn::FB &fbGBuffer);
 };
 
 } // fx
-
-} // app
 
 #endif

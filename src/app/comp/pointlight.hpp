@@ -14,6 +14,7 @@ struct PointLight : public ecs::Component<PointLight>
 	// GLfloat spotExponent = 0.f;
 	// GLfloat spotCutoff = 180.f;
 	// GLfloat constantAttenuation = 1.f;
+	GLfloat intensity = 1.f;
 	GLfloat linearAttenuation = 0.f;
 	GLfloat quadraticAttenuation = 0.f;
 	bool shadowCaster = false;
