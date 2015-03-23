@@ -6,6 +6,7 @@
 #include "../src/mem.hpp"
 #include <iostream>
 #include <algorithm>
+#include <limits>
 
 namespace rn
 {
@@ -62,7 +63,7 @@ Mesh::Mesh(Mesh &&rhs)
 	arrays = move(rhs.arrays);
 	meshName = rhs.meshName; // copy
 
-	boundingSphere = rhs.boundingSphere;
+	boundingRadius = rhs.boundingRadius;
 	boundingBox.min = rhs.boundingBox.min;
 	boundingBox.max = rhs.boundingBox.max;
 
@@ -98,7 +99,7 @@ Mesh & Mesh::operator=(Mesh &&rhs)
 	arrays = move(rhs.arrays);
 	meshName = rhs.meshName; // copy
 
-	boundingSphere = rhs.boundingSphere;
+	boundingRadius = rhs.boundingRadius;
 	boundingBox.min = rhs.boundingBox.min;
 	boundingBox.max = rhs.boundingBox.max;
 
@@ -143,6 +144,17 @@ void Mesh::reload()
 	indices = source->indices;
 	arrays = source->arrays;
 
+	for (const auto & layout : layouts)
+	{
+		// clog << layout.index << ", " << layout.size << ", " << rn::getEnumName(layout.type) << ", " << layout.stride << ", " << dec << reinterpret_cast<size_t>(layout.pointer) << " vbo=" << vbo << " ibo=" << ibo << endl;
+
+		if (layout.index == rn::LayoutLocation::pos)
+		{
+			buildBounds(vertexData, layout);
+			break;
+		}
+	}
+
 	RN_CHECK(glGenBuffers(1, &vbo));
 	RN_CHECK(glBindBuffer(GL_ARRAY_BUFFER, vbo));
 	RN_CHECK(glBufferData(GL_ARRAY_BUFFER, vertexData.size, vertexData.data, vertexData.usage));
@@ -153,6 +165,7 @@ void Mesh::reload()
 		RN_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo));
 		RN_CHECK(glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexData.size, indexData.data, indexData.usage));
 	}
+
 
 	reloadSoft();
 
@@ -211,6 +224,56 @@ void Mesh::reset()
 	}
 }
 
+void Mesh::buildBounds(const rn::BufferData &vertexData, const rn::VertexLayout &layout)
+{
+	boundingRadius = -1.f;
+	boundingBox.min = glm::vec3{numeric_limits<float>::max()};
+	boundingBox.max = glm::vec3{-numeric_limits<float>::max()};
+
+	if ( ! vertexData.data) {
+		return;
+	}
+
+	if (layout.type != GL_FLOAT)
+	{
+		clog << "rn::Mesh{" + meshName + "}::buildBounds() - unknown layout type" << endl;
+		return;
+	}
+
+	if (layout.size != 3)
+	{
+		clog << "rn::Mesh{" + meshName + "}::buildBounds() - unknown layout size" << endl;
+		return;
+	}
+
+	if (static_cast<size_t>(layout.stride) < sizeof(GLfloat) * 3)
+	{
+		clog << "rn::Mesh{" + meshName + "}::buildBounds() - incorrect stride" << endl;
+		return;
+	}
+
+	const uint8_t *data = reinterpret_cast<uint8_t *>(vertexData.data) + reinterpret_cast<size_t>(layout.pointer);
+	const uint8_t *end = reinterpret_cast<uint8_t *>(vertexData.data) + vertexData.size;
+
+	while ((data + sizeof(GLfloat) * 3) < end)
+	{
+		const GLfloat *vert = reinterpret_cast<const GLfloat *>(data);
+
+		boundingBox.min.x = min(boundingBox.min.x, vert[0]);
+		boundingBox.max.x = max(boundingBox.max.x, vert[0]);
+		boundingBox.min.y = min(boundingBox.min.y, vert[1]);
+		boundingBox.max.y = max(boundingBox.max.y, vert[1]);
+		boundingBox.min.z = min(boundingBox.min.z, vert[2]);
+		boundingBox.max.z = max(boundingBox.max.z, vert[2]);
+
+		boundingRadius = max(boundingRadius, vert[0] * vert[0] + vert[1] * vert[1] + vert[2] * vert[2]);
+
+		data += layout.stride;
+	}
+
+	boundingRadius = sqrt(boundingRadius);
+}
+
 void Mesh::render()
 {
 	if (vao)
@@ -251,9 +314,11 @@ namespace
 		assert(source.get() != nullptr);
 
 		source->arrays.emplace_back(GL_TRIANGLE_STRIP, 0, 4);
-		source->layouts.emplace_back(0, 4, GL_FLOAT, 0, 0);
+		source->layouts.emplace_back(rn::LayoutLocation::pos, 2, GL_FLOAT, sizeof(GLfloat) * 4, 0);
+		source->layouts.emplace_back(rn::LayoutLocation::tex, 2, GL_FLOAT, sizeof(GLfloat) * 4, sizeof(GLfloat) * 2);
 
-		reinterpret_cast<src::mem::Mesh *>(source.get())->setName("Mesh quad");
+		dynamic_cast<src::mem::Mesh *>(source.get())->setName("Mesh quad");
+		// reinterpret_cast<src::mem::Mesh *>(source.get())->setName("Mesh quad");
 
 		Mesh::quad.load(move(source));
 	});

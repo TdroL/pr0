@@ -34,7 +34,7 @@ public:
 
 	std::string meshName = "Unnamed mesh";
 
-	GLfloat boundingSphere = 0.f;
+	GLfloat boundingRadius = 0.f;
 	struct BoundingBox{
 		glm::vec3 min{};
 		glm::vec3 max{};
@@ -53,6 +53,8 @@ public:
 	void reload();
 	void reloadSoft();
 	void reset();
+
+	void buildBounds(const rn::BufferData &vertexData, const rn::VertexLayout &layout);
 
 	void render();
 };

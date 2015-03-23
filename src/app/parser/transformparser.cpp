@@ -2,17 +2,22 @@
 
 #include <app/comp/transform.hpp>
 
+#include <iostream>
+
 namespace
 {
 
-// TransformParser transformParser{"transform", [] (ecs::Entity &entity, const Parser::objectType &object)
-// {
-	// ecs::enable<comp::Transform>(entity);
+using namespace std;
 
-	// auto &transform = ecs::get<comp::Transform>(entity);
+TransformParser transformParser{"transform", [] (ecs::Entity &entity, const Parser::objectType &object)
+{
+	ecs::enable<comp::Transform>(entity);
 
-	// TransformParser::assign(object, "translation", transform.translation);
-	// TransformParser::assign(object, "rotation", transform.rotation);
-// }};
+	auto &transform = ecs::get<comp::Transform>(entity);
+
+	TransformParser::assign(object, "translation", transform.translation);
+	TransformParser::assign(object, "rotation", transform.rotation);
+	TransformParser::assign(object, "scale", transform.scale);
+}};
 
 }

@@ -330,14 +330,14 @@ void Mesh::open()
 		case Branch::vert:
 		{
 			GLsizei stride = 3 * sizeof(GLfloat);
-			layouts.emplace_back(rn::LayoutLocation::vert, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(0 * sizeof(GLfloat)));
+			layouts.emplace_back(rn::LayoutLocation::pos, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(0 * sizeof(GLfloat)));
 
 			break;
 		}
 		case Branch::vert_uv:
 		{
 			GLsizei stride = 5 * sizeof(GLfloat);
-			layouts.emplace_back(rn::LayoutLocation::vert, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(0 * sizeof(GLfloat)));
+			layouts.emplace_back(rn::LayoutLocation::pos, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(0 * sizeof(GLfloat)));
 			layouts.emplace_back(rn::LayoutLocation::tex, static_cast<GLint>(2), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(3 * sizeof(GLfloat)));
 
 			break;
@@ -345,7 +345,7 @@ void Mesh::open()
 		case Branch::vert_norm:
 		{
 			GLsizei stride = 6 * sizeof(GLfloat);
-			layouts.emplace_back(rn::LayoutLocation::vert, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(0 * sizeof(GLfloat)));
+			layouts.emplace_back(rn::LayoutLocation::pos, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(0 * sizeof(GLfloat)));
 			layouts.emplace_back(rn::LayoutLocation::norm, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(3 * sizeof(GLfloat)));
 
 			break;
@@ -353,7 +353,7 @@ void Mesh::open()
 		case Branch::vert_uv_norm:
 		{
 			GLsizei stride = 8 * sizeof(GLfloat);
-			layouts.emplace_back(rn::LayoutLocation::vert, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(0 * sizeof(GLfloat)));
+			layouts.emplace_back(rn::LayoutLocation::pos, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(0 * sizeof(GLfloat)));
 			layouts.emplace_back(rn::LayoutLocation::tex, static_cast<GLint>(2), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(3 * sizeof(GLfloat)));
 			layouts.emplace_back(rn::LayoutLocation::norm, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(5 * sizeof(GLfloat)));
 

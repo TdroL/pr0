@@ -8,11 +8,16 @@
 
 using namespace std;
 
-std::map<string, Parser::functionType> Parser::parsers{};
-
 Parser::Parser(string name, functionType &&parserFunction)
 {
-	Parser::parsers.insert({move(name), move(parserFunction)});
+	Parser::parsersMap().insert({move(name), move(parserFunction)});
+}
+
+map<string, Parser::functionType> & Parser::parsersMap()
+{
+	static map<string, Parser::functionType> parsers{};
+
+	return parsers;
 }
 
 void Parser::parse(ecs::Entity &entity, const Parser::objectType &object)
@@ -22,7 +27,7 @@ void Parser::parse(ecs::Entity &entity, const Parser::objectType &object)
 		return;
 	}
 
-	for (const auto &entry : Parser::parsers)
+	for (const auto &entry : Parser::parsersMap())
 	{
 		enter(object, entry.first.c_str(), [&] (const Parser::objectType &member) {
 			entry.second(entity, member);
@@ -55,6 +60,22 @@ void Parser::assign<string>(const objectType &object, const char *name, string &
 	if (value.IsString())
 	{
 		target = value.GetString();
+	}
+}
+
+template<>
+void Parser::assign<bool>(const objectType &object, const char *name, bool &target)
+{
+	if (!object.HasMember(name))
+	{
+		return;
+	}
+
+	const auto &value = object[name];
+
+	if (value.IsBool())
+	{
+		target = value.GetBool();
 	}
 }
 

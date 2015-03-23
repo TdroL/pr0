@@ -2,6 +2,7 @@
 
 #include <core/ngn.hpp>
 
+#include <app/comp/boundingobject.hpp>
 #include <app/comp/transform.hpp>
 #include <app/comp/temporaltransform.hpp>
 
@@ -32,6 +33,11 @@ void TransformProcess::update(const ecs::Entity &entity)
 
 			transform.translation += temporalTransform.translation * temporalTransform.translationSpeed * static_cast<float>(ngn::dt);
 			temporalTransform.translation = glm::vec3{0.0};
+
+			if (ecs::has<BoundingObject>(entity))
+			{
+				ecs::get<BoundingObject>(entity).dirty = true;
+			}
 		}
 
 	}

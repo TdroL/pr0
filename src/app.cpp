@@ -11,9 +11,10 @@
 #include <core/event.hpp>
 #include <core/util/timer.hpp>
 #include <core/util/toggle.hpp>
-
 #include <core/asset/mesh.hpp>
+#include <core/phs/frustum.hpp>
 
+#include <app/comp/boundingobject.hpp>
 #include <app/comp/direction.hpp>
 #include <app/comp/directionallight.hpp>
 #include <app/comp/input.hpp>
@@ -30,10 +31,15 @@
 #include <app/comp/transform.hpp>
 #include <app/comp/view.hpp>
 
+#include <app/proc/rebuildboundingobjectprocess.hpp>
 #include <app/proc/camera.hpp>
+#include <app/proc/frustumprocess.hpp>
 #include <app/proc/inputprocess.hpp>
 #include <app/proc/meshrenderer.hpp>
 #include <app/proc/transformprocess.hpp>
+
+#include <glm/gtx/string_cast.hpp>
+#include <glm/gtc/matrix_access.hpp>
 
 #include <iostream>
 #include <cmath>
@@ -296,7 +302,7 @@ void App::initScene()
 			auto &projection = ecs::get<Projection>(cameraId);
 
 			projection.aspect = static_cast<float>(win::width) / static_cast<float>(win::height);
-			projection.matrix = glm::perspective(projection.fovy, projection.aspect, projection.zNear, projection.zFar);
+			projection.matrix = glm::perspective(glm::radians(projection.fovy), projection.aspect, projection.zNear, projection.zFar);
 			projection.invMatrix = glm::inverse(projection.matrix);
 
 			progGBuffer.uniform("P", projection.matrix);
@@ -461,6 +467,11 @@ void App::initScene()
 
 		ecs::get<Mesh>(lightIds[4]).id = asset::mesh::load("sphere.sbm");
 	}
+
+	for (auto &entity : ecs::findWith<Name, Transform, Mesh>())
+	{
+		proc::RebuildBoundingObjectProcess::update(entity);
+	}
 }
 
 void App::update()
@@ -574,6 +585,11 @@ void App::update()
 	}
 
 	sunTimer.update();
+
+	for (auto &entity : ecs::findWith<Transform, Mesh>())
+	{
+		proc::RebuildBoundingObjectProcess::update(entity);
+	}
 }
 
 void App::render()
@@ -674,13 +690,22 @@ void App::gBufferPass()
 	RN_FB_BIND(fbGBuffer);
 	fbGBuffer.clear(rn::BUFFER_COLOR | rn::BUFFER_DEPTH | rn::BUFFER_STENCIL);
 
-	glm::mat4 &V = ecs::get<View>(cameraId).matrix;
+	const auto &V = ecs::get<View>(cameraId).matrix;
+	const auto &P = ecs::get<Projection>(cameraId).matrix;
+	// const auto P = glm::perspective(glm::radians(10.f), 16.f/9.f, 0.1f, 20.f);
+
+	const phs::Frustum frustum{P * V};
 
 	progGBuffer.use();
 	progGBuffer.var("V", V);
 
 	for (auto &entity : ecs::findWith<Transform, Mesh, Material>())
 	{
+		if (ecs::has<BoundingObject>(entity) && ! proc::FrustumProcess::isVisible(entity, frustum))
+		{
+			continue;
+		}
+
 		GLint ref = ecs::has<Stencil>(entity) ? ecs::get<Stencil>(entity).ref : 0;
 
 		RN_CHECK(glStencilFunc(GL_ALWAYS, ref, 0xF));
@@ -695,12 +720,22 @@ void App::gBufferPass()
 
 	for (auto &entity : ecs::findWith<Transform, Mesh, PointLight>())
 	{
+		if (ecs::has<BoundingObject>(entity) && ! proc::FrustumProcess::isVisible(entity, frustum))
+		{
+			continue;
+		}
+
 		progGBuffer.var("matDiffuse", ecs::get<PointLight>(entity).color);
 		proc::MeshRenderer::render(entity, progGBuffer);
 	}
 
 	for (auto &entity : ecs::findWith<Transform, Mesh, DirectionalLight>())
 	{
+		if (ecs::has<BoundingObject>(entity) && ! proc::FrustumProcess::isVisible(entity, frustum))
+		{
+			continue;
+		}
+
 		progGBuffer.var("matDiffuse", ecs::get<DirectionalLight>(entity).color);
 		proc::MeshRenderer::render(entity, progGBuffer);
 	}

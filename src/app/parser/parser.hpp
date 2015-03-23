@@ -16,9 +16,9 @@ public:
 	typedef rapidjson::Value objectType;
 	typedef std::function<void(ecs::Entity &, const objectType &)> functionType;
 
-	static std::map<std::string, functionType> parsers;
-
 	Parser(std::string name, functionType &&parserFunction);
+
+	static std::map<std::string, functionType> & parsersMap();
 
 	static void parse(ecs::Entity &entity, const objectType &object);
 

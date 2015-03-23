@@ -9,7 +9,7 @@ namespace rn
 
 struct LayoutLocation
 {
-	static const GLuint vert;
+	static const GLuint pos;
 	static const GLuint tex;
 	static const GLuint norm;
 };
