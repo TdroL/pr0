@@ -147,5 +147,707 @@
 			"id": "cornell-box-cycles.sbm"
 		},
 		"occluder": {}
+	},
+
+
+	{
+		"name": {
+			"name": "Sphere grid #0"
+		},
+		"transform": {
+			"translation": [
+				-12,
+				-1.2,
+				0
+			]
+		},
+		"mesh": {
+			"id": "sphere.sbm"
+		},
+		"material": {
+			"diffuse": [
+				0.5,
+				0.5,
+				0.5,
+				1
+			],
+			"shininess": 1
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Sphere grid #1"
+		},
+		"transform": {
+			"translation": [
+				-12,
+				-1.2,
+				-1.5
+			]
+		},
+		"mesh": {
+			"id": "sphere.sbm"
+		},
+		"material": {
+			"diffuse": [
+				0.5,
+				0.5,
+				0.5,
+				1
+			],
+			"shininess": 0.5
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Sphere grid #2"
+		},
+		"transform": {
+			"translation": [
+				-12,
+				-1.2,
+				-3
+			]
+		},
+		"mesh": {
+			"id": "sphere.sbm"
+		},
+		"material": {
+			"diffuse": [
+				0.5,
+				0.5,
+				0.5,
+				1
+			],
+			"shininess": 0.333
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Sphere grid #3"
+		},
+		"transform": {
+			"translation": [
+				-12,
+				-1.2,
+				-4.5
+			]
+		},
+		"mesh": {
+			"id": "sphere.sbm"
+		},
+		"material": {
+			"diffuse": [
+				0.5,
+				0.5,
+				0.5,
+				1
+			],
+			"shininess": 0.25
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Sphere grid #4"
+		},
+		"transform": {
+			"translation": [
+				-12,
+				-1.2,
+				-6
+			]
+		},
+		"mesh": {
+			"id": "sphere.sbm"
+		},
+		"material": {
+			"diffuse": [
+				0.5,
+				0.5,
+				0.5,
+				1
+			],
+			"shininess": 0.2
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Sphere grid #5"
+		},
+		"transform": {
+			"translation": [
+				-13.5,
+				-1.2,
+				0
+			]
+		},
+		"mesh": {
+			"id": "sphere.sbm"
+		},
+		"material": {
+			"diffuse": [
+				0.5,
+				0.5,
+				0.5,
+				1
+			],
+			"shininess": 0.167
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Sphere grid #6"
+		},
+		"transform": {
+			"translation": [
+				-13.5,
+				-1.2,
+				-1.5
+			]
+		},
+		"mesh": {
+			"id": "sphere.sbm"
+		},
+		"material": {
+			"diffuse": [
+				0.5,
+				0.5,
+				0.5,
+				1
+			],
+			"shininess": 0.143
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Sphere grid #7"
+		},
+		"transform": {
+			"translation": [
+				-13.5,
+				-1.2,
+				-3
+			]
+		},
+		"mesh": {
+			"id": "sphere.sbm"
+		},
+		"material": {
+			"diffuse": [
+				0.5,
+				0.5,
+				0.5,
+				1
+			],
+			"shininess": 0.125
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Sphere grid #8"
+		},
+		"transform": {
+			"translation": [
+				-13.5,
+				-1.2,
+				-4.5
+			]
+		},
+		"mesh": {
+			"id": "sphere.sbm"
+		},
+		"material": {
+			"diffuse": [
+				0.5,
+				0.5,
+				0.5,
+				1
+			],
+			"shininess": 0.111
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Sphere grid #9"
+		},
+		"transform": {
+			"translation": [
+				-13.5,
+				-1.2,
+				-6
+			]
+		},
+		"mesh": {
+			"id": "sphere.sbm"
+		},
+		"material": {
+			"diffuse": [
+				0.5,
+				0.5,
+				0.5,
+				1
+			],
+			"shininess": 0.1
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Sphere grid #10"
+		},
+		"transform": {
+			"translation": [
+				-15,
+				-1.2,
+				0
+			]
+		},
+		"mesh": {
+			"id": "sphere.sbm"
+		},
+		"material": {
+			"diffuse": [
+				0.5,
+				0.5,
+				0.5,
+				1
+			],
+			"shininess": 0.091
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Sphere grid #11"
+		},
+		"transform": {
+			"translation": [
+				-15,
+				-1.2,
+				-1.5
+			]
+		},
+		"mesh": {
+			"id": "sphere.sbm"
+		},
+		"material": {
+			"diffuse": [
+				0.5,
+				0.5,
+				0.5,
+				1
+			],
+			"shininess": 0.083
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Sphere grid #12"
+		},
+		"transform": {
+			"translation": [
+				-15,
+				-1.2,
+				-3
+			]
+		},
+		"mesh": {
+			"id": "sphere.sbm"
+		},
+		"material": {
+			"diffuse": [
+				0.5,
+				0.5,
+				0.5,
+				1
+			],
+			"shininess": 0.077
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Sphere grid #13"
+		},
+		"transform": {
+			"translation": [
+				-15,
+				-1.2,
+				-4.5
+			]
+		},
+		"mesh": {
+			"id": "sphere.sbm"
+		},
+		"material": {
+			"diffuse": [
+				0.5,
+				0.5,
+				0.5,
+				1
+			],
+			"shininess": 0.071
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Sphere grid #14"
+		},
+		"transform": {
+			"translation": [
+				-15,
+				-1.2,
+				-6
+			]
+		},
+		"mesh": {
+			"id": "sphere.sbm"
+		},
+		"material": {
+			"diffuse": [
+				0.5,
+				0.5,
+				0.5,
+				1
+			],
+			"shininess": 0.067
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Sphere grid #15"
+		},
+		"transform": {
+			"translation": [
+				-16.5,
+				-1.2,
+				0
+			]
+		},
+		"mesh": {
+			"id": "sphere.sbm"
+		},
+		"material": {
+			"diffuse": [
+				0.5,
+				0.5,
+				0.5,
+				1
+			],
+			"shininess": 0.063
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Sphere grid #16"
+		},
+		"transform": {
+			"translation": [
+				-16.5,
+				-1.2,
+				-1.5
+			]
+		},
+		"mesh": {
+			"id": "sphere.sbm"
+		},
+		"material": {
+			"diffuse": [
+				0.5,
+				0.5,
+				0.5,
+				1
+			],
+			"shininess": 0.059
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Sphere grid #17"
+		},
+		"transform": {
+			"translation": [
+				-16.5,
+				-1.2,
+				-3
+			]
+		},
+		"mesh": {
+			"id": "sphere.sbm"
+		},
+		"material": {
+			"diffuse": [
+				0.5,
+				0.5,
+				0.5,
+				1
+			],
+			"shininess": 0.056
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Sphere grid #18"
+		},
+		"transform": {
+			"translation": [
+				-16.5,
+				-1.2,
+				-4.5
+			]
+		},
+		"mesh": {
+			"id": "sphere.sbm"
+		},
+		"material": {
+			"diffuse": [
+				0.5,
+				0.5,
+				0.5,
+				1
+			],
+			"shininess": 0.053
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Sphere grid #19"
+		},
+		"transform": {
+			"translation": [
+				-16.5,
+				-1.2,
+				-6
+			]
+		},
+		"mesh": {
+			"id": "sphere.sbm"
+		},
+		"material": {
+			"diffuse": [
+				0.5,
+				0.5,
+				0.5,
+				1
+			],
+			"shininess": 0.05
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Sphere grid #20"
+		},
+		"transform": {
+			"translation": [
+				-18,
+				-1.2,
+				0
+			]
+		},
+		"mesh": {
+			"id": "sphere.sbm"
+		},
+		"material": {
+			"diffuse": [
+				0.5,
+				0.5,
+				0.5,
+				1
+			],
+			"shininess": 0.048
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Sphere grid #21"
+		},
+		"transform": {
+			"translation": [
+				-18,
+				-1.2,
+				-1.5
+			]
+		},
+		"mesh": {
+			"id": "sphere.sbm"
+		},
+		"material": {
+			"diffuse": [
+				0.5,
+				0.5,
+				0.5,
+				1
+			],
+			"shininess": 0.045
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Sphere grid #22"
+		},
+		"transform": {
+			"translation": [
+				-18,
+				-1.2,
+				-3
+			]
+		},
+		"mesh": {
+			"id": "sphere.sbm"
+		},
+		"material": {
+			"diffuse": [
+				0.5,
+				0.5,
+				0.5,
+				1
+			],
+			"shininess": 0.043
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Sphere grid #23"
+		},
+		"transform": {
+			"translation": [
+				-18,
+				-1.2,
+				-4.5
+			]
+		},
+		"mesh": {
+			"id": "sphere.sbm"
+		},
+		"material": {
+			"diffuse": [
+				0.5,
+				0.5,
+				0.5,
+				1
+			],
+			"shininess": 0.042
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Sphere grid #24"
+		},
+		"transform": {
+			"translation": [
+				-18,
+				-1.2,
+				-6
+			]
+		},
+		"mesh": {
+			"id": "sphere.sbm"
+		},
+		"material": {
+			"diffuse": [
+				0.5,
+				0.5,
+				0.5,
+				1
+			],
+			"shininess": 0.04
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"occluder": {}
 	}
 ]

@@ -91,7 +91,7 @@ void enable(const Entity &entity)
 
 	if (data.size() <= entity)
 	{
-		data.resize(std::max(static_cast<size_t>(entity), static_cast<size_t>(32)));
+		data.resize((static_cast<size_t>(entity / 32) + 1) * 32);
 	}
 
 	data[entity] = C{};

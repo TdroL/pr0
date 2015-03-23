@@ -692,7 +692,6 @@ void App::gBufferPass()
 
 	const auto &V = ecs::get<View>(cameraId).matrix;
 	const auto &P = ecs::get<Projection>(cameraId).matrix;
-	// const auto P = glm::perspective(glm::radians(10.f), 16.f/9.f, 0.1f, 20.f);
 
 	const phs::Frustum frustum{P * V};
 
@@ -887,10 +886,11 @@ glm::mat4 App::genShadowMap(ecs::Entity lightId)
 {
 	const auto &light = ecs::get<DirectionalLight>(lightId);
 
-	glm::mat4 shadowMapP = glm::ortho(-10.f, 10.f, -10.f, 10.f, -10.f, 20.f);
-	glm::mat4 shadowMapV = glm::lookAt(glm::normalize(light.direction), glm::vec3{0.f, 0.f, 0.f}, glm::vec3{0.f, 1.f, 0.f});
-	glm::mat4 shadowMapM{1.f};
-	glm::mat4 shadowMapMVP = shadowMapP * shadowMapV * shadowMapM;
+	const auto shadowMapP = glm::ortho(-10.f, 10.f, -10.f, 10.f, -10.f, 20.f);
+	const auto shadowMapV = glm::lookAt(glm::normalize(light.direction), glm::vec3{0.f, 0.f, 0.f}, glm::vec3{0.f, 1.f, 0.f});
+	const auto shadowMapVP = shadowMapP * shadowMapV;
+
+	const phs::Frustum frustum{shadowMapVP};
 
 	{
 		RN_FB_BIND(fbShadowMap);
@@ -907,6 +907,11 @@ glm::mat4 App::genShadowMap(ecs::Entity lightId)
 
 		for (auto &entity : ecs::findWith<Transform, Mesh, Occluder>())
 		{
+			if (ecs::has<BoundingObject>(entity) && ! proc::FrustumProcess::isVisible(entity, frustum))
+			{
+				continue;
+			}
+
 			proc::MeshRenderer::render(entity, progShadowMap);
 		}
 
@@ -946,5 +951,5 @@ glm::mat4 App::genShadowMap(ecs::Entity lightId)
 		progBlurGaussian7.forgo();
 	}
 
-	return shadowMapMVP;
+	return shadowMapVP;
 }
