@@ -192,7 +192,6 @@ struct TexParams
 	{}
 };
 
-
 enum MinFilter
 {
 	MIN_NEAREST         = GL_NEAREST,

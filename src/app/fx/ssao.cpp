@@ -20,7 +20,6 @@ void SSAO::init(const comp::Projection &projectionIn)
 	projection = projectionIn;
 
 	auto texZ = make_shared<rn::Tex2D>("fx::SSAO::fbZ.color[0]");
-
 	texZ->width = win::width;
 	texZ->height = win::height;
 	texZ->levels = zMipLevels;
@@ -130,6 +129,7 @@ void SSAO::init(const comp::Projection &projectionIn)
 	progSAO.uniform("pixelScale", pixelScale);
 	progSAO.uniform("intensity", intensity);
 	progSAO.uniform("radius", radius);
+	// progSAO.uniform("zMipLevels", static_cast<GLint>(zMipLevels));
 	progSAO.uniform<GLint>("zMipLevels", zMipLevels);
 
 	profZ.init();

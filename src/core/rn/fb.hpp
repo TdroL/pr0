@@ -7,7 +7,9 @@
 
 #include "../rn.hpp"
 #include "types.hpp"
+#include "tex.hpp"
 #include "tex2d.hpp"
+#include "tex2darray.hpp"
 #include "../util.hpp"
 
 namespace rn
@@ -22,9 +24,10 @@ public:
 	static void reloadAll();
 	static void reloadSoftAll();
 
-	struct Tex2DContainer
+	struct TexContainer
 	{
-		std::shared_ptr<rn::Tex2D> tex{};
+		std::shared_ptr<rn::Tex> tex{};
+		GLint layer = 0;
 		GLint level = 0;
 	};
 
@@ -36,8 +39,8 @@ public:
 	glm::vec4 clearColor{0.f, 0.f, 0.f, 0.f};
 	GLfloat clearDepth = 1.f;
 
-	std::vector<Tex2DContainer> colorContainers{};
-	Tex2DContainer depthContainer{};
+	std::vector<TexContainer> colorContainers{};
+	TexContainer depthContainer{};
 
 	std::string fbName = "Unnamed FB";
 
@@ -46,10 +49,12 @@ public:
 	~FB();
 
 	void attachColor(size_t index, const std::shared_ptr<rn::Tex2D> &tex, GLint level = 0);
+	void attachColor(size_t index, const std::shared_ptr<rn::Tex2DArray> &tex, GLsizei layer, GLint level = 0);
 	void attachDepth(const std::shared_ptr<rn::Tex2D> &tex, GLint level = 0);
+	void attachDepth(const std::shared_ptr<rn::Tex2DArray> &tex, GLsizei layer, GLint level = 0);
 
-	rn::Tex2D * color(size_t index);
-	rn::Tex2D * depth();
+	rn::Tex * color(size_t index);
+	rn::Tex * depth();
 
 	void clear(BuffersMask mask);
 

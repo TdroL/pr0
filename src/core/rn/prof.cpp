@@ -53,6 +53,12 @@ Prof::Prof()
 
 }
 
+Prof::Prof(string &&profName)
+	: Prof{}
+{
+	this->profName = move(profName);
+}
+
 Prof::~Prof()
 {
 	reset();
@@ -101,12 +107,12 @@ void Prof::swap()
 
 void Prof::start()
 {
-	RN_CHECK(glQueryCounter(queries[front][0], GL_TIMESTAMP));
+	RN_CHECK_PARAM(glQueryCounter(queries[front][0], GL_TIMESTAMP), profName << " id=" << queries[front][0]);
 }
 
 void Prof::stop()
 {
-	RN_CHECK(glQueryCounter(queries[front][1], GL_TIMESTAMP));
+	RN_CHECK_PARAM(glQueryCounter(queries[front][1], GL_TIMESTAMP), profName << " id=" << queries[front][1]);
 
 	if (front != back)
 	{

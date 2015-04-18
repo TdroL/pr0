@@ -3,6 +3,7 @@
 
 #include "../rn.hpp"
 #include "../util.hpp"
+#include <string>
 #include <vector>
 
 namespace rn
@@ -16,6 +17,8 @@ public:
 	static void reloadAll();
 	static void swapAll();
 
+	std::string profName = "Unnamed query timer";
+
 	GLuint queries[2][2] { { 0 } }; // { front { start, stop }, back { start, stop } }
 	GLuint64 times[2] { 0 }; // { front, back }
 
@@ -23,6 +26,7 @@ public:
 	unsigned int back = 0;
 
 	Prof();
+	explicit Prof(std::string &&profName);
 	~Prof();
 
 	void init();

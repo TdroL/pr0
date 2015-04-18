@@ -3,6 +3,7 @@
 
 #include "../rn.hpp"
 #include "../src.hpp"
+#include "tex.hpp"
 #include "types.hpp"
 #include "format.hpp"
 #include <vector>
@@ -10,7 +11,7 @@
 namespace rn
 {
 
-class Tex2D
+class Tex2D : public Tex
 {
 public:
 	static std::vector<Tex2D *> collection;
@@ -18,7 +19,7 @@ public:
 
 	typedef src::Tex2D Source;
 
-	GLuint id = 0;
+	// GLuint id = 0;
 
 	GLsizei width = 0;
 	GLsizei height = 0;
@@ -53,16 +54,21 @@ public:
 
 	~Tex2D();
 
+	GLenum targetType() override
+	{
+		return GL_TEXTURE_2D;
+	}
+
 	void reload();
 
 	void reset();
 
-	bool isDepth();
-	bool isDepthStencil();
+	bool isDepth() override;
+	bool isDepthStencil() override;
 
-	GLsizei bind(GLsizei unit);
+	GLsizei bind(GLsizei unit) override;
 
-	GLenum getAttachmentType();
+	GLenum getAttachmentType() override;
 };
 
 } // rn

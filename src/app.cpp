@@ -31,15 +31,16 @@
 #include <app/comp/transform.hpp>
 #include <app/comp/view.hpp>
 
-#include <app/proc/rebuildboundingobjectprocess.hpp>
 #include <app/proc/camera.hpp>
 #include <app/proc/frustumprocess.hpp>
 #include <app/proc/inputprocess.hpp>
 #include <app/proc/meshrenderer.hpp>
+#include <app/proc/rebuildboundingobjectprocess.hpp>
 #include <app/proc/transformprocess.hpp>
 
-#include <glm/gtx/string_cast.hpp>
+#include <glm/gtx/compatibility.hpp>
 #include <glm/gtc/matrix_access.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 #include <iostream>
 #include <cmath>
@@ -55,7 +56,7 @@ using namespace std;
 util::Timer sunTimer{};
 
 util::Toggle toggleSSAO{"SSAO (b)", 1};
-util::Toggle toggleSSAOBlur{"SSAOBlur (n)", 2, 3};
+util::Toggle toggleSSAOBlur{"SSAOBlur (n)", 1};
 util::Toggle toggleDebugPreview{"DebugPreview (m)", 0};
 util::Toggle toggleZPreview{"ZPreview (,)", 0};
 util::Toggle toggleLights{"Lights (;)", 1};
@@ -75,6 +76,7 @@ void App::init()
 	initScene();
 
 	ssao.init(ecs::get<Projection>(cameraId));
+	csm.init();
 
 	profRender.init();
 	profGBuffer.init();
@@ -297,6 +299,9 @@ void App::initScene()
 		rotation.y = 0.f;
 		rotation.z = 0.f;
 
+		auto &projection = ecs::get<Projection>(cameraId);
+		projection.zFar = 500.f;
+
 		auto resizeCallback = [&] ()
 		{
 			auto &projection = ecs::get<Projection>(cameraId);
@@ -471,6 +476,13 @@ void App::initScene()
 	for (auto &entity : ecs::findWith<Name, Transform, Mesh>())
 	{
 		proc::RebuildBoundingObjectProcess::update(entity);
+	}
+
+	{
+		glm::vec3 translate{0.0};
+		glm::vec3 rotate{0.0};
+
+		proc::Camera::update(cameraId, translate, rotate);
 	}
 }
 
@@ -670,6 +682,7 @@ void App::render()
 	{
 		progShadowMapPreview.use();
 		progShadowMapPreview.var("texSource", fbShadowMap.color(0)->bind(0));
+		// progShadowMapPreview.var("texSource", csm.fbShadows[0].color(0)->bind(0));
 
 		rn::Mesh::quad.render();
 
@@ -744,15 +757,18 @@ void App::gBufferPass()
 
 void App::directionalLightsPass()
 {
+	const auto &P = ecs::get<Projection>(cameraId).matrix;
 	const auto &view = ecs::get<View>(cameraId);
-	const glm::mat4 &V = view.matrix;
-	const glm::mat4 &invV = view.invMatrix;
+	const auto &V = view.matrix;
+	const auto &invV = view.invMatrix;
+
+	const phs::Frustum frustum{P * V};
 
 	progDirectionalLight.var("invV", invV);
 
 	for (auto &entity : ecs::findWith<DirectionalLight>())
 	{
-		glm::mat4 shadowMapMVP = genShadowMap(entity);
+		glm::mat4 shadowMapMVP = makeShadowMap(entity, frustum);
 
 		const auto &light = ecs::get<DirectionalLight>(entity);
 
@@ -772,16 +788,28 @@ void App::directionalLightsPass()
 			progDirectionalLight.var("lightDirection", glm::mat3{V} * light.direction);
 			progDirectionalLight.var("lightIntensity", light.intensity);
 			progDirectionalLight.var("shadowmapMVP", shadowMapMVP);
+			// progDirectionalLight.var("csmMVP", csm.Ps[0] * csm.V);
+
+			std::vector<glm::mat4> csmMVP = csm.Ps;
+
+			for (size_t i = 0; i < csmMVP.size(); i++)
+			{
+				csmMVP[i] = csmMVP[i] * csm.V * invV;
+			}
+
+			progDirectionalLight.var("csmCascades", csm.cascades.data(), csm.cascades.size());
+			progDirectionalLight.var("csmMVP", csmMVP.data(), csmMVP.size());
 
 			GLsizei unit = 0;
-
 			progDirectionalLight.var("texColor", fbGBuffer.color(0)->bind(unit++));
 			progDirectionalLight.var("texNormal", fbGBuffer.color(1)->bind(unit++));
 			progDirectionalLight.var("texDepth", fbGBuffer.depth()->bind(unit++));
 			progDirectionalLight.var("texAO", ssao.fbAO.color(0)->bind(unit++));
 
-			progDirectionalLight.var("shadowMoments", fbShadowMap.color(0)->bind(unit++));
-			progDirectionalLight.var("shadowDepth", fbShadowMap.depth()->bind(unit++));
+			progDirectionalLight.var("texShadowMoments", fbShadowMap.color(0)->bind(unit++));
+			progDirectionalLight.var("texShadowDepth", fbShadowMap.depth()->bind(unit++));
+			// progDirectionalLight.var("texCSM", csm.fbShadows[0].color(0)->bind(unit++));
+			progDirectionalLight.var("texCSM", csm.texCascades->bind(unit++));
 
 			rn::Mesh::quad.render();
 
@@ -879,18 +907,118 @@ void App::ssaoPass()
 
 	ssao.genMipMaps(fbGBuffer);
 	ssao.computeAO(fbGBuffer);
-	ssao.blur(fbGBuffer);
+
+	if (toggleSSAOBlur.value) {
+		ssao.blur(fbGBuffer);
+	}
 }
 
-glm::mat4 App::genShadowMap(ecs::Entity lightId)
+glm::mat4 App::makeShadowMap(const ecs::Entity &lightId, const phs::Frustum &frustum)
 {
+	csm.cameraId = cameraId;
+
+	csm.setup(lightId);
+	csm.render();
+
+	const auto &cameraPosition = ecs::get<Position>(cameraId).position;
+	// const auto &projection = ecs::get<Projection>(cameraId);
+	// const auto &view = ecs::get<View>(cameraId);
+	// const auto &P = projection.matrix;
+	// const auto &V = view.matrix;
+
 	const auto &light = ecs::get<DirectionalLight>(lightId);
 
+	// const auto shadowMapV = glm::lookAt(glm::normalize(light.direction), glm::vec3{0.f, 0.f, 0.f}, glm::vec3{0.f, 1.f, 0.f});
+	// const auto shadowMapV = glm::lookAt(cameraPosition, cameraPosition - light.direction, glm::vec3{0.f, 1.f, 0.f});
+
+	// const auto invVP = glm::inverse(P * V);
+	// glm::vec4 frustumCorners[8] = {
+	// 	invVP * glm::vec4{ 1.f,  1.f, -1.f, 1.f}, // rtn
+	// 	invVP * glm::vec4{-1.f,  1.f, -1.f, 1.f}, // ltn
+	// 	invVP * glm::vec4{ 1.f, -1.f, -1.f, 1.f}, // rbn
+	// 	invVP * glm::vec4{-1.f, -1.f, -1.f, 1.f}, // lbn
+	// 	invVP * glm::vec4{ 1.f,  1.f,  1.f, 1.f}, // rtf
+	// 	invVP * glm::vec4{-1.f,  1.f,  1.f, 1.f}, // ltf
+	// 	invVP * glm::vec4{ 1.f, -1.f,  1.f, 1.f}, // rbf
+	// 	invVP * glm::vec4{-1.f, -1.f,  1.f, 1.f}, // lbf
+	// };
+
+	// frustumCorners[0] /= frustumCorners[0].w;
+	// frustumCorners[1] /= frustumCorners[1].w;
+	// frustumCorners[2] /= frustumCorners[2].w;
+	// frustumCorners[3] /= frustumCorners[3].w;
+	// frustumCorners[4] /= frustumCorners[4].w;
+	// frustumCorners[5] /= frustumCorners[5].w;
+	// frustumCorners[6] /= frustumCorners[6].w;
+	// frustumCorners[7] /= frustumCorners[7].w;
+
+	// float t = (10.f - projection.zNear) / (projection.zFar - projection.zNear);
+
+	// frustumCorners[4] = glm::lerp(frustumCorners[0], frustumCorners[4], t);
+	// frustumCorners[5] = glm::lerp(frustumCorners[1], frustumCorners[5], t);
+	// frustumCorners[6] = glm::lerp(frustumCorners[2], frustumCorners[6], t);
+	// frustumCorners[7] = glm::lerp(frustumCorners[3], frustumCorners[7], t);
+
+	// glm::vec4 shadowFrustumCorners[] = {
+	// 	shadowMapV * frustumCorners[0],
+	// 	shadowMapV * frustumCorners[1],
+	// 	shadowMapV * frustumCorners[2],
+	// 	shadowMapV * frustumCorners[3],
+	// 	shadowMapV * frustumCorners[4],
+	// 	shadowMapV * frustumCorners[5],
+	// 	shadowMapV * frustumCorners[6],
+	// 	shadowMapV * frustumCorners[7]
+	// };
+
+	// float shadowFrustumLeft = shadowFrustumCorners[0].x;
+	// float shadowFrustumRight = shadowFrustumCorners[0].x;
+	// float shadowFrustumBottom = shadowFrustumCorners[0].y;
+	// float shadowFrustumTop = shadowFrustumCorners[0].y;
+	// float shadowFrustumZNear = shadowFrustumCorners[0].z;
+	// float shadowFrustumZFar = shadowFrustumCorners[0].z;
+
+	// cout << "shadowFrustumCorners[rtn]=" << glm::to_string(shadowFrustumCorners[0].xyz()) << endl;
+	// cout << "shadowFrustumCorners[ltn]=" << glm::to_string(shadowFrustumCorners[1].xyz()) << endl;
+	// cout << "shadowFrustumCorners[rbn]=" << glm::to_string(shadowFrustumCorners[2].xyz()) << endl;
+	// cout << "shadowFrustumCorners[lbn]=" << glm::to_string(shadowFrustumCorners[3].xyz()) << endl;
+	// cout << "shadowFrustumCorners[rtf]=" << glm::to_string(shadowFrustumCorners[4].xyz()) << endl;
+	// cout << "shadowFrustumCorners[ltf]=" << glm::to_string(shadowFrustumCorners[5].xyz()) << endl;
+	// cout << "shadowFrustumCorners[rbf]=" << glm::to_string(shadowFrustumCorners[6].xyz()) << endl;
+	// cout << "shadowFrustumCorners[lbf]=" << glm::to_string(shadowFrustumCorners[7].xyz()) << endl;
+
+	// for (const auto &corner : shadowFrustumCorners)
+	// {
+	// 	shadowFrustumLeft = min(shadowFrustumLeft, corner.x);
+	// 	shadowFrustumRight = max(shadowFrustumRight, corner.x);
+	// 	shadowFrustumBottom = min(shadowFrustumBottom, corner.y);
+	// 	shadowFrustumTop = max(shadowFrustumTop, corner.y);
+	// 	shadowFrustumZNear = max(shadowFrustumZNear, corner.z);
+	// 	shadowFrustumZFar = min(shadowFrustumZFar, corner.z);
+	// }
+
+	// glm::vec3 lightDirection = glm::normalize(ecs::get<DirectionalLight>(lightId).direction);
+	// float zMax = -numeric_limits<float>::max();
+
+	// for (auto &entity : ecs::findWith<Transform, Mesh, BoundingObject, Occluder>())
+	// {
+	// 	auto &boundingObject = ecs::get<BoundingObject>(entity);
+
+	// 	float dist = glm::dot(lightDirection, boundingObject.sphere.pos) + boundingObject.sphere.radius;
+
+	// 	zMax = max(zMax, dist);
+	// }
+
+	// shadowFrustumZNear = max(shadowFrustumZNear, zMax);
+
+	// const auto shadowMapP = glm::ortho(-10.f, 10.f, -10.f, 10.f, -10.f, 20.f);
+	// const auto shadowMapP = glm::ortho(shadowFrustumLeft, shadowFrustumRight, shadowFrustumBottom, shadowFrustumTop, -shadowFrustumZNear, -shadowFrustumZFar);
+
+	const auto shadowMapV = glm::lookAt(cameraPosition, cameraPosition - light.direction, glm::vec3{0.f, 1.f, 0.f});
+
 	const auto shadowMapP = glm::ortho(-10.f, 10.f, -10.f, 10.f, -10.f, 20.f);
-	const auto shadowMapV = glm::lookAt(glm::normalize(light.direction), glm::vec3{0.f, 0.f, 0.f}, glm::vec3{0.f, 1.f, 0.f});
 	const auto shadowMapVP = shadowMapP * shadowMapV;
 
-	const phs::Frustum frustum{shadowMapVP};
+	const phs::Frustum shadowFrustum{shadowMapVP};
 
 	{
 		RN_FB_BIND(fbShadowMap);
@@ -907,7 +1035,7 @@ glm::mat4 App::genShadowMap(ecs::Entity lightId)
 
 		for (auto &entity : ecs::findWith<Transform, Mesh, Occluder>())
 		{
-			if (ecs::has<BoundingObject>(entity) && ! proc::FrustumProcess::isVisible(entity, frustum))
+			if (ecs::has<BoundingObject>(entity) && ! proc::FrustumProcess::isVisible(entity, shadowFrustum))
 			{
 				continue;
 			}

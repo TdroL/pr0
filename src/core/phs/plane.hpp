@@ -15,11 +15,6 @@ public:
 	glm::vec3 normal{0.f};
 	float d = 0.f;
 
-	float distance(const AABB &aabb) const
-	{
-		return 0.f;
-	}
-
 	float distance(const Point &point) const
 	{
 		return glm::dot(point.pos, normal) + d;

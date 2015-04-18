@@ -7,6 +7,7 @@
 #include "plane.hpp"
 
 #include <cmath>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_access.hpp>
 
@@ -49,7 +50,45 @@ public:
 
 	bool test(const AABB &aabb) const
 	{
-		return false;
+		for (const auto &plane : planes)
+		{
+			int out = 0;
+			int in = 0;
+
+			const Point boxCorners[] = {
+				Point{aabb.max.x, aabb.max.y, aabb.max.z},
+				Point{aabb.min.x, aabb.max.y, aabb.max.z},
+				Point{aabb.max.x, aabb.min.y, aabb.max.z},
+				Point{aabb.min.x, aabb.min.y, aabb.max.z},
+				Point{aabb.max.x, aabb.max.y, aabb.min.z},
+				Point{aabb.min.x, aabb.max.y, aabb.min.z},
+				Point{aabb.max.x, aabb.min.y, aabb.min.z},
+				Point{aabb.min.x, aabb.min.y, aabb.min.z}
+			};
+
+			for (int i = 0; i < 8 && (in == 0 || out == 0); i++)
+			{
+				if (plane.distance(boxCorners[i]) < 0.f)
+				{
+					out++;
+				}
+				else
+				{
+					in++;
+				}
+			}
+
+			if (in == 0)
+			{
+				return false;
+			}
+			else if (out != 0)
+			{
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	bool test(const Point &point) const

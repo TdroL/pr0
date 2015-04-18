@@ -71,7 +71,25 @@ void FB::attachColor(size_t index, const shared_ptr<rn::Tex2D> &tex, GLint level
 		colorContainers.resize(index + 1);
 	}
 
-	colorContainers[index].tex = tex;
+	colorContainers[index].tex = static_pointer_cast<rn::Tex>(tex);
+	colorContainers[index].level = level;
+
+	if (tex)
+	{
+		width = tex->width;
+		height = tex->height;
+	}
+}
+
+void FB::attachColor(size_t index, const shared_ptr<rn::Tex2DArray> &tex, GLsizei layer, GLint level)
+{
+	if (colorContainers.size() <= index)
+	{
+		colorContainers.resize(index + 1);
+	}
+
+	colorContainers[index].tex = static_pointer_cast<rn::Tex>(tex);
+	colorContainers[index].layer = layer;
 	colorContainers[index].level = level;
 
 	if (tex)
@@ -83,7 +101,7 @@ void FB::attachColor(size_t index, const shared_ptr<rn::Tex2D> &tex, GLint level
 
 void FB::attachDepth(const shared_ptr<rn::Tex2D> &tex, GLint level)
 {
-	depthContainer.tex = tex;
+	depthContainer.tex = static_pointer_cast<rn::Tex>(tex);
 	depthContainer.level = level;
 
 	if (tex)
@@ -93,7 +111,20 @@ void FB::attachDepth(const shared_ptr<rn::Tex2D> &tex, GLint level)
 	}
 }
 
-rn::Tex2D * FB::color(size_t index)
+void FB::attachDepth(const shared_ptr<rn::Tex2DArray> &tex, GLsizei layer, GLint level)
+{
+	depthContainer.tex = static_pointer_cast<rn::Tex>(tex);
+	depthContainer.layer = layer;
+	depthContainer.level = level;
+
+	if (tex)
+	{
+		width = tex->width;
+		height = tex->height;
+	}
+}
+
+rn::Tex * FB::color(size_t index)
 {
 	UTIL_DEBUG
 	{
@@ -111,7 +142,7 @@ rn::Tex2D * FB::color(size_t index)
 	return colorContainers[index].tex.get();
 }
 
-rn::Tex2D * FB::depth()
+rn::Tex * FB::depth()
 {
 	UTIL_DEBUG
 	{
@@ -183,7 +214,7 @@ void FB::reloadSoft()
 {
 	double timer = ngn::time();
 
-	size_t enabledColors = count_if(begin(colorContainers), end(colorContainers), [] (const Tex2DContainer &container)
+	size_t enabledColors = count_if(begin(colorContainers), end(colorContainers), [] (const TexContainer &container)
 	{
 		return container.tex && container.tex->id;
 	});
@@ -211,17 +242,24 @@ void FB::reloadSoft()
 				continue;
 			}
 
-			RN_CHECK(glBindTexture(GL_TEXTURE_2D, colorContainers[i].tex->id));
+			// RN_CHECK(glBindTexture(colorContainers[i].tex->targetType(), colorContainers[i].tex->id));
 
-			RN_CHECK_PARAM(glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, colorContainers[i].tex->id, colorContainers[i].level), colorContainers[i].level);
+			switch (colorContainers[i].tex->targetType()) {
+				case GL_TEXTURE_2D:
+					RN_CHECK_PARAM(glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, colorContainers[i].tex->id, colorContainers[i].level), colorContainers[i].level);
+				break;
+				case GL_TEXTURE_2D_ARRAY:
+					RN_CHECK_PARAM(glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, colorContainers[i].tex->id, colorContainers[i].level, colorContainers[i].layer), colorContainers[i].level << ", " << colorContainers[i].layer);
+				break;
+			}
 
 			drawBuffers.push_back(GL_COLOR_ATTACHMENT0 + i);
+
+			// RN_CHECK(glBindTexture(colorContainers[i].tex->targetType(), 0));
 		}
 
 		// fill rest of the draw buffers list
 		drawBuffers.resize(drawBuffersSize, GL_NONE);
-
-		RN_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
 	}
 
 	if ( ! drawBuffers.empty())
@@ -236,7 +274,19 @@ void FB::reloadSoft()
 	if (depthContainer.tex && depthContainer.tex->id && depthContainer.tex->isDepth())
 	{
 		GLenum attachment = depthContainer.tex->isDepthStencil() ? GL_DEPTH_STENCIL_ATTACHMENT : GL_DEPTH_ATTACHMENT;
-		RN_CHECK_PARAM(glFramebufferTexture(GL_FRAMEBUFFER, attachment, depthContainer.tex->id, depthContainer.level), depthContainer.level);
+
+		// RN_CHECK(glBindTexture(depthContainer.tex->targetType(), depthContainer.tex->id));
+
+		switch (depthContainer.tex->targetType()) {
+			case GL_TEXTURE_2D:
+				RN_CHECK_PARAM(glFramebufferTexture(GL_FRAMEBUFFER, attachment, depthContainer.tex->id, depthContainer.level), depthContainer.level);
+			break;
+			case GL_TEXTURE_2D_ARRAY:
+				RN_CHECK_PARAM(glFramebufferTextureLayer(GL_FRAMEBUFFER, attachment, depthContainer.tex->id, depthContainer.level, depthContainer.layer), depthContainer.level << ", " << depthContainer.layer);
+			break;
+		}
+
+		// RN_CHECK(glBindTexture(depthContainer.tex->targetType(), 0));
 	}
 
 	GLenum status = GL_NONE;

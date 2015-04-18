@@ -5,11 +5,13 @@
 
 #include <core/rn/mesh.hpp>
 #include <core/rn/program.hpp>
-
 #include <core/rn/fb.hpp>
 #include <core/rn/prof.hpp>
 
+#include <core/phs/frustum.hpp>
+
 #include <app/fx/ssao.hpp>
+#include <app/fx/csm.hpp>
 #include <app/scene.hpp>
 
 class App
@@ -38,13 +40,14 @@ public:
 	rn::FB fbShadowMapBlur{"App::fbShadowMapBlur"};
 
 	fx::SSAO ssao{};
+	fx::CSM csm{};
 
-	rn::Prof profRender{};
-	rn::Prof profGBuffer{};
-	rn::Prof profDirectionalLight{};
-	rn::Prof profPointLight{};
-	rn::Prof profFlatLight{};
-	rn::Prof profSSAO{};
+	rn::Prof profRender{"App::profRender"};
+	rn::Prof profGBuffer{"App::profGBuffer"};
+	rn::Prof profDirectionalLight{"App::profDirectionalLight"};
+	rn::Prof profPointLight{"App::profPointLight"};
+	rn::Prof profFlatLight{"App::profFlatLight"};
+	rn::Prof profSSAO{"App::profSSAO"};
 
 	app::Scene scene{};
 
@@ -68,7 +71,7 @@ public:
 
 	void ssaoPass();
 
-	glm::mat4 genShadowMap(ecs::Entity lightId);
+	glm::mat4 makeShadowMap(const ecs::Entity &lightId, const phs::Frustum &frustum);
 };
 
 #endif

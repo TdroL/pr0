@@ -34,10 +34,10 @@ public:
 	rn::Program progSAO{};
 	rn::Program progBlur{};
 
-	rn::Prof profZ{};
-	rn::Prof profMipMaps{};
-	rn::Prof profAO{};
-	rn::Prof profBlur{};
+	rn::Prof profZ{"fx::SSAO::profZ"};
+	rn::Prof profMipMaps{"fx::SSAO::profMipMaps"};
+	rn::Prof profAO{"fx::SSAO::profAO"};
+	rn::Prof profBlur{"fx::SSAO::profBlur"};
 
 	void init(const comp::Projection &projection);
 

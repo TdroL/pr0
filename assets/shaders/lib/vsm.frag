@@ -27,8 +27,10 @@ float vsmVisibility(float dist, vec2 moments)
 	float d = dist - moments.x;
 	float pMax = variance / (variance + d * d);
 
+
 	// Reduce light bleeding
-	pMax = smoothstep(0.5, 1.0, pMax);
+	pMax = pow(pMax, 4.0);
+	pMax = smoothstep(0.25, 1.0, pMax);
 
 	return pMax;
 }

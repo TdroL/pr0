@@ -343,6 +343,9 @@ int main(int argc, char const* argv[])
 					oss << "    MipMaps=" << app.ssao.profMipMaps.ms() << "ms\n";
 					oss << "    AO=" << app.ssao.profAO.ms() << "ms\n";
 					oss << "    Blur=" << app.ssao.profBlur.ms() << "ms\n";
+					oss << "  CSM=???ms\n";
+					oss << "    Render=" << app.csm.profRender.ms() << "ms\n";
+					oss << "    Blur=" << app.csm.profBlur.ms() << "ms\n";
 
 					oss << "\n";
 					oss << "F4 - reload scene\n";
