@@ -1,4 +1,4 @@
-#version 330
+#version 440 core
 
 layout(location = 0) out vec4 outColor;
 
@@ -15,8 +15,9 @@ uniform sampler2D texColor;
 uniform sampler2D texDepth;
 uniform sampler2D texAO;
 uniform sampler2D texShadowMoments;
-// uniform sampler2D texShadowDepth;
-uniform sampler2DArray texCSM;
+uniform sampler2D texShadowDepth;
+uniform sampler2DArray csmTexCascades;
+uniform sampler2DArrayShadow csmTexDepths;
 
 uniform mat4 shadowmapMVP;
 uniform float csmCascades[3];
@@ -31,30 +32,132 @@ vec3 normalDecode(vec2 enc);
 vec3 positionReconstruct(float z, vec2 uv);
 float vsmVisibility(float dist, vec2 moments);
 
-float calcVisibility(vec3 position)
+float pcfVisibility(vec3 shadowCoord, int csmLayer, float kernelSize)
+{
+	vec2 texSize = textureSize(csmTexDepths, 0).xy;
+	vec2 texSizeInv = 1.0 / texSize;
+	float depthBias = texSizeInv.x;
+
+	vec2 shadowCoord2 = floor(shadowCoord.xy);
+	vec2 shadowCoord3 = fract(shadowCoord.xy);
+
+	texSizeInv /= float(csmLayer + 1.0);
+
+	float visibility = 0.0;
+	float weight = 0.0;
+
+	float origKernelSize = kernelSize;
+	kernelSize = floor(kernelSize / 2.0);
+	for (float i = -kernelSize; i <= kernelSize; i += 1.0) {
+		for (float j = -kernelSize; j <= kernelSize; j += 1.0) {
+			// float lightDepth = shadowCoord.z - depthBias * (0.25 * float(csmLayer + 1.0)) * max(abs(i), abs(j));
+
+			float lightDepth = shadowCoord.z - depthBias;
+			visibility += texture(csmTexDepths, vec4(shadowCoord.xy + vec2(i, j) * texSizeInv, csmLayer, lightDepth));
+
+			weight += 1.0;
+		}
+	}
+
+	visibility /= weight;
+
+	// visibility = 1.0 - pow(1.0 - visibility, 2.0);
+
+	// visibility = pow(visibility, kernelSize / 2.0);
+
+	return visibility;
+}
+
+float optPcfVisibility(vec3 shadowCoord, int csmLayer, float kernelSize)
+{
+	vec2 texSize = textureSize(csmTexDepths, 0).xy;
+	vec2 texSizeInv = 1.0 / texSize;
+
+	float depthBias = texSizeInv.x;
+	float lightDepth = shadowCoord.z + depthBias;
+
+	vec2 uv = shadowCoord.xy * texSize;
+
+	vec2 baseUv = floor(uv + 0.5);
+	float s = fract(uv.x);
+	float t = fract(uv.y);
+
+	baseUv -= 0.5;
+	baseUv *= texSizeInv;
+
+	// kernelSize = 5
+	float uw0 = (4.0 - 3.0 * s);
+	float uw1 = 7.0;
+	float uw2 = (1.0 + 3.0 * s);
+
+	float u0 = (3.0 - 2.0 * s) / uw0 - 2.0;
+	float u1 = (3.0 + s) / uw1;
+	float u2 = s / uw2 + 2.0;
+
+	float vw0 = (4.0 - 3.0 * t);
+	float vw1 = 7.0;
+	float vw2 = (1.0 + 3.0 * t);
+
+	float v0 = (3.0 - 2.0 * t) / vw0 - 2.0;
+	float v1 = (3.0 + t) / vw1;
+	float v2 = t / vw2 + 2.0;
+
+	vec2 texSizeInvScaled = texSizeInv / float(csmLayer + 1.0);
+
+	float visibility = 1.0;
+	visibility += uw0 * vw0 * texture(csmTexDepths, vec4(baseUv + vec2(u0, v0) * texSizeInvScaled, csmLayer, lightDepth));
+	visibility += uw1 * vw0 * texture(csmTexDepths, vec4(baseUv + vec2(u1, v0) * texSizeInvScaled, csmLayer, lightDepth));
+	visibility += uw2 * vw0 * texture(csmTexDepths, vec4(baseUv + vec2(u2, v0) * texSizeInvScaled, csmLayer, lightDepth));
+
+	visibility += uw0 * vw1 * texture(csmTexDepths, vec4(baseUv + vec2(u0, v1) * texSizeInvScaled, csmLayer, lightDepth));
+	visibility += uw1 * vw1 * texture(csmTexDepths, vec4(baseUv + vec2(u1, v1) * texSizeInvScaled, csmLayer, lightDepth));
+	visibility += uw2 * vw1 * texture(csmTexDepths, vec4(baseUv + vec2(u2, v1) * texSizeInvScaled, csmLayer, lightDepth));
+
+	visibility += uw0 * vw2 * texture(csmTexDepths, vec4(baseUv + vec2(u0, v2) * texSizeInvScaled, csmLayer, lightDepth));
+	visibility += uw1 * vw2 * texture(csmTexDepths, vec4(baseUv + vec2(u1, v2) * texSizeInvScaled, csmLayer, lightDepth));
+	visibility += uw2 * vw2 * texture(csmTexDepths, vec4(baseUv + vec2(u2, v2) * texSizeInvScaled, csmLayer, lightDepth));
+
+	visibility = visibility * 1.0f / 144;
+
+	return visibility;
+}
+
+int calcCascade(float z)
 {
 	int csmLayer = 3;
 
-	if (csmCascades[0] < position.z)
+	if (csmCascades[0] < z)
 	{
 		csmLayer = 0;
 	}
-	else if (csmCascades[1] < position.z)
+	else if (csmCascades[1] < z)
 	{
 		csmLayer = 1;
 	}
-	else if (csmCascades[2] < position.z)
+	else if (csmCascades[2] < z)
 	{
 		csmLayer = 2;
 	}
 
+	return csmLayer;
+}
+
+float calcVisibility(vec3 position)
+{
+	int csmLayer = calcCascade(position.z);
+
 	vec4 shadowCoord = csmMVP[csmLayer] * vec4(position, 1.0) * 0.5 + 0.5;
 	shadowCoord /= shadowCoord.w;
 
-	vec4 moments = texture(texCSM, vec3(shadowCoord.xy, csmLayer));
-	float visibility = vsmVisibility(min(shadowCoord.z, 1.0), moments.xy);
+	// vec4 moments = texture(csmTexCascades, vec3(shadowCoord.xy, csmLayer));
+	// float visibility = vsmVisibility(min(shadowCoord.z, 1.0), moments.xy);
 
-	if (csmLayer < 3)
+	float kernelSize = 1.0;
+	float visibility = pcfVisibility(shadowCoord.xyz, csmLayer, kernelSize);
+	// float visibility = optPcfVisibility(shadowCoord.xyz, csmLayer, 5.0);
+
+	bool enableBlending = false;
+	if (enableBlending && csmLayer < 3)
 	{
 		float blendScale = 16.0;
 
@@ -65,8 +168,9 @@ float calcVisibility(vec3 position)
 			shadowCoord = csmMVP[csmLayer + 1] * vec4(position, 1.0) * 0.5 + 0.5;
 			shadowCoord /= shadowCoord.w;
 
-			moments = texture(texCSM, vec3(shadowCoord.xy, csmLayer + 1.0));
-			float nextVisibility = vsmVisibility(min(shadowCoord.z, 1.0), moments.xy);
+			// moments = texture(csmTexCascades, vec3(shadowCoord.xy, csmLayer + 1.0));
+			// float nextVisibility = vsmVisibility(min(shadowCoord.z, 1.0), moments.xy);
+			float nextVisibility = pcfVisibility(shadowCoord.xyz, csmLayer + 1, kernelSize);
 
 			visibility = min(visibility, mix(visibility, nextVisibility, 1.0 - dl));
 		}
@@ -116,12 +220,18 @@ void main()
 	vec3 diffuse  = lightColorG * albedo * theta;
 	vec3 specular = lightColorG * gauss;
 
-	// float visibility = 1.0;
-
-	// vec2 moments = texture(texShadowMoments, shadowCoord.xy).rg;
-	// visibility = vsmVisibility(min(shadowCoord.z, 1.0), moments);
-
 	outColor.rgb = ambient + (diffuse + specular) * visibility;
+
+	vec3 cascadeColors[4] = vec3[4](
+		vec3(1.0, 0.0, 0.0),
+		vec3(0.0, 1.0, 0.0),
+		vec3(0.0, 0.0, 1.0),
+		vec3(0.0, 1.0, 1.0)
+	);
+	int cascade = calcCascade(position.z);
+
+	outColor.rgb *= cascadeColors[cascade];
+
 	outColor.rgb = pow(outColor.rgb, vec3(1.0 / 2.2));
 	outColor.a = 1.0;
 }

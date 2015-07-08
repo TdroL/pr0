@@ -115,7 +115,7 @@
 		},
 		"transform": {
 			"translation": [0.0, -1.5, 0.0],
-			"scale": [100.0]
+			"scale": [1000.0]
 		},
 		"material": {
 			"diffuse": [0.04, 0.16, 0.04, 1.0],
@@ -126,8 +126,7 @@
 		},
 		"mesh": {
 			"id": "plane.sbm"
-		},
-		"occluder": {}
+		}
 	},
 	{
 		"name": {

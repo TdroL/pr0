@@ -72,6 +72,7 @@ Tex2DArray::Tex2DArray(Tex2DArray &&rhs)
 	magFilter = move(rhs.magFilter);
 	wrapS = move(rhs.wrapS);
 	wrapT = move(rhs.wrapT);
+	compareFunc = move(rhs.compareFunc);
 	// source = move(rhs.source);
 	texName = move(rhs.texName);
 
@@ -104,6 +105,7 @@ Tex2DArray & Tex2DArray::operator=(Tex2DArray &&rhs)
 	magFilter = move(rhs.magFilter);
 	wrapS = move(rhs.wrapS);
 	wrapT = move(rhs.wrapT);
+	compareFunc = move(rhs.compareFunc);
 	// source = move(rhs.source);
 	texName = move(rhs.texName);
 
@@ -169,6 +171,11 @@ void Tex2DArray::reload()
 		default:
 			format = GL_RED;
 			type = GL_UNSIGNED_BYTE;
+	}
+
+	if (isDepth() && compareFunc != COMPARE_NONE) {
+		RN_CHECK(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE));
+		RN_CHECK_PARAM(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_FUNC, compareFunc), rn::getEnumName(compareFunc));
 	}
 
 	GLsizei mipWidth = width;

@@ -52,7 +52,7 @@ void RebuildBoundingObjectProcess::update(const ecs::Entity &entity)
 	boundingObject.aabb.min.z = min(corners[0].z, corners[1].z);
 	boundingObject.aabb.max.z = max(corners[0].z, corners[1].z);
 
-	boundingObject.sphere.pos = transform.translation;
+	boundingObject.sphere.position = transform.translation;
 	boundingObject.sphere.radius = mesh.boundingRadius * max({transform.scale.x, transform.scale.y, transform.scale.z});
 
 	boundingObject.dirty = false;

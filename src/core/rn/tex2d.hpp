@@ -35,6 +35,8 @@ public:
 	Wrap wrapS = WRAP_REPEAT;
 	Wrap wrapT = WRAP_REPEAT;
 
+	CompareFunc compareFunc = COMPARE_NONE;
+
 	glm::vec4 borderColor{0.f};
 
 	std::unique_ptr<Source> source{nullptr};

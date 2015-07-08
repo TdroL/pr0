@@ -24,9 +24,8 @@ Status status = Status::uninited;
 
 namespace
 {
-	void debugHandler(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei, const GLchar *message, GLvoid *)
+	void debugHandler(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei, const GLchar *message, const GLvoid *)
 	{
-
 		string error_type;
 		switch(type)
 		{
@@ -100,8 +99,6 @@ void reload()
 	RN_CHECK(glDepthFunc(GL_LEQUAL));
 	RN_CHECK(glDepthRange(0.0, 1.0));
 
-	RN_CHECK(glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST));
-
 	// glEnable(GL_MULTISAMPLE);
 
 	RN_CHECK(glEnable(GL_BLEND));
@@ -109,28 +106,15 @@ void reload()
 
 	const GLuint ignoreMessages[] =
 	{
-		131076 // glVertexAttribPointer(..., **12**) - Usage warning: Generic vertex attribute array 2 uses a pointer with a small value (0x000000000000000C). Is this intended to be used as an offset into a buffer object?
+		131076, // glVertexAttribPointer(..., **12**) - Usage warning: Generic vertex attribute array 2 uses a pointer with a small value (0x000000000000000C). Is this intended to be used as an offset into a buffer object?
+		131218 // NVIDIA: "shader will be recompiled due to GL state mismatches"
 	};
 
 	GLsizei ignoreMessagesCount = util::countOf(ignoreMessages);
 
-	if (rn::ext::KHR_debug)
-	{
-		RN_CHECK(glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS));
-		RN_CHECK(glDebugMessageCallback(debugHandler, reinterpret_cast<void*>(15)));
-		RN_CHECK(glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DONT_CARE, ignoreMessagesCount, ignoreMessages, GL_FALSE));
-	}
-	else if (rn::ext::ARB_debug_output)
-	{
-		RN_CHECK(glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB));
-		RN_CHECK(glDebugMessageCallbackARB(debugHandler, reinterpret_cast<void*>(15)));
-		RN_CHECK(glDebugMessageControlARB(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DONT_CARE, ignoreMessagesCount, ignoreMessages, GL_FALSE));
-	}
-	else
-	{
-		clog << "rn::reload() - GL_ARB_debug_output not supported" << endl;
-		clog << flush;
-	}
+	RN_CHECK(glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS));
+	RN_CHECK(glDebugMessageCallback(debugHandler, nullptr));
+	RN_CHECK(glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DONT_CARE, ignoreMessagesCount, ignoreMessages, GL_FALSE));
 }
 
 void reloadAll()

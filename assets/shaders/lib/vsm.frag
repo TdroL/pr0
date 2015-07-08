@@ -1,4 +1,4 @@
-#version 330
+#version 440 core
 
 // From http://fabiensanglard.net/shadowmappingVSM/index.php
 
@@ -26,7 +26,6 @@ float vsmVisibility(float dist, vec2 moments)
 
 	float d = dist - moments.x;
 	float pMax = variance / (variance + d * d);
-
 
 	// Reduce light bleeding
 	pMax = pow(pMax, 4.0);

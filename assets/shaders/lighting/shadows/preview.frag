@@ -1,13 +1,15 @@
-#version 330
+#version 440 core
 
 in vec2 uv;
 
-uniform sampler2D texSource;
+// uniform sampler2DArray texSource;
+uniform sampler2DArray texSource;
+uniform uint layer;
 
 out vec4 outColor;
 
 void main()
 {
-	outColor.rgb = texture(texSource, uv).rgb;
+	outColor.rgb = vec3(pow(texture(texSource, vec3(uv, float(layer))).r, 6.0));
 	outColor.a = 1.0;
 }

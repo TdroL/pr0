@@ -13,6 +13,12 @@ Khronos_ supported glcorearb.h_ header and generates gl3w.h and gl3w.c from it.
 Those files can then be added and linked (statically or dynamically) into your
 project.
 
+Requirements
+------------
+
+gl3w_gen.py_ requires Python version 2.6 or newer, with SSL support.
+It is also compatible with Python 3.x.
+
 Example
 -------
 
@@ -69,20 +75,20 @@ The gl3w_ API consists of just three functions:
 
 ``int gl3wIsSupported(int major, int minor)``
 
-    Returns ``1`` when OpenGL core profile version *major.minor* is available,
+    Returns ``1`` when OpenGL core profile version *major.minor* is available
     and ``0`` otherwise.
 
-``void *gl3wGetProcAddress(const char *proc)``
+``GL3WglProc gl3wGetProcAddress(const char *proc)``
 
     Returns the address of an OpenGL extension function. Generally, you won't
-    need to use it since gl3w_ loads all the functions defined in the OpenGL
-    core profile on initialization. It allows you to load OpenGL extensions
-    outside of the core profile.
+    need to use it since gl3w_ loads all functions defined in the OpenGL core
+    profile on initialization. It allows you to load OpenGL extensions outside
+    of the core profile.
 
 License
 -------
 
-gl3w_ is in the public domain.
+gl3w_ is in the public domain. See the file UNLICENSE for more information.
 
 Credits
 -------
@@ -99,6 +105,9 @@ Sjors Gielen
 Travis Gesslein
     Patches regarding glcorearb.h
 
+Arthur Tombs
+    Port to Python 3
+
 Rommel160 [github.com/Rommel160]
     Code contributions
 
@@ -109,7 +118,7 @@ OpenGL_ is a registered trademark of SGI_.
 
 .. _gl3w: https://github.com/skaslev/gl3w
 .. _gl3w_gen.py: https://github.com/skaslev/gl3w/blob/master/gl3w_gen.py
-.. _glcorearb.h: http://www.opengl.org/registry/api/glcorearb.h
+.. _glcorearb.h: https://www.opengl.org/registry/api/GL/glcorearb.h
 .. _OpenGL: http://www.opengl.org/
 .. _Khronos: http://www.khronos.org/
 .. _SGI: http://www.sgi.com/

@@ -1,4 +1,4 @@
-#version 330
+#version 440 core
 
 // From http://fabiensanglard.net/shadowmappingVSM/index.php
 

@@ -1,4 +1,4 @@
-#version 330
+#version 440 core
 
 uniform mat4 invP;
 uniform float zFar;

@@ -14,8 +14,8 @@ string title{"pr0"};
 GLFWwindow *handler = nullptr;
 int width = -1;
 int height = -1;
-const int contextMajor = 3;
-const int contextMinor = 3;
+const int contextMajor = 4;
+const int contextMinor = 4;
 
 Mode currentMode = Mode::windowed;
 int currentVsync = 0;

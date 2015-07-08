@@ -61,6 +61,7 @@ util::Toggle toggleDebugPreview{"DebugPreview (m)", 0};
 util::Toggle toggleZPreview{"ZPreview (,)", 0};
 util::Toggle toggleLights{"Lights (;)", 1};
 util::Toggle toggleColor{"Color (/)", 0};
+util::Toggle toggleCascade{"Cascade (')", 0, 4};
 
 void App::init()
 {
@@ -517,8 +518,11 @@ void App::update()
 		rotate.y = (key::pressed(KEY_LEFT) - key::pressed(KEY_RIGHT));
 		rotate.x = (key::pressed(KEY_UP) - key::pressed(KEY_DOWN));
 
-		translate *= 20.0 * ngn::dt;
-		rotate *= 90.0 * ngn::dt;
+		float translateSpeed = (key::pressed(KEY_LSHIFT) ? 1.0 : 20.0);
+		float rotateSpeed = (key::pressed(KEY_LSHIFT) ? 5.0 : 90.0);
+
+		translate *= translateSpeed * ngn::dt;
+		rotate *= rotateSpeed * ngn::dt;
 
 		proc::Camera::update(cameraId, translate, rotate);
 	}
@@ -556,6 +560,11 @@ void App::update()
 	if (key::hit('/'))
 	{
 		toggleColor.change();
+	}
+
+	if (key::hit('\''))
+	{
+		toggleCascade.change();
 	}
 
 	{
@@ -681,12 +690,21 @@ void App::render()
 
 	{
 		progShadowMapPreview.use();
-		progShadowMapPreview.var("texSource", fbShadowMap.color(0)->bind(0));
+		// progShadowMapPreview.var("texSource", fbShadowMap.color(0)->bind(0));
 		// progShadowMapPreview.var("texSource", csm.fbShadows[0].color(0)->bind(0));
+
+		auto unit = csm.texDepths->bind(0);
+		RN_CHECK(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_MODE, GL_NONE));
+
+		progShadowMapPreview.var("texSource", unit);
+		progShadowMapPreview.var("layer", toggleCascade.value);
 
 		rn::Mesh::quad.render();
 
 		progShadowMapPreview.forgo();
+
+		RN_CHECK(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE));
+		RN_CHECK_PARAM(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_FUNC, csm.texDepths->compareFunc), rn::getEnumName(csm.texDepths->compareFunc));
 	}
 
 	profRender.stop();
@@ -768,7 +786,11 @@ void App::directionalLightsPass()
 
 	for (auto &entity : ecs::findWith<DirectionalLight>())
 	{
-		glm::mat4 shadowMapMVP = makeShadowMap(entity, frustum);
+		// glm::mat4 shadowMapMVP = makeShadowMap(entity, frustum);
+
+		csm.cameraId = cameraId;
+		csm.setup(entity);
+		csm.render();
 
 		const auto &light = ecs::get<DirectionalLight>(entity);
 
@@ -787,18 +809,16 @@ void App::directionalLightsPass()
 			progDirectionalLight.var("lightColor", light.color);
 			progDirectionalLight.var("lightDirection", glm::mat3{V} * light.direction);
 			progDirectionalLight.var("lightIntensity", light.intensity);
-			progDirectionalLight.var("shadowmapMVP", shadowMapMVP);
+			// progDirectionalLight.var("shadowmapMVP", shadowMapMVP);
 			// progDirectionalLight.var("csmMVP", csm.Ps[0] * csm.V);
 
-			std::vector<glm::mat4> csmMVP = csm.Ps;
+			std::vector<glm::mat4> csmMVP{};
+			csmMVP.resize(csm.Ps.size());
 
 			for (size_t i = 0; i < csmMVP.size(); i++)
 			{
-				csmMVP[i] = csmMVP[i] * csm.V * invV;
+				csmMVP[i] = csm.Ps[i] * csm.Vs[i] * invV;
 			}
-
-			progDirectionalLight.var("csmCascades", csm.cascades.data(), csm.cascades.size());
-			progDirectionalLight.var("csmMVP", csmMVP.data(), csmMVP.size());
 
 			GLsizei unit = 0;
 			progDirectionalLight.var("texColor", fbGBuffer.color(0)->bind(unit++));
@@ -809,7 +829,11 @@ void App::directionalLightsPass()
 			progDirectionalLight.var("texShadowMoments", fbShadowMap.color(0)->bind(unit++));
 			progDirectionalLight.var("texShadowDepth", fbShadowMap.depth()->bind(unit++));
 			// progDirectionalLight.var("texCSM", csm.fbShadows[0].color(0)->bind(unit++));
-			progDirectionalLight.var("texCSM", csm.texCascades->bind(unit++));
+
+			progDirectionalLight.var("csmCascades", csm.cascades.data(), csm.cascades.size());
+			progDirectionalLight.var("csmMVP", csmMVP.data(), csmMVP.size());
+			// progDirectionalLight.var("csmTexCascades", csm.texCascades->bind(unit++));
+			progDirectionalLight.var("csmTexDepths", csm.texDepths->bind(unit++));
 
 			rn::Mesh::quad.render();
 
@@ -1003,7 +1027,7 @@ glm::mat4 App::makeShadowMap(const ecs::Entity &lightId, const phs::Frustum &fru
 	// {
 	// 	auto &boundingObject = ecs::get<BoundingObject>(entity);
 
-	// 	float dist = glm::dot(lightDirection, boundingObject.sphere.pos) + boundingObject.sphere.radius;
+	// 	float dist = glm::dot(lightDirection, boundingObject.sphere.position) + boundingObject.sphere.radius;
 
 	// 	zMax = max(zMax, dist);
 	// }

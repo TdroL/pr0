@@ -15,35 +15,17 @@ public:
 	glm::vec3 normal{0.f};
 	float d = 0.f;
 
-	float distance(const Point &point) const
-	{
-		return glm::dot(point.pos, normal) + d;
-	}
+	Plane() = default;
 
-	float distance(const Sphere &sphere) const
-	{
-		return glm::dot(sphere.pos, normal) + d + sphere.radius;
-	}
+	explicit Plane(const glm::vec4 &vec);
 
-	void normalize()
-	{
-		float invLength = glm::inversesqrt(glm::dot(normal, normal));
+	Plane & operator=(const glm::vec4 &vec);
 
-		normal *= invLength;
-		d *= invLength;
-	}
+	float distance(const Point &point) const;
 
-	Plane & operator=(const glm::vec4 &vec)
-	{
-		normal.x = vec.x;
-		normal.y = vec.y;
-		normal.z = vec.z;
-		d = vec.w;
+	float distance(const Sphere &sphere) const;
 
-		normalize();
-
-		return *this;
-	}
+	void normalize();
 };
 
 } // phs

@@ -1,4 +1,4 @@
-#version 330
+#version 440 core
 
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec2 outNormal;

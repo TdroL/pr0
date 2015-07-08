@@ -1,4 +1,4 @@
-#version 330
+#version 440 core
 #extension GL_ARB_gpu_shader5 : enable
 
 layout(location = 0) out vec4 outColor;
@@ -9,6 +9,7 @@ uniform mat4 P;
 uniform float zFar;
 
 uniform sampler2D texZ;
+uniform sampler2D texNormal;
 
 uniform vec4 projectionInfo;
 uniform float pixelScale;
@@ -24,6 +25,7 @@ float epsilon = 0.01;
 float bias = 0.012;
 
 vec2 pack2(float source);
+vec3 normalDecode(vec2 enc);
 
 // *-----------------------* //
 
@@ -64,7 +66,11 @@ void main()
 
 	float randomRotation = (3 * coord.x ^ coord.y + coord.x * coord.y) * 10;
 
+	/** /
 	vec3 normal = reconstructCSFaceNormal(position);
+	/*/
+	vec3 normal = -normalDecode(texture(texNormal, uv).xy);
+	/**/
 
 	float diskRadius = pixelScale * radius / position.z;
 

@@ -12,7 +12,7 @@ CXXFLAGS_DEBUG = -g -Og -Weffc++ -DDEBUG
 CXXFLAGS_RELEASE = -O3 -s -funroll-loops -msse -msse2 -msse3 -mfpmath=sse
 LFLAGS =
 LDIR =
-LIBS = -static -lgcc -lglfw3 -lgl3w -lopengl32 -lstb_image -lfreetype
+LIBS = -static -lgcc -lglfw3 -lgl3w -lopengl32 -lstb_image -lfreetype -lminball
 
 DEFINES = \
 	-DGLM_FORCE_CXX11 \
