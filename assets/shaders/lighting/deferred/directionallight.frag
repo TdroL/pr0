@@ -20,8 +20,11 @@ uniform sampler2DArray csmTexCascades;
 uniform sampler2DArrayShadow csmTexDepths;
 
 uniform mat4 shadowmapMVP;
-uniform float csmCascades[3];
-uniform mat4 csmMVP[4];
+
+#define CSM_MAX_CASCADES 10
+uniform int csmCascades;
+uniform float csmSplits[CSM_MAX_CASCADES];
+uniform mat4 csmMVP[CSM_MAX_CASCADES];
 
 uniform vec3 lightDirection;
 uniform vec4 lightColor;
@@ -124,22 +127,15 @@ float optPcfVisibility(vec3 shadowCoord, int csmLayer, float kernelSize)
 
 int calcCascade(float z)
 {
-	int csmLayer = 3;
-
-	if (csmCascades[0] < z)
+	for (int i = 0; i < csmCascades - 1; i++)
 	{
-		csmLayer = 0;
-	}
-	else if (csmCascades[1] < z)
-	{
-		csmLayer = 1;
-	}
-	else if (csmCascades[2] < z)
-	{
-		csmLayer = 2;
+		if (csmSplits[i] < z)
+		{
+			return i;
+		}
 	}
 
-	return csmLayer;
+	return csmCascades - 1;
 }
 
 float calcVisibility(vec3 position)
@@ -161,7 +157,7 @@ float calcVisibility(vec3 position)
 	{
 		float blendScale = 16.0;
 
-		float dl = abs((position.z - csmCascades[csmLayer]) / (csmCascades[csmLayer + 1] - csmCascades[csmLayer])) * blendScale;
+		float dl = abs((position.z - csmSplits[csmLayer]) / (csmSplits[csmLayer + 1] - csmSplits[csmLayer])) * blendScale;
 
 		if (dl < 1.0)
 		{
@@ -222,15 +218,17 @@ void main()
 
 	outColor.rgb = ambient + (diffuse + specular) * visibility;
 
-	vec3 cascadeColors[4] = vec3[4](
+	vec3 cascadeColors[6] = vec3[6](
 		vec3(1.0, 0.0, 0.0),
 		vec3(0.0, 1.0, 0.0),
 		vec3(0.0, 0.0, 1.0),
-		vec3(0.0, 1.0, 1.0)
+		vec3(0.0, 1.0, 1.0),
+		vec3(1.0, 0.0, 1.0),
+		vec3(1.0, 1.0, 0.0)
 	);
 	int cascade = calcCascade(position.z);
 
-	outColor.rgb *= cascadeColors[cascade];
+	outColor.rgb *= cascadeColors[cascade % 6];
 
 	outColor.rgb = pow(outColor.rgb, vec3(1.0 / 2.2));
 	outColor.a = 1.0;

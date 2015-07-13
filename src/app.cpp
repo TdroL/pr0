@@ -830,7 +830,8 @@ void App::directionalLightsPass()
 			progDirectionalLight.var("texShadowDepth", fbShadowMap.depth()->bind(unit++));
 			// progDirectionalLight.var("texCSM", csm.fbShadows[0].color(0)->bind(unit++));
 
-			progDirectionalLight.var("csmCascades", csm.cascades.data(), csm.cascades.size());
+			progDirectionalLight.var("csmCascades", static_cast<GLint>(csm.cascades.size()));
+			progDirectionalLight.var("csmSplits", csm.cascades.data(), csm.cascades.size());
 			progDirectionalLight.var("csmMVP", csmMVP.data(), csmMVP.size());
 			// progDirectionalLight.var("csmTexCascades", csm.texCascades->bind(unit++));
 			progDirectionalLight.var("csmTexDepths", csm.texDepths->bind(unit++));

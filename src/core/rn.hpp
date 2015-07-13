@@ -6,10 +6,12 @@
 #include <string>
 #include <iostream>
 
-#ifdef NGN_USE_GLEW
+#if defined(NGN_USE_GLEW)
 	#include <GL/glew.h>
-#else
+#elif (NGN_USE_GL3W)
 	#include <GL/gl3w.h>
+#else
+	#include <GL/gl_core_3_3.h>
 #endif
 
 #include <GLFW/glfw3.h>

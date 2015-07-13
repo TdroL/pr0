@@ -111,6 +111,68 @@
 	},
 	{
 		"name": {
+			"name": "Bunny"
+		},
+		"transform": {
+			"translation": [0.0, -1.115, 2.0],
+			"scale": [5.0]
+		},
+		"material": {
+			"diffuse": [0.16, 0.16, 0.04, 1.0],
+			"shininess": 0.25
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"mesh": {
+			"id": "bunny.sbm"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Torus #1"
+		},
+		"transform": {
+			"translation": [4.0, 0.0, 2.0],
+			"scale": [1.0],
+			"rotation": [45.0, 0.0, 45.0]
+		},
+		"material": {
+			"diffuse": [0.16, 0.16, 0.04, 1.0],
+			"shininess": 0.125
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"mesh": {
+			"id": "torus.sbm"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Torus #2"
+		},
+		"transform": {
+			"translation": [4.5, 0.0, 2.5],
+			"scale": [1.0],
+			"rotation": [-45.0, 0.0, -45.0]
+		},
+		"material": {
+			"diffuse": [0.16, 0.16, 0.04, 1.0],
+			"shininess": 0.125
+		},
+		"stencil": {
+			"ref": "shaded"
+		},
+		"mesh": {
+			"id": "torus.sbm"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
 			"name": "Floor"
 		},
 		"transform": {

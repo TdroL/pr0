@@ -39,7 +39,7 @@ void init()
 
 	window::create(1600, 900);
 
-#ifdef NGN_USE_GLEW
+#if defined(NGN_USE_GLEW)
 	{
 		glewExperimental = GL_TRUE;
 		auto err = glewInit();
@@ -48,10 +48,10 @@ void init()
 			throw string{"ngn::init() - glewInit() - "} + reinterpret_cast<const char *>(glewGetErrorString(err));
 		}
 	}
-#else
+#elif (NGN_USE_GL3W)
 	if (gl3wInit())
 	{
-		throw string{"ngn::init() - gl3wInit() - Failed to initialize OpenGL"};
+		throw string{"ngn::init() - gl3wInit() - failed to initialize OpenGL"};
 	}
 
 	if ( ! gl3wIsSupported(window::contextMajor, window::contextMinor))
@@ -62,6 +62,19 @@ void init()
 		rn::get(GL_MINOR_VERSION, versionMinor);
 
 		throw string{"ngn::init() - gl3wIsSupported(" + to_string(window::contextMajor) + ", " + to_string(window::contextMinor) + ") - OpenGL " + to_string(versionMajor) + "." + to_string(versionMinor)};
+	}
+#else
+	if (ogl_LoadFunctions() == ogl_LOAD_FAILED)
+	{
+		throw string{"ngn::init() - ogl_LoadFunctions() - failed to initialize OpenGL"};
+	}
+
+	if ( ! ogl_IsVersionGEQ(window::contextMajor, window::contextMinor))
+	{
+		int versionMajor = ogl_GetMinorVersion();
+		int versionMinor = ogl_GetMajorVersion();
+
+		throw string{"ngn::init() - ogl_IsVersionGEQ(" + to_string(window::contextMajor) + ", " + to_string(window::contextMinor) + ") - OpenGL " + to_string(versionMajor) + "." + to_string(versionMinor)};
 	}
 #endif
 

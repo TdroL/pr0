@@ -34,16 +34,16 @@ namespace fx
 using namespace std;
 using namespace comp;
 
-enum CORNERS {
-	RTN = 0,
-	LTN = 1,
-	RBN = 2,
-	LBN = 3,
-	RTF = 4,
-	LTF = 5,
-	RBF = 6,
-	LBF = 7
-};
+// enum CORNERS {
+// 	RTN = 0,
+// 	LTN = 1,
+// 	RBN = 2,
+// 	LBN = 3,
+// 	RTF = 4,
+// 	LTF = 5,
+// 	RBF = 6,
+// 	LBF = 7
+// };
 
 void CSM::init()
 {
@@ -280,13 +280,16 @@ void CSM::setup(const ecs::Entity &lightId)
 
 		glm::vec3 viewCenter{view.invMatrix * glm::vec4{center, 1.f}};
 		float minViewCenterDistance = glm::dot(lightDirection, viewCenter);
-		float zNearCorrection = min((minViewCenterDistance - radius) - zMinMax.x, 0.f);
+		float zNearCorrection = min((minViewCenterDistance + radius) + zMinMax.x, 0.f);
 
 		// cout << "center=" << glm::to_string(center) << endl;
 		// cout << "viewCenter=" << glm::to_string(viewCenter) << endl;
 		// cout << "radius=" << radius << endl;
-		// cout << "minViewCenterDistance=" << minViewCenterDistance << endl;
-		// cout << "minViewCenterDistance - radius=" << minViewCenterDistance - radius << endl;
+		cout << "-center.z - radius=" << -center.z - radius << endl;
+		cout << "zMinMax=" << glm::to_string(zMinMax) << endl;
+		cout << "minViewCenterDistance=" << minViewCenterDistance << endl;
+		cout << "minViewCenterDistance - radius=" << minViewCenterDistance - radius << endl;
+		cout << "zNearCorrection=" << zNearCorrection << endl;
 
 		//
 		// cout << "view center: " << glm::to_string(glm::vec3{view.invMatrix * glm::vec4{center, 1.f}}) << endl;
@@ -454,6 +457,7 @@ void CSM::render()
 	// profBlur.stop();
 }
 
+/*
 void CSM::buildCorners(const glm::mat4 &VP, glm::vec4 (&output)[8])
 {
 	const auto invVP = glm::inverse(VP);
@@ -476,6 +480,7 @@ void CSM::buildCorners(const glm::mat4 &VP, glm::vec4 (&output)[8])
 	output[RBF] /= output[RBF].w;
 	output[LBF] /= output[LBF].w;
 }
+*/
 
 glm::vec2 CSM::findSceneZMinMax(glm::vec3 lightDirection)
 {
@@ -494,6 +499,7 @@ glm::vec2 CSM::findSceneZMinMax(glm::vec3 lightDirection)
 	return zMinMax;
 }
 
+/*
 glm::mat4 CSM::buildShadowPMatrix(const glm::vec4 (&corners)[8], const glm::mat4 &V, float zMax)
 {
 	glm::vec4 shadowFrustumCorners[8] = {
@@ -528,7 +534,9 @@ glm::mat4 CSM::buildShadowPMatrix(const glm::vec4 (&corners)[8], const glm::mat4
 
 	return glm::ortho(left, right, bottom, top, -zNear, -zFar);
 }
+*/
 
+/*
 glm::mat4 CSM::stabilizeVMatrix(const glm::mat4 &V, const glm::mat4 &P)
 {
 	// reduce shimmering
@@ -542,7 +550,9 @@ glm::mat4 CSM::stabilizeVMatrix(const glm::mat4 &V, const glm::mat4 &P)
 
 	return V;
 }
+*/
 
+/*
 pair<glm::vec3, glm::vec3> CSM::computeBox(const glm::mat4 &splitProjection)
 {
 	glm::mat4 invP = glm::inverse(splitProjection);
@@ -582,5 +592,6 @@ pair<glm::vec3, glm::vec3> CSM::computeBox(const glm::mat4 &splitProjection)
 
 	return { bottomLeft, topRight };
 }
+*/
 
 } // fx
