@@ -1,4 +1,4 @@
-#version 440 core
+#version 330 core
 
 vec4 blurGaussian7(sampler2D tex, vec2 uv, vec2 scale)
 {

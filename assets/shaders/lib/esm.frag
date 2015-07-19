@@ -1,4 +1,4 @@
-#version 440 core
+#version 330 core
 
 float esmLogConv(float x0,float X, float y0, float Y)
 {

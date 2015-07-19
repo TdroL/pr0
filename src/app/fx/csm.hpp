@@ -20,13 +20,12 @@ namespace fx
 class CSM
 {
 public:
-	bool useMinball = true;
-	bool useViewCenter = true;
+	bool useSmartSplitting = true;
 
 	std::vector<float> splits{ 0.025f, 0.075f, 0.25f, 1.f };
 	std::vector<float> cascades{};
 
-	int shadowResolution = 1024*2;
+	int shadowResolution = 1024;
 
 	std::shared_ptr<rn::Tex2DArray> texDepths{};
 	// std::shared_ptr<rn::Tex2DArray> texCascades{};

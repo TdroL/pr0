@@ -62,6 +62,7 @@ util::Toggle toggleZPreview{"ZPreview (,)", 0};
 util::Toggle toggleLights{"Lights (;)", 1};
 util::Toggle toggleColor{"Color (/)", 0};
 util::Toggle toggleCascade{"Cascade (')", 0, 4};
+util::Toggle toggleUseSmartSplitting{"UseSmartSplitting (')", 1};
 
 void App::init()
 {
@@ -567,6 +568,11 @@ void App::update()
 		toggleCascade.change();
 	}
 
+	if (key::hit('\\'))
+	{
+		toggleUseSmartSplitting.change();
+	}
+
 	{
 		glm::vec3 lightPositionDelta{static_cast<float>(5.0 * ngn::dt)};
 
@@ -597,7 +603,7 @@ void App::update()
 		glm::vec3 lightPositionDelta{1.f, 0.25f, 1.f};
 
 		auto &directionalLight = ecs::get<DirectionalLight>(lightIds[4]);
-		directionalLight.direction.x = lightPositionDelta.x * sin(sunTimer.timed);
+		directionalLight.direction.x = lightPositionDelta.x * sin(sunTimer.timed); //  + 3.151592f / 4.f
 		directionalLight.direction.z = lightPositionDelta.z * cos(sunTimer.timed);
 
 		auto &transform = ecs::get<Transform>(lightIds[4]);
@@ -789,6 +795,7 @@ void App::directionalLightsPass()
 		// glm::mat4 shadowMapMVP = makeShadowMap(entity, frustum);
 
 		csm.cameraId = cameraId;
+		csm.useSmartSplitting = toggleUseSmartSplitting.value;
 		csm.setup(entity);
 		csm.render();
 

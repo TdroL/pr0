@@ -1,4 +1,4 @@
-#version 440 core
+#version 330 core
 #extension GL_ARB_gpu_shader5 : enable
 
 layout(location = 0) out vec4 outColor;
@@ -41,7 +41,7 @@ vec3 getOffsetPosition(ivec2 coord, vec2 offsetVector, float offsetRadius) {
 
 #define LOG_MAX_OFFSET 3
 
-#ifdef GL_EXT_gpu_shader5
+#ifdef GL_ARB_gpu_shader5
 	int mipLevel = clamp(findMSB(int(offsetRadius)) - LOG_MAX_OFFSET, 0, zMipLevels);
 #else
 	int mipLevel = clamp(int(floor(log2(offsetRadius))) - LOG_MAX_OFFSET, 0, zMipLevels);

@@ -1,4 +1,4 @@
-#version 440 core
+#version 330 core
 
 layout(location = 0) out vec4 outColor;
 
@@ -21,7 +21,7 @@ uniform sampler2DArrayShadow csmTexDepths;
 
 uniform mat4 shadowmapMVP;
 
-#define CSM_MAX_CASCADES 10
+#define CSM_MAX_CASCADES 4
 uniform int csmCascades;
 uniform float csmSplits[CSM_MAX_CASCADES];
 uniform mat4 csmMVP[CSM_MAX_CASCADES];
@@ -30,6 +30,9 @@ uniform vec3 lightDirection;
 uniform vec4 lightColor;
 uniform float lightIntensity;
 uniform uint useColor;
+
+bool enableBlending = false;
+bool enableVisualizeCascades = true;
 
 vec3 normalDecode(vec2 enc);
 vec3 positionReconstruct(float z, vec2 uv);
@@ -127,20 +130,24 @@ float optPcfVisibility(vec3 shadowCoord, int csmLayer, float kernelSize)
 
 int calcCascade(float z)
 {
-	for (int i = 0; i < csmCascades - 1; i++)
+	for (int i = 0; i < csmCascades; i++)
 	{
-		if (csmSplits[i] < z)
+		if (csmSplits[i] <= z)
 		{
 			return i;
 		}
 	}
 
-	return csmCascades - 1;
+	return -1;
 }
 
 float calcVisibility(vec3 position)
 {
 	int csmLayer = calcCascade(position.z);
+
+	if (csmLayer == -1) {
+		return 1.0;
+	}
 
 	vec4 shadowCoord = csmMVP[csmLayer] * vec4(position, 1.0) * 0.5 + 0.5;
 	shadowCoord /= shadowCoord.w;
@@ -152,8 +159,7 @@ float calcVisibility(vec3 position)
 	float visibility = pcfVisibility(shadowCoord.xyz, csmLayer, kernelSize);
 	// float visibility = optPcfVisibility(shadowCoord.xyz, csmLayer, 5.0);
 
-	bool enableBlending = false;
-	if (enableBlending && csmLayer < 3)
+	if (enableBlending && csmLayer < csmCascades - 1)
 	{
 		float blendScale = 16.0;
 
@@ -228,7 +234,10 @@ void main()
 	);
 	int cascade = calcCascade(position.z);
 
-	outColor.rgb *= cascadeColors[cascade % 6];
+	if (enableVisualizeCascades && cascade != -1)
+	{
+		outColor.rgb *= cascadeColors[cascade % 6];
+	}
 
 	outColor.rgb = pow(outColor.rgb, vec3(1.0 / 2.2));
 	outColor.a = 1.0;

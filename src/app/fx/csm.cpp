@@ -140,189 +140,79 @@ void CSM::setup(const ecs::Entity &lightId)
 	const auto lightDirection = glm::normalize(light.direction);
 	glm::vec2 zMinMax = findSceneZMinMax(lightDirection);
 
-	size_t splitCount = fbShadows.size();
+	size_t splitCount = splits.size();
 
 	vector<float> splitFar(splitCount, zFar);
 	vector<float> splitNear(splitCount, zNear);
 
-	float lambda = .8f;
-	float j = 1.f;
-
-	// cout << "frustum=[" << zNear << " - " << zFar << "]" << endl;
-
-	for (size_t i = 0; i < splitCount - 1; i++)
+	if (useSmartSplitting)
 	{
-		// splitFar[i] = glm::mix(
-		// 	zNear + (j / (float) splitCount) * (zFar - zNear),
-		// 	zNear * pow(zFar / zNear, j / (float) splitCount),
-		// 	lambda
-		// );
-		splitFar[i] = glm::mix(zNear, zFar, splits[i]);
+		float lambda = 0.8f;
+		float j = 1.f;
 
-		splitNear[i + 1] = splitFar[i];
+		for (size_t i = 0; i < splitCount; i++)
+		{
+			splitFar[i] = glm::mix(
+				zNear + (j / (float) splitCount) * (zFar - zNear),
+				zNear * pow(zFar / zNear, j / (float) splitCount),
+				lambda
+			);
+			j += 1.f;
 
-		j += 1.f;
+			if (i + 1 < splitCount)
+			{
+				splitNear[i + 1] = splitFar[i];
+			}
+		}
+	}
+	else
+	{
+		for (size_t i = 0; i < splitCount; i++)
+		{
+			splitFar[i] = glm::mix(zNear, zFar, splits[i]);
+
+			if (i + 1 < splitCount)
+			{
+				splitNear[i + 1] = splitFar[i];
+			}
+		}
 	}
 
-	// for (size_t i = 0; i < splitCount; i++) {
-	// 	cout << "split[" << i << "]: [" << splitNear[i] << " - " << splitFar[i] << "]" << endl;
-	// }
-
-	// const auto V = glm::lookAt(cameraPosition, cameraPosition - light.direction, glm::vec3{0.f, 1.f, 0.f});
-	const auto unitVec = projection.matrix * glm::vec4{1.f};
-
-	// glm::vec4 corners[8];
-
-	// corners[0] = projection.invMatrix * glm::vec4{ 1.f,  1.f, -1.f, 1.f};
-	// corners[1] = projection.invMatrix * glm::vec4{-1.f,  1.f, -1.f, 1.f};
-	// corners[2] = projection.invMatrix * glm::vec4{ 1.f, -1.f, -1.f, 1.f};
-	// corners[3] = projection.invMatrix * glm::vec4{-1.f, -1.f, -1.f, 1.f};
-	// corners[4] = projection.invMatrix * glm::vec4{ 1.f,  1.f,  1.f, 1.f};
-	// corners[5] = projection.invMatrix * glm::vec4{-1.f,  1.f,  1.f, 1.f};
-	// corners[6] = projection.invMatrix * glm::vec4{ 1.f, -1.f,  1.f, 1.f};
-	// corners[7] = projection.invMatrix * glm::vec4{-1.f, -1.f,  1.f, 1.f};
-
-	// corners[0] /= corners[0].w;
-	// corners[1] /= corners[1].w;
-	// corners[2] /= corners[2].w;
-	// corners[3] /= corners[3].w;
-	// corners[4] /= corners[4].w;
-	// corners[5] /= corners[5].w;
-	// corners[6] /= corners[6].w;
-	// corners[7] /= corners[7].w;
-
-	// cout << "corners[0]=" << glm::to_string(corners[0]) << endl;
-	// cout << "corners[1]=" << glm::to_string(corners[1]) << endl;
-	// cout << "corners[2]=" << glm::to_string(corners[2]) << endl;
-	// cout << "corners[3]=" << glm::to_string(corners[3]) << endl;
-	// cout << "corners[4]=" << glm::to_string(corners[4]) << endl;
-	// cout << "corners[5]=" << glm::to_string(corners[5]) << endl;
-	// cout << "corners[6]=" << glm::to_string(corners[6]) << endl;
-	// cout << "corners[7]=" << glm::to_string(corners[7]) << endl;
-
-	// cout << "cameraPosition=" << glm::to_string(cameraPosition) << endl;
-
-	// const auto invVP = glm::inverse(projection.matrix * view.matrix);
-
-	// corners[0] = invVP * glm::vec4{ 1.f,  1.f, -1.f, 1.f};
-	// corners[1] = invVP * glm::vec4{-1.f,  1.f, -1.f, 1.f};
-	// corners[2] = invVP * glm::vec4{ 1.f, -1.f, -1.f, 1.f};
-	// corners[3] = invVP * glm::vec4{-1.f, -1.f, -1.f, 1.f};
-	// corners[4] = invVP * glm::vec4{ 1.f,  1.f,  1.f, 1.f};
-	// corners[5] = invVP * glm::vec4{-1.f,  1.f,  1.f, 1.f};
-	// corners[6] = invVP * glm::vec4{ 1.f, -1.f,  1.f, 1.f};
-	// corners[7] = invVP * glm::vec4{-1.f, -1.f,  1.f, 1.f};
-
-	// corners[0] /= corners[0].w;
-	// corners[1] /= corners[1].w;
-	// corners[2] /= corners[2].w;
-	// corners[3] /= corners[3].w;
-	// corners[4] /= corners[4].w;
-	// corners[5] /= corners[5].w;
-	// corners[6] /= corners[6].w;
-	// corners[7] /= corners[7].w;
-
-	// cout << "corners[0]=" << glm::to_string(corners[0]) << endl;
-	// cout << "corners[1]=" << glm::to_string(corners[1]) << endl;
-	// cout << "corners[2]=" << glm::to_string(corners[2]) << endl;
-	// cout << "corners[3]=" << glm::to_string(corners[3]) << endl;
-	// cout << "corners[4]=" << glm::to_string(corners[4]) << endl;
-	// cout << "corners[5]=" << glm::to_string(corners[5]) << endl;
-	// cout << "corners[6]=" << glm::to_string(corners[6]) << endl;
-	// cout << "corners[7]=" << glm::to_string(corners[7]) << endl;
-
-	// cout << "zMinMax=" << glm::to_string(zMinMax) << endl;
-	// cout << "lightDirection=" << glm::to_string(lightDirection) << endl;
+	const float radiusPadding = static_cast<float>(shadowResolution) / static_cast<float>(shadowResolution - 1);
+	const float radiusBias = 1.f;
+	const auto V = glm::lookAt(light.direction, glm::vec3{0.f}, glm::vec3{0.f, 1.f, 0.f});
+	const auto invV = glm::inverse(V);
 
 	for (size_t i = 0; i < splitCount; i++)
 	{
-		// cout << "split[" << i << "]:" << splitNear[i] << "-" << splitFar[i] << endl;
 		const auto splitP = glm::perspective(fovy, aspect, splitNear[i], splitFar[i]);
-		const auto splitInvVP = glm::inverse(splitP * view.matrix);
-
-		// corners[0] = splitInvVP * glm::vec4{ 1.f,  1.f, -1.f, 1.f};
-		// corners[1] = splitInvVP * glm::vec4{-1.f,  1.f, -1.f, 1.f};
-		// corners[2] = splitInvVP * glm::vec4{ 1.f, -1.f, -1.f, 1.f};
-		// corners[3] = splitInvVP * glm::vec4{-1.f, -1.f, -1.f, 1.f};
-		// corners[4] = splitInvVP * glm::vec4{ 1.f,  1.f,  1.f, 1.f};
-		// corners[5] = splitInvVP * glm::vec4{-1.f,  1.f,  1.f, 1.f};
-		// corners[6] = splitInvVP * glm::vec4{ 1.f, -1.f,  1.f, 1.f};
-		// corners[7] = splitInvVP * glm::vec4{-1.f, -1.f,  1.f, 1.f};
-
-		// corners[0] /= corners[0].w;
-		// corners[1] /= corners[1].w;
-		// corners[2] /= corners[2].w;
-		// corners[3] /= corners[3].w;
-		// corners[4] /= corners[4].w;
-		// corners[5] /= corners[5].w;
-		// corners[6] /= corners[6].w;
-		// corners[7] /= corners[7].w;
-
-		// cout << "corners[0]=" << glm::to_string(corners[0]) << endl;
-		// cout << "corners[1]=" << glm::to_string(corners[1]) << endl;
-		// cout << "corners[2]=" << glm::to_string(corners[2]) << endl;
-		// cout << "corners[3]=" << glm::to_string(corners[3]) << endl;
-		// cout << "corners[4]=" << glm::to_string(corners[4]) << endl;
-		// cout << "corners[5]=" << glm::to_string(corners[5]) << endl;
-		// cout << "corners[6]=" << glm::to_string(corners[6]) << endl;
-		// cout << "corners[7]=" << glm::to_string(corners[7]) << endl;
-
-		// const auto box = computeBox(splitProjection);
-
-		// Ps[i] = glm::ortho<float>(splitAABB.min.x, splitAABB.max.x, splitAABB.min.y, splitAABB.max.y, -splitAABB.max.z, -splitAABB.min.z);
-
-		// cout << "  max=" << glm::to_string(splitAABB.max) << endl;
-		// cout << "  min=" << glm::to_string(splitAABB.min) << endl;
-
 		const phs::Sphere splitSphere{splitP};
-		glm::vec3 center = splitSphere.position;
-		float radius = splitSphere.radius;
 
-		glm::vec3 viewCenter{view.invMatrix * glm::vec4{center, 1.f}};
-		float minViewCenterDistance = glm::dot(lightDirection, viewCenter);
-		float zNearCorrection = min((minViewCenterDistance + radius) + zMinMax.x, 0.f);
+		glm::vec3 center = glm::vec3{view.invMatrix * glm::vec4{splitSphere.position, 1.f}};
+		float radius = splitSphere.radius * radiusPadding + radiusBias;
 
-		// cout << "center=" << glm::to_string(center) << endl;
-		// cout << "viewCenter=" << glm::to_string(viewCenter) << endl;
-		// cout << "radius=" << radius << endl;
-		cout << "-center.z - radius=" << -center.z - radius << endl;
-		cout << "zMinMax=" << glm::to_string(zMinMax) << endl;
-		cout << "minViewCenterDistance=" << minViewCenterDistance << endl;
-		cout << "minViewCenterDistance - radius=" << minViewCenterDistance - radius << endl;
-		cout << "zNearCorrection=" << zNearCorrection << endl;
+		// correct near plane to include objects behind cascade bounding sphere
+		float c_l = glm::dot(lightDirection, center);
+		float zNearCorrection = zMinMax.y - min(c_l + radius, zMinMax.y);
 
-		//
-		// cout << "view center: " << glm::to_string(glm::vec3{view.invMatrix * glm::vec4{center, 1.f}}) << endl;
-		// cout << "splitSphere: " << glm::to_string(splitSphere.position) << ", " << splitSphere.radius << endl;
+		// stabilize cascade center
+		float qStep = (radius + radius) / static_cast<float>(shadowResolution);
+		glm::vec3 centerV{V * glm::vec4{center, 1.f}};
 
-		// cout << "  sphere=" << glm::to_string(center) << ", r=" << radius << endl;
+		centerV.x -= glm::mod(centerV.x, qStep);
+		centerV.y -= glm::mod(centerV.y, qStep);
 
+		center = glm::vec3{invV * glm::vec4{centerV, 1.f}};
 
 		Ps[i] = glm::ortho(
-			center.x - radius, center.x + radius,
-			center.y - radius, center.y + radius,
-			-center.z - radius + zNearCorrection, -center.z + radius
+			-radius, +radius,
+			-radius, +radius,
+			-radius - zNearCorrection, +radius
 		);
 
-		if (useViewCenter)
-		{
-			center = glm::vec3{view.invMatrix * glm::vec4{center, 1.f}};
-		}
-
-		Vs[i] = glm::lookAt(viewCenter, viewCenter - light.direction, glm::vec3{0.f, 1.f, 0.f});;
-
-		// glm::vec2 q{1.f / (float) fbShadows[i].width, 1.f / (float) fbShadows[i].height};
-
-		// auto rounded = glm::round(projCenter / q) * q;
-		// auto offset = glm::vec3(projCenter.x - rounded.x, projCenter.y - rounded.y, 0.f);
-		//
-		// projection = glm::translate(projection, -offset);
-
-		// _shadowProjections[i] = cameraViewProjection;
+		Vs[i] = glm::lookAt(center + light.direction, center, glm::vec3{0.f, 1.f, 0.f});
 
 		cascades[i] = -splitFar[i];
-
-		// cout << "  n - f=[" << splitNear[i] << " - " << splitFar[i] << "]" << endl;
 	}
 
 	//
