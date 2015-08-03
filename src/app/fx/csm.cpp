@@ -18,10 +18,14 @@
 #include <core/rn/mesh.hpp>
 #include <core/util/count.hpp>
 
+#include <minball/minball.hpp>
+
 #include <iostream>
 #include <cmath>
 #include <utility>
 #include <limits>
+#include <sstream>
+#include <iomanip>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -47,27 +51,29 @@ using namespace comp;
 
 void CSM::init()
 {
-	cascades.resize(splits.size());
-	fbShadows.resize(splits.size());
-	Ps.resize(splits.size());
-	Vs.resize(splits.size());
+	cascades.resize(splits);
+	radiuses.resize(splits);
+	centers.resize(splits);
+	fbShadows.resize(splits);
+	Ps.resize(splits);
+	Vs.resize(splits);
 
 	texDepths = make_shared<rn::Tex2DArray>("fx::CSM::texDepths");
 	texDepths->width = shadowResolution;
 	texDepths->height = shadowResolution;
-	texDepths->size = splits.size();
+	texDepths->size = splits;
 	texDepths->minFilter = rn::MinFilter::MIN_LINEAR;
 	texDepths->magFilter = rn::MagFilter::MAG_LINEAR;
 	texDepths->compareFunc = rn::CompareFunc::COMPARE_LEQUAL;
 	texDepths->internalFormat = rn::format::D32F.layout;
 	texDepths->reload();
 
-	// texCascades = make_shared<rn::Tex2DArray>("fx::CSM::texCascades");
-	// texCascades->width = texDepths->width;
-	// texCascades->height = texDepths->height;
-	// texCascades->size = splits.size();
-	// texCascades->internalFormat = rn::format::RGBA32F.layout;
-	// texCascades->reload();
+	texColors = make_shared<rn::Tex2DArray>("fx::CSM::texColors");
+	texColors->width = texDepths->width;
+	texColors->height = texDepths->height;
+	texColors->size = splits;
+	texColors->internalFormat = rn::format::RGBA32F.layout;
+	texColors->reload();
 
 	for (size_t i = 0; i < fbShadows.size(); i++)
 	{
@@ -75,7 +81,7 @@ void CSM::init()
 
 		fb.fbName = "fx::CSM::fbShadows[" + to_string(i) + "]";
 
-		// fb.attachColor(0, texCascades, i);
+		fb.attachColor(0, texColors, i);
 		fb.attachDepth(texDepths, i);
 
 		fb.clearColor = glm::vec4{1.f};
@@ -84,9 +90,9 @@ void CSM::init()
 
 	// auto texBlurBuffer = make_shared<rn::Tex2D>("fx::CSM::texBlurBuffer");
 
-	// texBlurBuffer->width = texCascades->width;
-	// texBlurBuffer->height = texCascades->height;
-	// texBlurBuffer->internalFormat = texCascades->internalFormat;
+	// texBlurBuffer->width = texColors->width;
+	// texBlurBuffer->height = texColors->height;
+	// texBlurBuffer->internalFormat = texColors->internalFormat;
 	// texBlurBuffer->reload();
 
 	// fbBlurBuffer.fbName = "fx::CSM::fbBlurBuffer";
@@ -124,7 +130,7 @@ void CSM::init()
 	profBlur.init();
 }
 
-void CSM::setup(const ecs::Entity &lightId)
+void CSM::calculateMatrices(const ecs::Entity &cameraId, const ecs::Entity &lightId)
 {
 	const auto &light = ecs::get<DirectionalLight>(lightId);
 
@@ -133,33 +139,31 @@ void CSM::setup(const ecs::Entity &lightId)
 	const auto &cameraPosition = ecs::get<Position>(cameraId).position;
 
 	const float zNear = projection.zNear;
-	const float zFar = projection.zFar;
+	const float zFar = min(projection.zFar, maxShadowDistance);
 	const float fovy = projection.fovy;
 	const float aspect = projection.aspect;
 
 	const auto lightDirection = glm::normalize(light.direction);
 	glm::vec2 zMinMax = findSceneZMinMax(lightDirection);
 
-	size_t splitCount = splits.size();
-
-	vector<float> splitFar(splitCount, zFar);
-	vector<float> splitNear(splitCount, zNear);
+	vector<float> splitFar(splits, zFar);
+	vector<float> splitNear(splits, zNear);
 
 	if (useSmartSplitting)
 	{
 		float lambda = 0.8f;
 		float j = 1.f;
 
-		for (size_t i = 0; i < splitCount; i++)
+		for (size_t i = 0; i < splits; i++)
 		{
 			splitFar[i] = glm::mix(
-				zNear + (j / (float) splitCount) * (zFar - zNear),
-				zNear * pow(zFar / zNear, j / (float) splitCount),
+				zNear + (j / (float) splits) * (zFar - zNear),
+				zNear * pow(zFar / zNear, j / (float) splits),
 				lambda
 			);
 			j += 1.f;
 
-			if (i + 1 < splitCount)
+			if (i + 1 < splits)
 			{
 				splitNear[i + 1] = splitFar[i];
 			}
@@ -167,26 +171,39 @@ void CSM::setup(const ecs::Entity &lightId)
 	}
 	else
 	{
-		for (size_t i = 0; i < splitCount; i++)
-		{
-			splitFar[i] = glm::mix(zNear, zFar, splits[i]);
+		std::vector<float> manualSplits{ 0.025f, 0.075f, 0.25f, 1.f };
 
-			if (i + 1 < splitCount)
+		for (size_t i = 0; i < splits; i++)
+		{
+			splitFar[i] = glm::mix(zNear, zFar, manualSplits[i]);
+
+			if (i + 1 < splits)
 			{
 				splitNear[i + 1] = splitFar[i];
 			}
 		}
 	}
 
-	const float radiusPadding = static_cast<float>(shadowResolution) / static_cast<float>(shadowResolution - 1);
-	const float radiusBias = 1.f;
-	const auto V = glm::lookAt(light.direction, glm::vec3{0.f}, glm::vec3{0.f, 1.f, 0.f});
-	const auto invV = glm::inverse(V);
+	float radiusPadding = static_cast<float>(shadowResolution) / static_cast<float>(shadowResolution - 1);
+	float radiusBias = 1.f;
+	glm::mat4 V = glm::lookAt(glm::vec3{0.f}, -light.direction, glm::vec3{0.f, 1.f, 0.f});
+	glm::mat4 invV = glm::inverse(V);
 
-	for (size_t i = 0; i < splitCount; i++)
+	// cout << "l=" << glm::to_string(light.direction) << endl;
+	// cout << "V * l=" << glm::to_string(V * glm::vec4{light.direction, 1.f}) << endl;
+	// cout << "V' * l=" << glm::to_string(invV * (V * glm::vec4{light.direction, 1.f})) << endl;
+
+	debugLog = "";
+
+	for (size_t j = splits; j > 0; j--)
 	{
-		const auto splitP = glm::perspective(fovy, aspect, splitNear[i], splitFar[i]);
-		const phs::Sphere splitSphere{splitP};
+		size_t i = j - 1;
+
+		glm::mat4 splitP = glm::perspective(fovy, aspect, splitNear[i], splitFar[i]);
+		glm::mat4 invProj = glm::inverse(splitP);
+		phs::Sphere splitSphere{splitP};
+
+		// glm::mat4 invProj = invV * glm::inverse(splitP * V);
 
 		glm::vec3 center = glm::vec3{view.invMatrix * glm::vec4{splitSphere.position, 1.f}};
 		float radius = splitSphere.radius * radiusPadding + radiusBias;
@@ -197,12 +214,41 @@ void CSM::setup(const ecs::Entity &lightId)
 
 		// stabilize cascade center
 		float qStep = (radius + radius) / static_cast<float>(shadowResolution);
-		glm::vec3 centerV{V * glm::vec4{center, 1.f}};
+		glm::vec4 centerV{V * glm::vec4{center, 1.f}};
 
-		centerV.x -= glm::mod(centerV.x, qStep);
-		centerV.y -= glm::mod(centerV.y, qStep);
+		glm::vec4 centerVQuant = centerV;
+		centerVQuant.x = floor(centerVQuant.x / qStep) * qStep;
+		centerVQuant.y = floor(centerVQuant.y / qStep) * qStep;
+		centerVQuant.z = floor(centerVQuant.z / qStep) * qStep;
 
-		center = glm::vec3{invV * glm::vec4{centerV, 1.f}};
+		glm::vec3 centerQuant = glm::vec3{invV * centerVQuant};
+
+		// cout << "i=" << i << endl;
+		// cout << "manualCenter=" << glm::to_string(manualCenter) << endl;
+		// cout << "manualRadius=" << manualRadius << endl;
+		// cout << "position=" << glm::to_string(splitSphere.position) << endl;
+		// cout << "radius=" << splitSphere.radius << endl;
+		// cout << "center=" << glm::to_string(center) << endl;
+		// cout << "centerV=" << glm::to_string(centerV) << endl;
+		// cout << "centerInvV=" << glm::to_string(invV * glm::vec4{center, 1.f}) << endl;
+		// cout << "centerVInvV=" << glm::to_string(invV * centerV) << endl;
+
+		cascades[i] = -splitFar[i];
+		radiuses[i] = radius - qStep;
+		centers[i] = glm::vec3{center};
+
+		// cout << "qStep=" << qStep << endl;
+		// cout << "x mod qStep=" << glm::mod(centerV.x, qStep) << endl;
+		// cout << "y mod qStep=" << glm::mod(centerV.y, qStep) << endl;
+
+		// centerV.x = floor(centerV.x / qStep) * qStep;
+		// centerV.x -= glm::mod(centerV.x, qStep);
+		// centerV.y = floor(centerV.y / qStep) * qStep;
+		// centerV.y -= glm::mod(centerV.y, qStep);
+		// centerV.z = floor(centerV.z / qStep) * qStep;
+		// centerV.z -= glm::mod(centerV.z, qStep);
+
+		// center = glm::vec3{invV * centerV};
 
 		Ps[i] = glm::ortho(
 			-radius, +radius,
@@ -210,9 +256,31 @@ void CSM::setup(const ecs::Entity &lightId)
 			-radius - zNearCorrection, +radius
 		);
 
-		Vs[i] = glm::lookAt(center + light.direction, center, glm::vec3{0.f, 1.f, 0.f});
+		Vs[i] = glm::lookAt(centerQuant, centerQuant - light.direction, glm::vec3{0.f, 1.f, 0.f});
+		// Vs[i] = glm::lookAt(center, center - light.direction, glm::vec3{0.f, 1.f, 0.f});
 
-		cascades[i] = -splitFar[i];
+		if (i == 0)
+		{
+			ostringstream oss;
+			oss << setprecision(4) << fixed;
+
+			oss << "lightDirection=" << glm::to_string(lightDirection) << "\n";
+			oss << "zero=" << glm::to_string(view.invMatrix * glm::vec4{0.f, 0.f, 0.f, 1.f}) << "\n";
+			oss << "center=" << glm::to_string(center) << "\n";
+			oss << "qStep=" << qStep << "\n";
+			oss << "radius=" << radius << "\n";
+			oss << "centerQuant=" << glm::to_string(centerQuant) << "\n";
+			oss << "Ps[i][0]=" << glm::to_string(Ps[i][0]) << "\n";
+			oss << "Ps[i][1]=" << glm::to_string(Ps[i][1]) << "\n";
+			oss << "Ps[i][2]=" << glm::to_string(Ps[i][2]) << "\n";
+			oss << "Ps[i][3]=" << glm::to_string(Ps[i][3]) << "\n";
+			oss << "Vs[i][0]=" << glm::to_string(Vs[i][0]) << "\n";
+			oss << "Vs[i][1]=" << glm::to_string(Vs[i][1]) << "\n";
+			oss << "Vs[i][2]=" << glm::to_string(Vs[i][2]) << "\n";
+			oss << "Vs[i][3]=" << glm::to_string(Vs[i][3]) << "\n";
+
+			debugLog = oss.str();
+		}
 	}
 
 	//
@@ -243,7 +311,7 @@ void CSM::setup(const ecs::Entity &lightId)
 	splitCorners[RBF] = splitCorners[RBN];
 	splitCorners[LBF] = splitCorners[LBN];
 
-	for (size_t i = 0; i < splits.size(); i++)
+	for (size_t i = 0; i < splits; i++)
 	{
 		splitCorners[RTN] = splitCorners[RTF];
 		splitCorners[LTN] = splitCorners[LTF];
@@ -262,7 +330,7 @@ void CSM::setup(const ecs::Entity &lightId)
 	*/
 }
 
-void CSM::render()
+void CSM::renderCascades()
 {
 	profRender.start();
 
@@ -323,7 +391,7 @@ void CSM::render()
 
 	// 		progBlurH.use();
 	// 		// progBlurH.var("texSource", fbShadow.color(0)->bind(0));
-	// 		progBlurH.var("texSource", texCascades->bind(0));
+	// 		progBlurH.var("texSource", texColors->bind(0));
 	// 		progBlurH.var("layer", static_cast<GLint>(i));
 
 	// 		rn::Mesh::quad.render();

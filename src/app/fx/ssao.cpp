@@ -20,8 +20,8 @@ void SSAO::init(const comp::Projection &projectionIn)
 	projection = projectionIn;
 
 	auto texZ = make_shared<rn::Tex2D>("fx::SSAO::fbZ.color[0]");
-	texZ->width = win::width;
-	texZ->height = win::height;
+	texZ->width = win::internalWidth;
+	texZ->height = win::internalHeight;
 	texZ->levels = zMipLevels;
 	texZ->minFilter = rn::MIN_NEAREST_NEAREST;
 	texZ->magFilter = rn::MAG_LINEAR;
@@ -43,8 +43,8 @@ void SSAO::init(const comp::Projection &projectionIn)
 	}
 
 	auto texAO = make_shared<rn::Tex2D>("fx::SSAO::fbAO.color[0]");
-	texAO->width = win::width;
-	texAO->height = win::height;
+	texAO->width = win::internalWidth;
+	texAO->height = win::internalHeight;
 	texAO->internalFormat = rn::format::RGB8.layout;
 	texAO->reload();
 
@@ -53,8 +53,8 @@ void SSAO::init(const comp::Projection &projectionIn)
 	fbAO.reload();
 
 	auto texBlur = make_shared<rn::Tex2D>("fx::SSAO::fbBlur.color[0]");
-	texBlur->width = win::width;
-	texBlur->height = win::height;
+	texBlur->width = win::internalWidth;
+	texBlur->height = win::internalHeight;
 	texBlur->internalFormat = rn::format::RGB8.layout;
 	texBlur->reload();
 

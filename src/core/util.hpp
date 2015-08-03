@@ -26,7 +26,7 @@ namespace util
 #define UTIL_CONCAT7(one, two, three, four, five, six, seven) UTIL_CONCAT7_IMPL(one, two, three, four, five, six, seven)
 
 #if defined(DEBUG) || defined (_DEBUG)
-	#define UTIL_DEBUG
+	#define UTIL_DEBUG if (true)
 #else
 	#define UTIL_DEBUG if (false)
 #endif

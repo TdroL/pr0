@@ -3,10 +3,11 @@
 
 #include <core/ecs/entity.hpp>
 
-#include <core/rn/mesh.hpp>
-#include <core/rn/program.hpp>
 #include <core/rn/fb.hpp>
+#include <core/rn/font.hpp>
+#include <core/rn/mesh.hpp>
 #include <core/rn/prof.hpp>
+#include <core/rn/program.hpp>
 
 #include <core/phs/frustum.hpp>
 
@@ -19,6 +20,9 @@ class App
 public:
 	ecs::Entity cameraId{};
 	ecs::Entity lightIds[10]{};
+
+	rn::Font font1{"DejaVuSansMono"};
+	rn::Font font2{"DejaVuSansMono"};
 
 	rn::Program progGBuffer{};
 	rn::Program progShadowMap{};
@@ -36,6 +40,8 @@ public:
 	rn::Program progTexPreview{};
 
 	rn::FB fbGBuffer{"App::fbGBuffer"};
+	rn::FB fbScreen{"App::fbScreen"};
+	rn::FB fbUI{"App::fbUI"};
 	rn::FB fbShadowMap{"App::fbShadowMap"};
 	rn::FB fbShadowMapBlur{"App::fbShadowMapBlur"};
 

@@ -124,6 +124,33 @@ void FB::attachDepth(const shared_ptr<rn::Tex2DArray> &tex, GLsizei layer, GLint
 	}
 }
 
+FB::TexContainer FB::detachColor(size_t index)
+{
+	FB::TexContainer tmpContainer;
+
+	if (colorContainers.size() < index && colorContainers[index].tex)
+	{
+		tmpContainer = colorContainers[index];
+		colorContainers[index] = {};
+	}
+
+	return tmpContainer;
+}
+
+FB::TexContainer FB::detachDepth()
+{
+	FB::TexContainer tmpContainer;
+
+	if (depthContainer.tex)
+	{
+		tmpContainer = depthContainer;
+		depthContainer = TexContainer{};
+	}
+
+	return tmpContainer;
+}
+
+
 rn::Tex * FB::color(size_t index)
 {
 	UTIL_DEBUG
@@ -180,7 +207,15 @@ void FB::clear(BuffersMask mask)
 	}
 }
 
-void FB::blit(const FB *target, BuffersMask mask, MagFilter filter)
+void FB::blit(FB &target, BuffersMask mask, MagFilter filter)
+{
+	RN_CHECK(glBindFramebuffer(GL_READ_FRAMEBUFFER, id));
+	RN_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target.id));
+	RN_CHECK(glBlitFramebuffer(0, 0, width, height, 0, 0, target.width, target.height, mask, filter));
+	RN_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+}
+
+void FB::blit(FB *target, BuffersMask mask, MagFilter filter)
 {
 	GLuint targetId;
 	GLsizei targetWidth;

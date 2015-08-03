@@ -22,15 +22,17 @@ class CSM
 public:
 	bool useSmartSplitting = true;
 
-	std::vector<float> splits{ 0.025f, 0.075f, 0.25f, 1.f };
+	size_t splits = 4;
+	int shadowResolution = 1024*2;
+	float maxShadowDistance = 256.f;
+
 	std::vector<float> cascades{};
-
-	int shadowResolution = 1024;
-
+	std::vector<float> radiuses{};
+	std::vector<glm::vec3> centers{};
 	std::shared_ptr<rn::Tex2DArray> texDepths{};
-	// std::shared_ptr<rn::Tex2DArray> texCascades{};
+	std::shared_ptr<rn::Tex2DArray> texColors{};
 	std::vector<rn::FB> fbShadows{};
-	rn::FB fbBlurBuffer{};
+	// rn::FB fbBlurBuffer{};
 
 	std::vector<glm::mat4> Ps{};
 	std::vector<glm::mat4> Vs{};
@@ -42,18 +44,18 @@ public:
 	rn::Prof profRender{"fx::CSM::profRender"};
 	rn::Prof profBlur{"fx::CSM::profBlur"};
 
-	ecs::Entity cameraId{};
+	std::string debugLog{};
 
 	void init();
 
-	void setup(const ecs::Entity &lightId);
-	void render();
+	void calculateMatrices(const ecs::Entity &cameraId, const ecs::Entity &lightId);
+	void renderCascades();
 
-	void buildCorners(const glm::mat4 &VP, glm::vec4 (&output)[8]);
-	glm::mat4 buildShadowPMatrix(const glm::vec4 (&corners)[8], const glm::mat4 &V, float zMax);
-	glm::mat4 stabilizeVMatrix(const glm::mat4 &V, const glm::mat4 &P);
 	glm::vec2 findSceneZMinMax(glm::vec3 lightDirection);
-	std::pair<glm::vec3, glm::vec3> computeBox(const glm::mat4 &splitProjection);
+	// void buildCorners(const glm::mat4 &VP, glm::vec4 (&output)[8]);
+	// glm::mat4 buildShadowPMatrix(const glm::vec4 (&corners)[8], const glm::mat4 &V, float zMax);
+	// glm::mat4 stabilizeVMatrix(const glm::mat4 &V, const glm::mat4 &P);
+	// std::pair<glm::vec3, glm::vec3> computeBox(const glm::mat4 &splitProjection);
 };
 
 } // fx

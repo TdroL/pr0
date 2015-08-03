@@ -1,18 +1,19 @@
 #include "app.hpp"
 
-#include <core/rn.hpp>
-#include <core/rn/format.hpp>
+#include <core/asset/mesh.hpp>
+#include <core/event.hpp>
 #include <core/ngn.hpp>
 #include <core/ngn/fs.hpp>
 #include <core/ngn/key.hpp>
 #include <core/ngn/window.hpp>
-#include <core/src/sbm.hpp>
+#include <core/phs/frustum.hpp>
+#include <core/rn.hpp>
+#include <core/rn/format.hpp>
 #include <core/src/mem.hpp>
-#include <core/event.hpp>
+#include <core/src/sbm.hpp>
+#include <core/util/count.hpp>
 #include <core/util/timer.hpp>
 #include <core/util/toggle.hpp>
-#include <core/asset/mesh.hpp>
-#include <core/phs/frustum.hpp>
 
 #include <app/comp/boundingobject.hpp>
 #include <app/comp/direction.hpp>
@@ -43,8 +44,10 @@
 #include <glm/gtx/string_cast.hpp>
 
 #include <iostream>
+#include <sstream>
 #include <cmath>
 #include <limits>
+#include <iomanip>
 
 namespace fs = ngn::fs;
 namespace key = ngn::key;
@@ -62,11 +65,45 @@ util::Toggle toggleZPreview{"ZPreview (,)", 0};
 util::Toggle toggleLights{"Lights (;)", 1};
 util::Toggle toggleColor{"Color (/)", 0};
 util::Toggle toggleCascade{"Cascade (')", 0, 4};
-util::Toggle toggleUseSmartSplitting{"UseSmartSplitting (')", 1};
+util::Toggle toggleUseSmartSplitting{"UseSmartSplitting (])", 1};
+util::Toggle toggleCalculateMatrices{"CalculateMatrices ([)", 1};
+
+const win::Mode modes[]
+{
+	win::Mode::windowed,
+	win::Mode::borderless,
+	win::Mode::fullscreen
+};
+
+const string modeNames[]
+{
+	"windowed",
+	"borderless",
+	"fullscreen",
+};
+
+size_t currentMode = 0;
+
+const int vsyncs[]
+{
+	-1, // progressive
+	 0, // off
+	 1, // on
+};
+
+const string vsyncNames[]
+{
+	"progressive",
+	"off",
+	"on",
+};
+
+size_t currentVsync = 0;
 
 void App::init()
 {
-	/* Init scene objects */
+	font1.load("DejaVu/DejaVuSansMono.ttf");
+	font2.load("DejaVu/DejaVuSansMono.ttf");
 
 	clog << "Init shader programs:" << endl;
 	initProg();
@@ -86,6 +123,18 @@ void App::init()
 	profPointLight.init();
 	profFlatLight.init();
 	profSSAO.init();
+
+	/* Test: switch to window mode */
+	UTIL_DEBUG
+	{
+		currentMode = 0;
+		currentVsync = 1;
+
+		clog << "Test: switching to " << modeNames[currentMode] << " " << vsyncNames[currentVsync] << endl;
+
+		win::switchMode(modes[currentMode], vsyncs[currentVsync]);
+		rn::reloadSoftAll();
+	}
 }
 
 void App::initProg()
@@ -98,8 +147,6 @@ void App::initProg()
 	{
 		cerr << "Warning: " << e << endl;
 	}
-
-	progFBOBlit.uniform("color", glm::vec3{1.f});
 
 	try
 	{
@@ -197,9 +244,9 @@ void App::initFB()
 	// fbGBuffer
 	{
 		auto texMaterial = make_shared<rn::Tex2D>("App::fbGBuffer.color[0]");
-		texMaterial->width = win::width;
-		texMaterial->height = win::height;
-		texMaterial->internalFormat = rn::format::RGBA16F.layout;
+		texMaterial->width = win::internalWidth;
+		texMaterial->height = win::internalHeight;
+		texMaterial->internalFormat = rn::format::RGBA8.layout;
 		texMaterial->reload();
 
 		fbGBuffer.attachColor(0, texMaterial);
@@ -208,8 +255,8 @@ void App::initFB()
 	{
 		auto texNormals = make_shared<rn::Tex2D>("App::fbGBuffer.color[1]");
 
-		texNormals->width = win::width;
-		texNormals->height = win::height;
+		texNormals->width = win::internalWidth;
+		texNormals->height = win::internalHeight;
 		texNormals->internalFormat = rn::format::RG16F.layout;
 		texNormals->reload();
 
@@ -217,17 +264,102 @@ void App::initFB()
 	}
 
 	{
-		auto texDepth = make_shared<rn::Tex2D>("App::fbGBuffer.depth");
+		auto texZ = make_shared<rn::Tex2D>("App::fbGBuffer.color[2]");
+		texZ->width = win::internalWidth;
+		texZ->height = win::internalHeight;
+		// texZ->internalFormat = rn::format::R32F.layout;
+		texZ->internalFormat = rn::format::RGB32F.layout;
+		texZ->reload();
 
-		texDepth->width = win::width;
-		texDepth->height = win::height;
-		texDepth->internalFormat = rn::format::D24S8.layout;
+		fbGBuffer.attachColor(2, texZ);
+	}
+
+	{
+		auto texDepth = make_shared<rn::Tex2D>("App::fbGBuffer.depth");
+		texDepth->width = win::internalWidth;
+		texDepth->height = win::internalHeight;
+		texDepth->internalFormat = rn::format::D32FS8.layout;
 		texDepth->reload();
 
 		fbGBuffer.attachDepth(texDepth);
 	}
 
 	fbGBuffer.reload();
+
+	// fbScreen
+	{
+		auto texColor = make_shared<rn::Tex2D>("App::fbScreen.color[0]");
+		texColor->width = win::internalWidth;
+		texColor->height = win::internalHeight;
+		texColor->internalFormat = rn::format::RGBA16F.layout;
+		texColor->reload();
+
+		fbScreen.attachColor(0, texColor);
+	}
+
+	{
+		auto texDepth = make_shared<rn::Tex2D>("App::fbScreen.depth");
+		texDepth->width = win::internalWidth;
+		texDepth->height = win::internalHeight;
+		texDepth->internalFormat = rn::format::D32FS8.layout;
+		texDepth->reload();
+
+		fbScreen.attachDepth(texDepth);
+	}
+
+	fbScreen.clearColor = glm::vec4{0.f, 0.f, 0.f, 1.f};
+	fbScreen.reload();
+
+	// fbUI
+	{
+		auto texColor = make_shared<rn::Tex2D>("App::fbUI.color[0]");
+		texColor->width = win::internalWidth;
+		texColor->height = win::internalHeight;
+		texColor->internalFormat = rn::format::RGBA8.layout;
+		texColor->reload();
+
+		fbUI.attachColor(0, texColor);
+	}
+
+	fbUI.clearColor = glm::vec4{0.f, 0.f, 0.f, 0.f};
+	fbUI.reload();
+
+	event::subscribe<win::WindowResizeEvent>([&] (const win::WindowResizeEvent &)
+	{
+		/*
+		auto texMaterial = dynamic_cast<rn::Tex2D *>(fbGBuffer.color(0));
+		texMaterial->width = win::internalWidth;
+		texMaterial->height = win::internalHeight;
+
+		auto texNormals = dynamic_cast<rn::Tex2D *>(fbGBuffer.color(1));
+		texNormals->width = win::internalWidth;
+		texNormals->height = win::internalHeight;
+
+		auto texZ = dynamic_cast<rn::Tex2D *>(fbGBuffer.color(2));
+		texZ->width = win::internalWidth;
+		texZ->height = win::internalHeight;
+
+		auto texDepth = dynamic_cast<rn::Tex2D *>(fbGBuffer.depth());
+		texDepth->width = win::internalWidth;
+		texDepth->height = win::internalHeight;
+
+		fbGBuffer.width = win::internalWidth;
+		fbGBuffer.height = win::internalHeight;
+		fbGBuffer.reload();
+
+		auto texDepth = dynamic_cast<rn::Tex2D *>(fbScreen.color(0));
+		texColor->width = win::internalWidth;
+		texColor->height = win::internalHeight;
+
+		auto texDepth = dynamic_cast<rn::Tex2D *>(fbScreen.depth());
+		texDepth->width = win::internalWidth;
+		texDepth->height = win::internalHeight;
+
+		fbScreen.width = win::internalWidth;
+		fbScreen.height = win::internalHeight;
+		fbScreen.reload();
+		*/
+	});
 
 	// fbShadowMap
 	{
@@ -308,7 +440,7 @@ void App::initScene()
 		{
 			auto &projection = ecs::get<Projection>(cameraId);
 
-			projection.aspect = static_cast<float>(win::width) / static_cast<float>(win::height);
+			projection.aspect = static_cast<float>(win::internalWidth) / static_cast<float>(win::internalHeight);
 			projection.matrix = glm::perspective(glm::radians(projection.fovy), projection.aspect, projection.zNear, projection.zFar);
 			projection.invMatrix = glm::inverse(projection.matrix);
 
@@ -464,8 +596,9 @@ void App::initScene()
 		name.name = "DirectionalLight";
 
 		auto &light = ecs::get<DirectionalLight>(lightIds[4]);
-		light.direction = glm::vec3{0.5f, 0.25f, 1.f};
+		light.ambient = glm::vec4{0.f, 0.36f, 0.5f, 1.f};
 		light.color = glm::vec4{0.8f, 0.8f, 0.8f, 1.f};
+		light.direction = glm::vec3{0.5f, 0.25f, 1.f};
 		light.intensity = 4.f;
 
 		auto &transform = ecs::get<Transform>(lightIds[4]);
@@ -519,13 +652,97 @@ void App::update()
 		rotate.y = (key::pressed(KEY_LEFT) - key::pressed(KEY_RIGHT));
 		rotate.x = (key::pressed(KEY_UP) - key::pressed(KEY_DOWN));
 
-		float translateSpeed = (key::pressed(KEY_LSHIFT) ? 1.0 : 20.0);
+		float translateSpeed = (key::pressed(KEY_LSHIFT) ? 0.1 : 20.0);
 		float rotateSpeed = (key::pressed(KEY_LSHIFT) ? 5.0 : 90.0);
 
 		translate *= translateSpeed * ngn::dt;
 		rotate *= rotateSpeed * ngn::dt;
 
 		proc::Camera::update(cameraId, translate, rotate);
+	}
+
+	if (key::hit(KEY_ESCAPE))
+	{
+		win::close();
+	}
+
+	if (key::hit(KEY_F4))
+	{
+		cout << "Reloading scene..." << endl;
+
+		try
+		{
+			scene.reload();
+			cout << "done" << endl;
+		}
+		catch (const string &e)
+		{
+			cerr << e << endl;
+		}
+	}
+
+	if (key::hit(KEY_F5))
+	{
+		cout << "Reloading shaders..." << endl;
+		try
+		{
+			rn::Program::reloadAll();
+			cout << "done" << endl;
+		}
+		catch (string e)
+		{
+			cerr << "  - " << e << endl;
+		}
+	}
+
+	if (key::hit(KEY_F6))
+	{
+		cout << "Reloading meshes..." << endl;
+		rn::Mesh::reloadAll();
+		cout << "done" << endl;
+	}
+
+	if (key::hit(KEY_F7))
+	{
+		cout << "Reloading fonts..." << endl;
+		rn::Font::reloadAll();
+		cout << "done" << endl;
+	}
+
+	if (key::hit(KEY_F8))
+	{
+		cout << "Reloading FBs..." << endl;
+		rn::FB::reloadAll();
+		cout << "done" << endl;
+	}
+
+	if (key::hit(KEY_F9))
+	{
+		cout << "Reloading textures..." << endl;
+		rn::Tex2D::reloadAll();
+		cout << "done" << endl;
+	}
+
+	if (key::hit(KEY_F10))
+	{
+		currentVsync = (currentVsync + 1) % util::countOf(vsyncs);
+
+		cout << "Switching vsync mode to \"" << vsyncNames[currentVsync] << "\" (" << vsyncs[currentVsync] << ") ..." << endl;
+		win::switchMode(modes[currentMode], vsyncs[currentVsync]);
+		rn::reloadSoftAll();
+		cout << "done" << endl;
+	}
+
+	if (key::hit(KEY_F11))
+	{
+		cout << "Switching window mode..." << endl;
+		currentMode = (currentMode + 1) % util::countOf(modes);
+		win::switchMode(modes[currentMode], vsyncs[currentVsync]);
+		cout << "done" << endl;
+
+		cout << "Soft reloading GL..." << endl;
+		rn::reloadSoftAll();
+		cout << "done" << endl;
 	}
 
 	if (key::hit('t'))
@@ -568,9 +785,14 @@ void App::update()
 		toggleCascade.change();
 	}
 
-	if (key::hit('\\'))
+	if (key::hit(']'))
 	{
 		toggleUseSmartSplitting.change();
+	}
+
+	if (key::hit('['))
+	{
+		toggleCalculateMatrices.change();
 	}
 
 	{
@@ -623,6 +845,8 @@ void App::render()
 {
 	profRender.start();
 
+	fbScreen.bind();
+
 	RN_CHECK(glClearColor(0.f, 0.f, 0.f, 0.f));
 	RN_CHECK(glClearDepth(numeric_limits<GLfloat>::max()));
 	RN_CHECK(glClearStencil(0));
@@ -633,11 +857,14 @@ void App::render()
 	gBufferPass();
 	profGBuffer.stop();
 
-	fbGBuffer.blit(nullptr, rn::BUFFER_STENCIL);
+	// fbScreen.clear(rn::BUFFER_COLOR);
+	fbGBuffer.blit(fbScreen, rn::BUFFER_STENCIL);
+	// fbGBuffer.blit(nullptr, rn::BUFFER_STENCIL);
 
 	if (!toggleLights.value)
 	{
-		fbGBuffer.blit(nullptr, rn::BUFFER_COLOR);
+		fbGBuffer.blit(fbScreen, rn::BUFFER_COLOR);
+		// fbGBuffer.blit(nullptr, rn::BUFFER_COLOR);
 	}
 
 	profSSAO.start();
@@ -657,6 +884,8 @@ void App::render()
 		profFlatLight.start();
 		flatLightPass();
 		profFlatLight.stop();
+
+		// fbScreen.blit(nullptr, rn::BUFFER_COLOR/*, rn::MAG_LINEAR*/);
 	}
 
 	if (toggleDebugPreview.value)
@@ -665,7 +894,6 @@ void App::render()
 		RN_SCOPE_ENABLE(GL_STENCIL_TEST);
 		RN_CHECK(glStencilFunc(GL_EQUAL, Stencil::MASK_SHADED, Stencil::MASK_ALL));
 		RN_CHECK(glStencilMask(0x0));
-		RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
 		progSSAOBlit.use();
 
@@ -713,7 +941,91 @@ void App::render()
 		RN_CHECK_PARAM(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_FUNC, csm.texDepths->compareFunc), rn::getEnumName(csm.texDepths->compareFunc));
 	}
 
+	fbScreen.unbind();
+
+	fbScreen.blit(nullptr, rn::BUFFER_COLOR);
+
 	profRender.stop();
+
+	double ft = ngn::time() - ngn::ct;
+
+	fbUI.bind();
+	fbUI.clear(rn::BUFFER_COLOR);
+
+	ostringstream oss;
+	oss << setprecision(4) << fixed;
+	oss << "dt=" << ngn::dt * 1000.0 << "ms\n";
+	oss << "ft=" << ft * 1000.0 << "ms\n";
+	oss << "fps=" << 1.0 / ngn::dt << "\n";
+	oss << "fps=" << 1.0 / ft << " (frame)\n";
+	oss << "triangles=" << rn::stats.triangles << "\n";
+	oss << "\n";
+
+	oss << "render=" << profRender.ms() << "ms (" << 1000.0 / profRender.ms() << ")\n";
+	oss << "  GBuffer=" << profGBuffer.ms() << "ms\n";
+	oss << "  DirectionalLight=" << profDirectionalLight.ms() << "ms\n";
+	oss << "  PointLight=" << profPointLight.ms() << "ms\n";
+	oss << "  FlatLight=" << profFlatLight.ms() << "ms\n";
+	oss << "  SSAO=" << profSSAO.ms() << "ms\n";
+	oss << "    Z=" << ssao.profZ.ms() << "ms\n";
+	oss << "    MipMaps=" << ssao.profMipMaps.ms() << "ms\n";
+	oss << "    AO=" << ssao.profAO.ms() << "ms\n";
+	oss << "    Blur=" << ssao.profBlur.ms() << "ms\n";
+	oss << "  CSM=???ms\n";
+	oss << "    Render=" << csm.profRender.ms() << "ms\n";
+	oss << "    Blur=" << csm.profBlur.ms() << "ms\n";
+
+	oss << "\n";
+	oss << "F4 - reload scene\n";
+	oss << "F5 - reload shaders\n";
+	oss << "F6 - reload meshes\n";
+	oss << "F7 - reload fonts\n";
+	oss << "F8 - reload FBOs\n";
+	oss << "F9 - reload textures\n";
+	oss << "F10 - change vsync mode (current: " << vsyncNames[currentVsync] << ")\n";
+	oss << "F11 - change window mode (current: " << modeNames[currentMode] << ")\n";
+	oss << "\n";
+	oss << "Movement: W, A, S, D\n";
+	oss << "Camera: arrows\n";
+	oss << "Point Light: Keypad 8, 4, 5, 6\n\n";
+	oss << "Toggles:\n";
+
+	for (auto &toggle : util::Toggle::collection)
+	{
+		oss << "  " << toggle->toggleName << " = " << toggle->value << "\n";
+	}
+
+	font1.render(oss.str());
+
+	oss.str(""s);
+	oss.clear();
+
+	oss << "CSM:\n";
+	oss << "  V[0][0]=" << glm::to_string(csm.Vs[0][0]) << "\n";
+	oss << "  V[0][1]=" << glm::to_string(csm.Vs[0][1]) << "\n";
+	oss << "  V[0][2]=" << glm::to_string(csm.Vs[0][2]) << "\n";
+	oss << "  V[0][3]=" << glm::to_string(csm.Vs[0][3]) << "\n";
+	oss << "\n";
+	oss << "  P[0][0]=" << glm::to_string(csm.Ps[0][0]) << "\n";
+	oss << "  P[0][1]=" << glm::to_string(csm.Ps[0][1]) << "\n";
+	oss << "  P[0][2]=" << glm::to_string(csm.Ps[0][2]) << "\n";
+	oss << "  P[0][3]=" << glm::to_string(csm.Ps[0][3]) << "\n";
+
+	font2.position.x = -0.125f;
+	font2.render(oss.str());
+
+	fbUI.unbind();
+
+	RN_SCOPE_ENABLE(GL_BLEND);
+	RN_SCOPE_DISABLE(GL_DEPTH_TEST);
+	RN_CHECK(glBlendFunc(GL_ONE, GL_ONE));
+
+	progFBOBlit.use();
+	progFBOBlit.uniform("texSource", fbUI.color(0)->bind(0));
+	rn::Mesh::quad.render();
+	progFBOBlit.forgo();
+
+	RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 }
 
 void App::gBufferPass()
@@ -781,7 +1093,8 @@ void App::gBufferPass()
 
 void App::directionalLightsPass()
 {
-	const auto &P = ecs::get<Projection>(cameraId).matrix;
+	const auto &projection = ecs::get<Projection>(cameraId);
+	const auto &P = projection.matrix;
 	const auto &view = ecs::get<View>(cameraId);
 	const auto &V = view.matrix;
 	const auto &invV = view.invMatrix;
@@ -789,47 +1102,69 @@ void App::directionalLightsPass()
 	const phs::Frustum frustum{P * V};
 
 	progDirectionalLight.var("invV", invV);
+	progDirectionalLight.var("zNear", projection.zNear);
+	progDirectionalLight.var("zFar", projection.zFar);
 
 	for (auto &entity : ecs::findWith<DirectionalLight>())
 	{
 		// glm::mat4 shadowMapMVP = makeShadowMap(entity, frustum);
-
-		csm.cameraId = cameraId;
 		csm.useSmartSplitting = toggleUseSmartSplitting.value;
-		csm.setup(entity);
-		csm.render();
+		if (toggleCalculateMatrices.value) {
+			csm.calculateMatrices(cameraId, entity);
+		}
+
+		csm.renderCascades();
 
 		const auto &light = ecs::get<DirectionalLight>(entity);
 
-		RN_CHECK(glBlendFunc(GL_ONE, GL_ONE));
-		RN_SCOPE_ENABLE(GL_STENCIL_TEST);
-		RN_CHECK(glStencilFunc(GL_EQUAL, Stencil::MASK_SHADED, Stencil::MASK_ALL));
-		RN_CHECK(glStencilMask(0x0));
-
-		// global lighting
 		{
+			// RN_FB_BIND(fbScreen);
+			// RN_SCOPE_DISABLE(GL_DEPTH_TEST);
+
+			RN_CHECK(glBlendFunc(GL_ONE, GL_ONE));
+			RN_SCOPE_ENABLE(GL_STENCIL_TEST);
+			RN_CHECK(glStencilFunc(GL_EQUAL, Stencil::MASK_SHADED, Stencil::MASK_ALL));
+			RN_CHECK(glStencilMask(0x0));
 
 			progDirectionalLight.use();
 
 			progDirectionalLight.var("useColor", toggleColor.value);
 
+			progDirectionalLight.var("lightAmbient", light.ambient);
 			progDirectionalLight.var("lightColor", light.color);
 			progDirectionalLight.var("lightDirection", glm::mat3{V} * light.direction);
 			progDirectionalLight.var("lightIntensity", light.intensity);
 			// progDirectionalLight.var("shadowmapMVP", shadowMapMVP);
 			// progDirectionalLight.var("csmMVP", csm.Ps[0] * csm.V);
 
+			std::vector<float> csmRadiuses2{};
+			csmRadiuses2.resize(csm.radiuses.size());
+
+			for (size_t i = 0; i < csmRadiuses2.size(); i++)
+			{
+				csmRadiuses2[i] = csm.radiuses[i] * csm.radiuses[i];
+			}
+
+			std::vector<glm::vec3> csmCenters{};
+			csmCenters.resize(csm.centers.size());
+
+			for (size_t i = 0; i < csmCenters.size(); i++)
+			{
+				csmCenters[i] = glm::vec3{V  * glm::vec4{csm.centers[i], 1.f}};
+			}
+
 			std::vector<glm::mat4> csmMVP{};
 			csmMVP.resize(csm.Ps.size());
 
 			for (size_t i = 0; i < csmMVP.size(); i++)
 			{
-				csmMVP[i] = csm.Ps[i] * csm.Vs[i] * invV;
+				csmMVP[i] = csm.Ps[i] * csm.Vs[i];
 			}
 
 			GLsizei unit = 0;
 			progDirectionalLight.var("texColor", fbGBuffer.color(0)->bind(unit++));
 			progDirectionalLight.var("texNormal", fbGBuffer.color(1)->bind(unit++));
+			progDirectionalLight.var("texZ", fbGBuffer.color(2)->bind(unit++));
 			progDirectionalLight.var("texDepth", fbGBuffer.depth()->bind(unit++));
 			progDirectionalLight.var("texAO", ssao.fbAO.color(0)->bind(unit++));
 
@@ -837,8 +1172,10 @@ void App::directionalLightsPass()
 			progDirectionalLight.var("texShadowDepth", fbShadowMap.depth()->bind(unit++));
 			// progDirectionalLight.var("texCSM", csm.fbShadows[0].color(0)->bind(unit++));
 
-			progDirectionalLight.var("csmCascades", static_cast<GLint>(csm.cascades.size()));
-			progDirectionalLight.var("csmSplits", csm.cascades.data(), csm.cascades.size());
+			progDirectionalLight.var("csmSplits", static_cast<GLint>(csm.splits));
+			progDirectionalLight.var("csmCascades", csm.cascades.data(), csm.cascades.size());
+			progDirectionalLight.var("csmRadiuses2", csmRadiuses2.data(), csmRadiuses2.size());
+			progDirectionalLight.var("csmCenters", csmCenters.data(), csmCenters.size());
 			progDirectionalLight.var("csmMVP", csmMVP.data(), csmMVP.size());
 			// progDirectionalLight.var("csmTexCascades", csm.texCascades->bind(unit++));
 			progDirectionalLight.var("csmTexDepths", csm.texDepths->bind(unit++));
@@ -846,9 +1183,9 @@ void App::directionalLightsPass()
 			rn::Mesh::quad.render();
 
 			progDirectionalLight.forgo();
-		}
 
-		RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+			RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+		}
 	}
 }
 
@@ -865,7 +1202,7 @@ void App::pointLightsPass()
 
 		// @TODO: shadows
 		// {
-		// 	RN_FBO_USE(shadowmap);
+		// 	RN_FB_BIND(shadowmap);
 
 		// 	shadowmap.clear();
 
@@ -881,6 +1218,8 @@ void App::pointLightsPass()
 		// }
 
 		{
+			// RN_FB_BIND(fbScreen);
+
 			RN_SCOPE_ENABLE(GL_STENCIL_TEST);
 			RN_CHECK(glStencilFunc(GL_EQUAL, Stencil::MASK_SHADED, Stencil::MASK_ALL));
 			RN_CHECK(glStencilMask(0x0));
@@ -896,7 +1235,8 @@ void App::pointLightsPass()
 
 			progPointLight.var("texColor", fbGBuffer.color(0)->bind(0));
 			progPointLight.var("texNormal", fbGBuffer.color(1)->bind(1));
-			progPointLight.var("texDepth", fbGBuffer.depth()->bind(2));
+			progPointLight.var("texZ", fbGBuffer.color(2)->bind(2));
+			progPointLight.var("texDepth", fbGBuffer.depth()->bind(3));
 
 			// shadowMapBuffer.colors[0].bind(3);
 			// shadowMapBuffer.depth.tex.bind(4);
@@ -947,10 +1287,10 @@ void App::ssaoPass()
 
 glm::mat4 App::makeShadowMap(const ecs::Entity &lightId, const phs::Frustum &frustum)
 {
-	csm.cameraId = cameraId;
+	// csm.cameraId = cameraId;
 
-	csm.setup(lightId);
-	csm.render();
+	// csm.calculateMatrices(lightId);
+	// csm.renderCascades();
 
 	const auto &cameraPosition = ecs::get<Position>(cameraId).position;
 	// const auto &projection = ecs::get<Projection>(cameraId);

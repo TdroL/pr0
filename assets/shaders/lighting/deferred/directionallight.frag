@@ -7,11 +7,12 @@ in vec2 uv;
 uniform mat4 invP;
 uniform mat4 invV;
 
-uniform float near;
-uniform float far;
+uniform float zNear;
+uniform float zFar;
 
 uniform sampler2D texNormal;
 uniform sampler2D texColor;
+uniform sampler2D texZ;
 uniform sampler2D texDepth;
 uniform sampler2D texAO;
 uniform sampler2D texShadowMoments;
@@ -22,17 +23,24 @@ uniform sampler2DArrayShadow csmTexDepths;
 uniform mat4 shadowmapMVP;
 
 #define CSM_MAX_CASCADES 4
-uniform int csmCascades;
-uniform float csmSplits[CSM_MAX_CASCADES];
+uniform int csmSplits;
+uniform float csmCascades[CSM_MAX_CASCADES];
+uniform float csmRadiuses2[CSM_MAX_CASCADES];
+uniform vec3 csmCenters[CSM_MAX_CASCADES];
 uniform mat4 csmMVP[CSM_MAX_CASCADES];
 
-uniform vec3 lightDirection;
+uniform vec4 lightAmbient;
 uniform vec4 lightColor;
+uniform vec3 lightDirection;
 uniform float lightIntensity;
 uniform uint useColor;
 
+float kernelSize = 0.0;
+bool fixZValue = true;
+bool showConstCascade = false;
+bool useLinearSplits = false;
 bool enableBlending = false;
-bool enableVisualizeCascades = true;
+bool enableVisualizeCascades = false;
 
 vec3 normalDecode(vec2 enc);
 vec3 positionReconstruct(float z, vec2 uv);
@@ -51,90 +59,53 @@ float pcfVisibility(vec3 shadowCoord, int csmLayer, float kernelSize)
 
 	float visibility = 0.0;
 	float weight = 0.0;
-
 	float origKernelSize = kernelSize;
 	kernelSize = floor(kernelSize / 2.0);
+
 	for (float i = -kernelSize; i <= kernelSize; i += 1.0) {
 		for (float j = -kernelSize; j <= kernelSize; j += 1.0) {
-			// float lightDepth = shadowCoord.z - depthBias * (0.25 * float(csmLayer + 1.0)) * max(abs(i), abs(j));
-
 			float lightDepth = shadowCoord.z - depthBias;
-			visibility += texture(csmTexDepths, vec4(shadowCoord.xy + vec2(i, j) * texSizeInv, csmLayer, lightDepth));
+			vec4 testCoords = vec4(shadowCoord.xy + vec2(i, j) * texSizeInv, csmLayer, lightDepth);
+
+			visibility += texture(csmTexDepths, testCoords);
 
 			weight += 1.0;
 		}
 	}
 
-	visibility /= weight;
-
-	// visibility = 1.0 - pow(1.0 - visibility, 2.0);
-
-	// visibility = pow(visibility, kernelSize / 2.0);
+	visibility /= max(weight, 1.0);
 
 	return visibility;
 }
 
-float optPcfVisibility(vec3 shadowCoord, int csmLayer, float kernelSize)
+int calcCascade(vec3 position)
 {
-	vec2 texSize = textureSize(csmTexDepths, 0).xy;
-	vec2 texSizeInv = 1.0 / texSize;
-
-	float depthBias = texSizeInv.x;
-	float lightDepth = shadowCoord.z + depthBias;
-
-	vec2 uv = shadowCoord.xy * texSize;
-
-	vec2 baseUv = floor(uv + 0.5);
-	float s = fract(uv.x);
-	float t = fract(uv.y);
-
-	baseUv -= 0.5;
-	baseUv *= texSizeInv;
-
-	// kernelSize = 5
-	float uw0 = (4.0 - 3.0 * s);
-	float uw1 = 7.0;
-	float uw2 = (1.0 + 3.0 * s);
-
-	float u0 = (3.0 - 2.0 * s) / uw0 - 2.0;
-	float u1 = (3.0 + s) / uw1;
-	float u2 = s / uw2 + 2.0;
-
-	float vw0 = (4.0 - 3.0 * t);
-	float vw1 = 7.0;
-	float vw2 = (1.0 + 3.0 * t);
-
-	float v0 = (3.0 - 2.0 * t) / vw0 - 2.0;
-	float v1 = (3.0 + t) / vw1;
-	float v2 = t / vw2 + 2.0;
-
-	vec2 texSizeInvScaled = texSizeInv / float(csmLayer + 1.0);
-
-	float visibility = 1.0;
-	visibility += uw0 * vw0 * texture(csmTexDepths, vec4(baseUv + vec2(u0, v0) * texSizeInvScaled, csmLayer, lightDepth));
-	visibility += uw1 * vw0 * texture(csmTexDepths, vec4(baseUv + vec2(u1, v0) * texSizeInvScaled, csmLayer, lightDepth));
-	visibility += uw2 * vw0 * texture(csmTexDepths, vec4(baseUv + vec2(u2, v0) * texSizeInvScaled, csmLayer, lightDepth));
-
-	visibility += uw0 * vw1 * texture(csmTexDepths, vec4(baseUv + vec2(u0, v1) * texSizeInvScaled, csmLayer, lightDepth));
-	visibility += uw1 * vw1 * texture(csmTexDepths, vec4(baseUv + vec2(u1, v1) * texSizeInvScaled, csmLayer, lightDepth));
-	visibility += uw2 * vw1 * texture(csmTexDepths, vec4(baseUv + vec2(u2, v1) * texSizeInvScaled, csmLayer, lightDepth));
-
-	visibility += uw0 * vw2 * texture(csmTexDepths, vec4(baseUv + vec2(u0, v2) * texSizeInvScaled, csmLayer, lightDepth));
-	visibility += uw1 * vw2 * texture(csmTexDepths, vec4(baseUv + vec2(u1, v2) * texSizeInvScaled, csmLayer, lightDepth));
-	visibility += uw2 * vw2 * texture(csmTexDepths, vec4(baseUv + vec2(u2, v2) * texSizeInvScaled, csmLayer, lightDepth));
-
-	visibility = visibility * 1.0f / 144;
-
-	return visibility;
-}
-
-int calcCascade(float z)
-{
-	for (int i = 0; i < csmCascades; i++)
+	if (useLinearSplits)
 	{
-		if (csmSplits[i] <= z)
+		for (int i = 0; i < csmSplits; i++)
 		{
-			return i;
+			if (position.z > csmCascades[i])
+			{
+				return i;
+			}
+		}
+	}
+	else
+	{
+		for (int i = 0; i < csmSplits - 1; i++)
+		{
+			vec3 len = csmCenters[i] - position;
+			float dist2 = dot(len, len);
+
+			if (dist2 <= csmRadiuses2[i])
+			{
+				return i;
+			}
+		}
+
+		if (position.z > csmCascades[csmSplits - 1])
+		{
+			return csmSplits - 1;
 		}
 	}
 
@@ -143,35 +114,26 @@ int calcCascade(float z)
 
 float calcVisibility(vec3 position)
 {
-	int csmLayer = calcCascade(position.z);
+	int csmLayer = calcCascade(position);
 
 	if (csmLayer == -1) {
 		return 1.0;
 	}
 
-	vec4 shadowCoord = csmMVP[csmLayer] * vec4(position, 1.0) * 0.5 + 0.5;
-	shadowCoord /= shadowCoord.w;
+	vec4 shadowCoord = csmMVP[csmLayer] * invV * vec4(position, 1.0) * 0.5 + 0.5;
 
-	// vec4 moments = texture(csmTexCascades, vec3(shadowCoord.xy, csmLayer));
-	// float visibility = vsmVisibility(min(shadowCoord.z, 1.0), moments.xy);
-
-	float kernelSize = 1.0;
 	float visibility = pcfVisibility(shadowCoord.xyz, csmLayer, kernelSize);
-	// float visibility = optPcfVisibility(shadowCoord.xyz, csmLayer, 5.0);
 
-	if (enableBlending && csmLayer < csmCascades - 1)
+	if (enableBlending && csmLayer < csmSplits - 1)
 	{
 		float blendScale = 16.0;
 
-		float dl = abs((position.z - csmSplits[csmLayer]) / (csmSplits[csmLayer + 1] - csmSplits[csmLayer])) * blendScale;
+		float dl = abs((position.z - csmCascades[csmLayer]) / (csmCascades[csmLayer + 1] - csmCascades[csmLayer])) * blendScale;
 
 		if (dl < 1.0)
 		{
-			shadowCoord = csmMVP[csmLayer + 1] * vec4(position, 1.0) * 0.5 + 0.5;
-			shadowCoord /= shadowCoord.w;
+			shadowCoord = csmMVP[csmLayer + 1] * invV * vec4(position, 1.0) * 0.5 + 0.5;
 
-			// moments = texture(csmTexCascades, vec3(shadowCoord.xy, csmLayer + 1.0));
-			// float nextVisibility = vsmVisibility(min(shadowCoord.z, 1.0), moments.xy);
 			float nextVisibility = pcfVisibility(shadowCoord.xyz, csmLayer + 1, kernelSize);
 
 			visibility = min(visibility, mix(visibility, nextVisibility, 1.0 - dl));
@@ -193,18 +155,28 @@ void main()
 	vec3 normal = normalDecode(encodedNormal);
 	vec3 position = positionReconstruct(depth, uv);
 
-	if (useColor == 0u) {
+	if (fixZValue)
+	{
+		position.z = texture(texZ, uv).x; // fix z precision
+	}
+
+	if (useColor == 0u)
+	{
 		albedo = vec3(0.5);
 	}
 
 	float visibility = calcVisibility(position);
-	float occlusion = texture(texAO, uv).r;
 
-	// albedo *= occlusion;
+	if (showConstCascade)
+	{
+		visibility = 1.0;
+	}
+
+	float occlusion = texture(texAO, uv).r;
 
 	vec3 n = normalize(normal);
 	vec3 l = normalize(lightDirection);
-	vec3 v = normalize(-position.xyz);
+	vec3 v = normalize(-position);
 	vec3 h = normalize(l + v);
 
 	float n_l = dot(n, l);
@@ -216,9 +188,10 @@ void main()
 	float exponent = acos(n_h) / shininess;
 	float gauss = sign(theta) * exp(-(exponent * exponent));
 
-	vec3 lightColorG = pow(lightColor.rgb, vec3(2.2)) * lightIntensity;
+	vec3 lightAmbientG = pow(lightAmbient.rgb, vec3(2.2));
+	vec3 lightColorG = pow(lightColor.rgb, vec3(2.2));
 
-	vec3 ambient  = lightColorG * albedo * occlusion / 16.0;
+	vec3 ambient  = lightAmbientG * albedo * occlusion;
 	vec3 diffuse  = lightColorG * albedo * theta;
 	vec3 specular = lightColorG * gauss;
 
@@ -232,13 +205,38 @@ void main()
 		vec3(1.0, 0.0, 1.0),
 		vec3(1.0, 1.0, 0.0)
 	);
-	int cascade = calcCascade(position.z);
+
+	int cascade = calcCascade(position);
 
 	if (enableVisualizeCascades && cascade != -1)
 	{
 		outColor.rgb *= cascadeColors[cascade % 6];
 	}
 
+	if (showConstCascade)
+	{
+		mat4 fV = mat4(
+			-0.948358,  0.076933, -0.307732, 0.0,
+			 0.000000,  0.970142, -0.920042, 0.0,
+			 0.317203,  0.230011,  2.757908, 0.0,
+			 1.394276, -1.409597,  2.757908, 1.0
+		);
+		mat4 fP = mat4(
+			0.063737, 0.000000,  0.000000, 0.0,
+			0.000000, 0.063737,  0.000000, 0.0,
+			0.000000, 0.000000, -0.063737, 0.0,
+			0.000000, 0.000000,  0.000000, 1.0
+		);
+
+		vec4 fPos = fP * fV * invV * vec4(position, 1.0);
+
+		if (fPos.x >= -0.125 && fPos.x <= 0.125 && fPos.y >= -0.125 && fPos.y <= 0.125)
+		{
+			outColor.rgb = fPos.xyz * 8.0;
+		}
+	}
+
 	outColor.rgb = pow(outColor.rgb, vec3(1.0 / 2.2));
+
 	outColor.a = 1.0;
 }

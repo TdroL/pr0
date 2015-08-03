@@ -14,14 +14,14 @@ Sphere::Sphere(const glm::mat4 &WVP, bool needInverse)
 	const auto invWVP = needInverse ? glm::inverse(WVP) : WVP;
 
 	glm::vec4 corners[8] = {
-		invWVP * glm::vec4{-1.f,  1.f, -1.f, 1.f},
-		invWVP * glm::vec4{ 1.f,  1.f, -1.f, 1.f},
-		invWVP * glm::vec4{ 1.f, -1.f, -1.f, 1.f},
-		invWVP * glm::vec4{-1.f, -1.f, -1.f, 1.f},
-		invWVP * glm::vec4{-1.f,  1.f,  1.f, 1.f},
 		invWVP * glm::vec4{ 1.f,  1.f,  1.f, 1.f},
+		invWVP * glm::vec4{ 1.f,  1.f, -1.f, 1.f},
 		invWVP * glm::vec4{ 1.f, -1.f,  1.f, 1.f},
-		invWVP * glm::vec4{-1.f, -1.f,  1.f, 1.f}
+		invWVP * glm::vec4{ 1.f, -1.f, -1.f, 1.f},
+		invWVP * glm::vec4{-1.f,  1.f,  1.f, 1.f},
+		invWVP * glm::vec4{-1.f,  1.f, -1.f, 1.f},
+		invWVP * glm::vec4{-1.f, -1.f,  1.f, 1.f},
+		invWVP * glm::vec4{-1.f, -1.f, -1.f, 1.f}
 	};
 
 	for (size_t i = 0; i < 8; i++)

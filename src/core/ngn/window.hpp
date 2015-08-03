@@ -34,6 +34,9 @@ extern GLFWwindow *handler;
 extern GLFWwindow *initial;
 extern int width;
 extern int height;
+extern bool linkInternalResolution;
+extern int internalWidth;
+extern int internalHeight;
 extern const int contextMajor;
 extern const int contextMinor;
 

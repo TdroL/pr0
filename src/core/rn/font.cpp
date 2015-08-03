@@ -74,8 +74,8 @@ void Font::init()
 	{
 		for (Font *font : Font::collection)
 		{
-			font->sx = win::width ? 2.0f / win::width : 0.f;
-			font->sy = win::height ? 2.0f / win::height : 0.f;
+			font->sx = win::internalWidth ? 2.0f / win::internalWidth : 0.f;
+			font->sy = win::internalHeight ? 2.0f / win::internalHeight : 0.f;
 		}
 	});
 }
@@ -154,8 +154,8 @@ void Font::reload()
 
 	FT_Set_Pixel_Sizes(face, 0, fontSize);
 
-	sx = 2.0f / win::width;
-	sy = 2.0f / win::height;
+	sx = 2.0f / win::internalWidth;
+	sy = 2.0f / win::internalHeight;
 
 	RN_CHECK(glGenVertexArrays(1, &vao));
 	RN_CHECK(glGenBuffers(1, &vbo));
@@ -312,7 +312,8 @@ void Font::render(const string &text)
 
 	prog.use();
 
-	RN_CHECK(glEnable(GL_BLEND));
+	RN_SCOPE_DISABLE(GL_DEPTH_TEST);
+	RN_SCOPE_ENABLE(GL_BLEND);
 	RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
 	RN_CHECK(glActiveTexture(GL_TEXTURE0 + 0));

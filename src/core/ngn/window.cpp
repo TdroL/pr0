@@ -14,6 +14,9 @@ string title{"pr0"};
 GLFWwindow *handler = nullptr;
 int width = -1;
 int height = -1;
+bool linkInternalResolution = true;
+int internalWidth = 1920;
+int internalHeight = 1080;
 const int contextMajor = 3;
 const int contextMinor = 3;
 
@@ -87,6 +90,12 @@ namespace
 		window::width = width;
 		window::height = height;
 
+		if (linkInternalResolution)
+		{
+			window::internalWidth = width;
+			window::internalHeight = height;
+		}
+
 		event::emit(WindowResizeEvent{width, height});
 	}
 }
@@ -120,6 +129,12 @@ void create(int width, int height)
 
 	window::width = width;
 	window::height = height;
+
+	if (linkInternalResolution)
+	{
+		window::internalWidth = width;
+		window::internalHeight = height;
+	}
 
 	switchMode(currentMode, currentVsync);
 }

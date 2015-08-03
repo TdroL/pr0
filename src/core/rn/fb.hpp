@@ -53,12 +53,16 @@ public:
 	void attachDepth(const std::shared_ptr<rn::Tex2D> &tex, GLint level = 0);
 	void attachDepth(const std::shared_ptr<rn::Tex2DArray> &tex, GLsizei layer, GLint level = 0);
 
+	TexContainer detachColor(size_t index);
+	TexContainer detachDepth();
+
 	rn::Tex * color(size_t index);
 	rn::Tex * depth();
 
 	void clear(BuffersMask mask);
 
-	void blit(const FB *target, BuffersMask mask, MagFilter filter = MAG_NEAREST);
+	void blit(FB &target, BuffersMask mask, MagFilter filter = MAG_NEAREST);
+	void blit(FB *target, BuffersMask mask, MagFilter filter = MAG_NEAREST);
 
 	void reload();
 	void reloadSoft();
