@@ -1,3 +1,5 @@
+#include <pch.hpp>
+
 #include "occluderparser.hpp"
 
 #include <app/comp/occluder.hpp>

@@ -1,7 +1,10 @@
+#include <pch.hpp>
+
 #include "tex2d.hpp"
+
+#include "../ngn.hpp"
 #include "../rn.hpp"
 #include "../rn/ext.hpp"
-#include "../ngn.hpp"
 
 #include <utility>
 #include <iostream>

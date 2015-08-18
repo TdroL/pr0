@@ -1,8 +1,12 @@
+#include <pch.hpp>
+
 #include "fb.hpp"
+
 #include "../ngn.hpp"
 #include "../util.hpp"
 #include "../ngn/window.hpp"
 #include "../util/align.hpp"
+
 #include <algorithm>
 
 namespace rn
@@ -150,7 +154,6 @@ FB::TexContainer FB::detachDepth()
 	return tmpContainer;
 }
 
-
 rn::Tex * FB::color(size_t index)
 {
 	UTIL_DEBUG
@@ -180,6 +183,37 @@ rn::Tex * FB::depth()
 	}
 
 	return depthContainer.tex.get();
+}
+
+shared_ptr<rn::Tex> FB::shareColor(size_t index)
+{
+	UTIL_DEBUG
+	{
+		if (colorContainers.size() < index || ! colorContainers[index].tex)
+		{
+			throw string{"rn::FB{" + fbName + "}::shareColor(" + to_string(index) + ") - no color texture"};
+		}
+	}
+
+	if (colorContainers.size() < index)
+	{
+		return shared_ptr<rn::Tex>(nullptr);
+	}
+
+	return colorContainers[index].tex;
+}
+
+shared_ptr<rn::Tex> FB::shareDepth()
+{
+	UTIL_DEBUG
+	{
+		if ( ! depthContainer.tex)
+		{
+			throw string{"rn::FB{" + fbName + "}::shareDepth() - no depth texture"};
+		}
+	}
+
+	return depthContainer.tex;
 }
 
 void FB::clear(BuffersMask mask)

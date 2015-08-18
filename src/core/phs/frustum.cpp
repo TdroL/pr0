@@ -1,8 +1,10 @@
+#include <pch.hpp>
+
 #include "frustum.hpp"
 
-#include <algorithm>
-
 #include <glm/gtc/matrix_access.hpp>
+
+#include <algorithm>
 
 namespace phs
 {

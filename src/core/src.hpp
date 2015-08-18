@@ -1,13 +1,13 @@
 #ifndef SRC_HPP
 #define SRC_HPP
 
-#include <vector>
-#include <memory>
-#include <string>
-
 #include "rn.hpp"
 #include "rn/types.hpp"
 #include "util.hpp"
+
+#include <vector>
+#include <memory>
+#include <string>
 
 namespace src
 {

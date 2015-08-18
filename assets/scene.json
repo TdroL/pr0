@@ -19,7 +19,7 @@
 			"rotationSpeed": [90.0]
 		},
 		"transform": {
-			"translation": [0.0, 0.0, -1.0]
+			"translation": [0.0, 0.0, 1.0]
 		},
 		"mesh": {
 			"id": "sphere.sbm"
@@ -37,7 +37,7 @@
 			"name": "Cube"
 		},
 		"transform": {
-			"translation": [0.0, 0.0, -3.0]
+			"translation": [0.0, 0.0, 3.0]
 		},
 		"material": {
 			"diffuse": [0.75, 0.75, 0.75, 1.0],
@@ -94,7 +94,7 @@
 			"name": "Dragon"
 		},
 		"transform": {
-			"translation": [0.0, -1.5, -2.0],
+			"translation": [0.0, -1.5, 2.0],
 			"scale": [3.0]
 		},
 		"material": {
@@ -114,7 +114,7 @@
 			"name": "Bunny"
 		},
 		"transform": {
-			"translation": [0.0, -1.115, 2.0],
+			"translation": [0.0, -1.115, -2.0],
 			"scale": [5.0]
 		},
 		"material": {
@@ -134,7 +134,7 @@
 			"name": "Torus #1"
 		},
 		"transform": {
-			"translation": [4.0, 0.0, 2.0],
+			"translation": [4.0, 0.0, -2.0],
 			"scale": [1.0],
 			"rotation": [45.0, 0.0, 45.0]
 		},
@@ -155,7 +155,7 @@
 			"name": "Torus #2"
 		},
 		"transform": {
-			"translation": [4.5, 0.0, 2.5],
+			"translation": [4.5, 0.0, -2.5],
 			"scale": [1.0],
 			"rotation": [-45.0, 0.0, -45.0]
 		},
@@ -216,23 +216,14 @@
 			"name": "Sphere grid #0"
 		},
 		"transform": {
-			"translation": [
-				-12,
-				-1.2,
-				0
-			]
+			"translation": [-12, -1.2, 0]
 		},
 		"mesh": {
 			"id": "sphere.sbm"
 		},
 		"material": {
-			"diffuse": [
-				0.5,
-				0.5,
-				0.5,
-				1
-			],
-			"shininess": 1
+			"diffuse": [0.5, 0.5, 0.5, 1],
+			"shininess": 0.04
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -244,23 +235,14 @@
 			"name": "Sphere grid #1"
 		},
 		"transform": {
-			"translation": [
-				-12,
-				-1.2,
-				-1.5
-			]
+			"translation": [-12, -1.2, 1.5]
 		},
 		"mesh": {
 			"id": "sphere.sbm"
 		},
 		"material": {
-			"diffuse": [
-				0.5,
-				0.5,
-				0.5,
-				1
-			],
-			"shininess": 0.5
+			"diffuse": [0.5, 0.5, 0.5, 1],
+			"shininess": 0.08
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -272,23 +254,14 @@
 			"name": "Sphere grid #2"
 		},
 		"transform": {
-			"translation": [
-				-12,
-				-1.2,
-				-3
-			]
+			"translation": [-12, -1.2, 3]
 		},
 		"mesh": {
 			"id": "sphere.sbm"
 		},
 		"material": {
-			"diffuse": [
-				0.5,
-				0.5,
-				0.5,
-				1
-			],
-			"shininess": 0.333
+			"diffuse": [0.5, 0.5, 0.5, 1],
+			"shininess": 0.12
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -300,23 +273,14 @@
 			"name": "Sphere grid #3"
 		},
 		"transform": {
-			"translation": [
-				-12,
-				-1.2,
-				-4.5
-			]
+			"translation": [-12, -1.2, 4.5]
 		},
 		"mesh": {
 			"id": "sphere.sbm"
 		},
 		"material": {
-			"diffuse": [
-				0.5,
-				0.5,
-				0.5,
-				1
-			],
-			"shininess": 0.25
+			"diffuse": [0.5, 0.5, 0.5, 1],
+			"shininess": 0.16
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -328,22 +292,13 @@
 			"name": "Sphere grid #4"
 		},
 		"transform": {
-			"translation": [
-				-12,
-				-1.2,
-				-6
-			]
+			"translation": [-12, -1.2, 6]
 		},
 		"mesh": {
 			"id": "sphere.sbm"
 		},
 		"material": {
-			"diffuse": [
-				0.5,
-				0.5,
-				0.5,
-				1
-			],
+			"diffuse": [0.5, 0.5, 0.5, 1],
 			"shininess": 0.2
 		},
 		"stencil": {
@@ -356,23 +311,14 @@
 			"name": "Sphere grid #5"
 		},
 		"transform": {
-			"translation": [
-				-13.5,
-				-1.2,
-				0
-			]
+			"translation": [-13.5, -1.2, 0]
 		},
 		"mesh": {
 			"id": "sphere.sbm"
 		},
 		"material": {
-			"diffuse": [
-				0.5,
-				0.5,
-				0.5,
-				1
-			],
-			"shininess": 0.167
+			"diffuse": [0.5, 0.5, 0.5, 1],
+			"shininess": 0.24
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -384,23 +330,14 @@
 			"name": "Sphere grid #6"
 		},
 		"transform": {
-			"translation": [
-				-13.5,
-				-1.2,
-				-1.5
-			]
+			"translation": [-13.5, -1.2, 1.5]
 		},
 		"mesh": {
 			"id": "sphere.sbm"
 		},
 		"material": {
-			"diffuse": [
-				0.5,
-				0.5,
-				0.5,
-				1
-			],
-			"shininess": 0.143
+			"diffuse": [0.5, 0.5, 0.5, 1],
+			"shininess": 0.28
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -412,23 +349,14 @@
 			"name": "Sphere grid #7"
 		},
 		"transform": {
-			"translation": [
-				-13.5,
-				-1.2,
-				-3
-			]
+			"translation": [-13.5, -1.2, 3]
 		},
 		"mesh": {
 			"id": "sphere.sbm"
 		},
 		"material": {
-			"diffuse": [
-				0.5,
-				0.5,
-				0.5,
-				1
-			],
-			"shininess": 0.125
+			"diffuse": [0.5, 0.5, 0.5, 1],
+			"shininess": 0.32
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -440,23 +368,14 @@
 			"name": "Sphere grid #8"
 		},
 		"transform": {
-			"translation": [
-				-13.5,
-				-1.2,
-				-4.5
-			]
+			"translation": [-13.5, -1.2, 4.5]
 		},
 		"mesh": {
 			"id": "sphere.sbm"
 		},
 		"material": {
-			"diffuse": [
-				0.5,
-				0.5,
-				0.5,
-				1
-			],
-			"shininess": 0.111
+			"diffuse": [0.5, 0.5, 0.5, 1],
+			"shininess": 0.36
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -468,23 +387,14 @@
 			"name": "Sphere grid #9"
 		},
 		"transform": {
-			"translation": [
-				-13.5,
-				-1.2,
-				-6
-			]
+			"translation": [-13.5, -1.2, 6]
 		},
 		"mesh": {
 			"id": "sphere.sbm"
 		},
 		"material": {
-			"diffuse": [
-				0.5,
-				0.5,
-				0.5,
-				1
-			],
-			"shininess": 0.1
+			"diffuse": [0.5, 0.5, 0.5, 1],
+			"shininess": 0.4
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -496,23 +406,14 @@
 			"name": "Sphere grid #10"
 		},
 		"transform": {
-			"translation": [
-				-15,
-				-1.2,
-				0
-			]
+			"translation": [-15, -1.2, 0]
 		},
 		"mesh": {
 			"id": "sphere.sbm"
 		},
 		"material": {
-			"diffuse": [
-				0.5,
-				0.5,
-				0.5,
-				1
-			],
-			"shininess": 0.091
+			"diffuse": [0.5, 0.5, 0.5, 1],
+			"shininess": 0.44
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -524,23 +425,14 @@
 			"name": "Sphere grid #11"
 		},
 		"transform": {
-			"translation": [
-				-15,
-				-1.2,
-				-1.5
-			]
+			"translation": [-15, -1.2, 1.5]
 		},
 		"mesh": {
 			"id": "sphere.sbm"
 		},
 		"material": {
-			"diffuse": [
-				0.5,
-				0.5,
-				0.5,
-				1
-			],
-			"shininess": 0.083
+			"diffuse": [0.5, 0.5, 0.5, 1],
+			"shininess": 0.48
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -552,23 +444,14 @@
 			"name": "Sphere grid #12"
 		},
 		"transform": {
-			"translation": [
-				-15,
-				-1.2,
-				-3
-			]
+			"translation": [-15, -1.2, 3]
 		},
 		"mesh": {
 			"id": "sphere.sbm"
 		},
 		"material": {
-			"diffuse": [
-				0.5,
-				0.5,
-				0.5,
-				1
-			],
-			"shininess": 0.077
+			"diffuse": [0.5, 0.5, 0.5, 1],
+			"shininess": 0.52
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -580,23 +463,14 @@
 			"name": "Sphere grid #13"
 		},
 		"transform": {
-			"translation": [
-				-15,
-				-1.2,
-				-4.5
-			]
+			"translation": [-15, -1.2, 4.5]
 		},
 		"mesh": {
 			"id": "sphere.sbm"
 		},
 		"material": {
-			"diffuse": [
-				0.5,
-				0.5,
-				0.5,
-				1
-			],
-			"shininess": 0.071
+			"diffuse": [0.5, 0.5, 0.5, 1],
+			"shininess": 0.56
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -608,23 +482,14 @@
 			"name": "Sphere grid #14"
 		},
 		"transform": {
-			"translation": [
-				-15,
-				-1.2,
-				-6
-			]
+			"translation": [-15, -1.2, 6]
 		},
 		"mesh": {
 			"id": "sphere.sbm"
 		},
 		"material": {
-			"diffuse": [
-				0.5,
-				0.5,
-				0.5,
-				1
-			],
-			"shininess": 0.067
+			"diffuse": [0.5, 0.5, 0.5, 1],
+			"shininess": 0.6
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -636,23 +501,14 @@
 			"name": "Sphere grid #15"
 		},
 		"transform": {
-			"translation": [
-				-16.5,
-				-1.2,
-				0
-			]
+			"translation": [-16.5, -1.2, 0]
 		},
 		"mesh": {
 			"id": "sphere.sbm"
 		},
 		"material": {
-			"diffuse": [
-				0.5,
-				0.5,
-				0.5,
-				1
-			],
-			"shininess": 0.063
+			"diffuse": [0.5, 0.5, 0.5, 1],
+			"shininess": 0.64
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -664,23 +520,14 @@
 			"name": "Sphere grid #16"
 		},
 		"transform": {
-			"translation": [
-				-16.5,
-				-1.2,
-				-1.5
-			]
+			"translation": [-16.5, -1.2, 1.5]
 		},
 		"mesh": {
 			"id": "sphere.sbm"
 		},
 		"material": {
-			"diffuse": [
-				0.5,
-				0.5,
-				0.5,
-				1
-			],
-			"shininess": 0.059
+			"diffuse": [0.5, 0.5, 0.5, 1],
+			"shininess": 0.68
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -692,23 +539,14 @@
 			"name": "Sphere grid #17"
 		},
 		"transform": {
-			"translation": [
-				-16.5,
-				-1.2,
-				-3
-			]
+			"translation": [-16.5, -1.2, 3]
 		},
 		"mesh": {
 			"id": "sphere.sbm"
 		},
 		"material": {
-			"diffuse": [
-				0.5,
-				0.5,
-				0.5,
-				1
-			],
-			"shininess": 0.056
+			"diffuse": [0.5, 0.5, 0.5, 1],
+			"shininess": 0.72
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -720,23 +558,14 @@
 			"name": "Sphere grid #18"
 		},
 		"transform": {
-			"translation": [
-				-16.5,
-				-1.2,
-				-4.5
-			]
+			"translation": [-16.5, -1.2, 4.5]
 		},
 		"mesh": {
 			"id": "sphere.sbm"
 		},
 		"material": {
-			"diffuse": [
-				0.5,
-				0.5,
-				0.5,
-				1
-			],
-			"shininess": 0.053
+			"diffuse": [0.5, 0.5, 0.5, 1],
+			"shininess": 0.76
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -748,23 +577,14 @@
 			"name": "Sphere grid #19"
 		},
 		"transform": {
-			"translation": [
-				-16.5,
-				-1.2,
-				-6
-			]
+			"translation": [-16.5, -1.2, 6]
 		},
 		"mesh": {
 			"id": "sphere.sbm"
 		},
 		"material": {
-			"diffuse": [
-				0.5,
-				0.5,
-				0.5,
-				1
-			],
-			"shininess": 0.05
+			"diffuse": [0.5, 0.5, 0.5, 1],
+			"shininess": 0.8
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -776,23 +596,14 @@
 			"name": "Sphere grid #20"
 		},
 		"transform": {
-			"translation": [
-				-18,
-				-1.2,
-				0
-			]
+			"translation": [-18, -1.2, 0]
 		},
 		"mesh": {
 			"id": "sphere.sbm"
 		},
 		"material": {
-			"diffuse": [
-				0.5,
-				0.5,
-				0.5,
-				1
-			],
-			"shininess": 0.048
+			"diffuse": [0.5, 0.5, 0.5, 1],
+			"shininess": 0.84
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -804,23 +615,14 @@
 			"name": "Sphere grid #21"
 		},
 		"transform": {
-			"translation": [
-				-18,
-				-1.2,
-				-1.5
-			]
+			"translation": [-18, -1.2, 1.5]
 		},
 		"mesh": {
 			"id": "sphere.sbm"
 		},
 		"material": {
-			"diffuse": [
-				0.5,
-				0.5,
-				0.5,
-				1
-			],
-			"shininess": 0.045
+			"diffuse": [0.5, 0.5, 0.5, 1],
+			"shininess": 0.88
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -832,23 +634,14 @@
 			"name": "Sphere grid #22"
 		},
 		"transform": {
-			"translation": [
-				-18,
-				-1.2,
-				-3
-			]
+			"translation": [-18, -1.2, 3]
 		},
 		"mesh": {
 			"id": "sphere.sbm"
 		},
 		"material": {
-			"diffuse": [
-				0.5,
-				0.5,
-				0.5,
-				1
-			],
-			"shininess": 0.043
+			"diffuse": [0.5, 0.5, 0.5, 1],
+			"shininess": 0.92
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -860,23 +653,14 @@
 			"name": "Sphere grid #23"
 		},
 		"transform": {
-			"translation": [
-				-18,
-				-1.2,
-				-4.5
-			]
+			"translation": [-18, -1.2, 4.5]
 		},
 		"mesh": {
 			"id": "sphere.sbm"
 		},
 		"material": {
-			"diffuse": [
-				0.5,
-				0.5,
-				0.5,
-				1
-			],
-			"shininess": 0.042
+			"diffuse": [0.5, 0.5, 0.5, 1],
+			"shininess": 0.96
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -888,23 +672,14 @@
 			"name": "Sphere grid #24"
 		},
 		"transform": {
-			"translation": [
-				-18,
-				-1.2,
-				-6
-			]
+			"translation": [-18, -1.2, 6]
 		},
 		"mesh": {
 			"id": "sphere.sbm"
 		},
 		"material": {
-			"diffuse": [
-				0.5,
-				0.5,
-				0.5,
-				1
-			],
-			"shininess": 0.04
+			"diffuse": [0.5, 0.5, 0.5, 1],
+			"shininess": 1.0
 		},
 		"stencil": {
 			"ref": "shaded"

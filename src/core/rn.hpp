@@ -1,14 +1,12 @@
 #ifndef RN_HPP
 #define RN_HPP
 
-#define GLM_SWIZZLE
-
 #include <string>
 #include <iostream>
 
 #if defined(NGN_USE_GLEW)
 	#include <GL/glew.h>
-#elif (NGN_USE_GL3W)
+#elif defined(NGN_USE_GL3W)
 	#include <GL/gl3w.h>
 #else
 	#include <GL/gl_core_3_3.h>
@@ -18,7 +16,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+// #include <glm/gtc/matrix_transform.hpp>
 
 #include "util/initq.hpp"
 #include "util.hpp"

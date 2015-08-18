@@ -37,7 +37,7 @@ public:
 	GLsizei height = 0;
 
 	glm::vec4 clearColor{0.f, 0.f, 0.f, 0.f};
-	GLfloat clearDepth = 1.f;
+	GLfloat clearDepth = 0.f;
 
 	std::vector<TexContainer> colorContainers{};
 	TexContainer depthContainer{};
@@ -58,6 +58,9 @@ public:
 
 	rn::Tex * color(size_t index);
 	rn::Tex * depth();
+
+	std::shared_ptr<rn::Tex> shareColor(size_t index);
+	std::shared_ptr<rn::Tex> shareDepth();
 
 	void clear(BuffersMask mask);
 

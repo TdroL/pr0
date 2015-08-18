@@ -1,4 +1,9 @@
+#include <pch.hpp>
+
 #include "prof.hpp"
+
+#include "../ngn.hpp"
+
 #include <iostream>
 #include <algorithm>
 
@@ -63,7 +68,6 @@ Prof::~Prof()
 {
 	reset();
 
-	// Prof::collection.remove(this);
 	Prof::collection.erase(remove(begin(Prof::collection), end(Prof::collection), this), end(Prof::collection));
 }
 
@@ -80,16 +84,25 @@ void Prof::reset()
 	times[0] = 0;
 	times[1] = 0;
 
-	front = 0;
-	back = 0;
+	front = -1;
+	back = -1;
 }
 
 void Prof::reloadSoft()
 {
+	double timer = ngn::time();
+
 	reset();
 
 	RN_CHECK(glGenQueries(2, queries[0]));
 	RN_CHECK(glGenQueries(2, queries[1]));
+
+	UTIL_DEBUG
+	{
+		clog << fixed;
+		clog << "  [Prof \"" << profName << "\":" << (ngn::time() - timer) << "s]" << endl;
+		clog.unsetf(ios::floatfield);
+	}
 }
 
 void Prof::reload()
@@ -101,26 +114,47 @@ void Prof::swap()
 {
 	times[back] = 0;
 
-	back = front;
-	front = 1 - front;
+	if (front != -1)
+	{
+		back = front;
+		front = 1 - front;
+	}
 }
 
 void Prof::start()
 {
-	RN_CHECK_PARAM(glQueryCounter(queries[front][0], GL_TIMESTAMP), profName << " id=" << queries[front][0]);
+	if (queries[front][START])
+	{
+		if (front == -1)
+		{
+			front = 0;
+		}
+
+		RN_CHECK_PARAM(glQueryCounter(queries[front][START], GL_TIMESTAMP), profName << " id=" << queries[front][START]);
+	}
 }
 
 void Prof::stop()
 {
-	RN_CHECK_PARAM(glQueryCounter(queries[front][1], GL_TIMESTAMP), profName << " id=" << queries[front][1]);
-
-	if (front != back)
+	if (front != -1 && queries[front][STOP])
 	{
-		GLuint64 t1;
-		GLuint64 t2;
+		RN_CHECK_PARAM(glQueryCounter(queries[front][STOP], GL_TIMESTAMP), profName << " id=" << queries[front][STOP]);
+	}
 
-		RN_CHECK(glGetQueryObjectui64v(queries[back][0], GL_QUERY_RESULT, &t1));
-		RN_CHECK(glGetQueryObjectui64v(queries[back][1], GL_QUERY_RESULT, &t2));
+	if (back != -1)
+	{
+		GLuint64 t1 = 0;
+		GLuint64 t2 = 0;
+
+		if (queries[back][START])
+		{
+			RN_CHECK(glGetQueryObjectui64v(queries[back][START], GL_QUERY_RESULT, &t1));
+		}
+
+		if (queries[back][STOP])
+		{
+			RN_CHECK(glGetQueryObjectui64v(queries[back][STOP], GL_QUERY_RESULT, &t2));
+		}
 
 		times[back] = t2 - t1;
 	}

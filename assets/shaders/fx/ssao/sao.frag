@@ -6,9 +6,11 @@ layout(location = 0) out vec4 outColor;
 in vec2 uv;
 
 uniform mat4 P;
-uniform float zFar;
+uniform mat4 invP;
 
 uniform sampler2D texZ;
+uniform sampler2D texZYX;
+uniform sampler2D texDepth;
 uniform sampler2D texNormal;
 
 uniform vec4 projectionInfo;
@@ -17,35 +19,44 @@ uniform float intensity;
 uniform float radius;
 uniform int zMipLevels;
 
-// float intensity = 1.0;
-// float radius = 1.0 / 4.0;
+// float intensity = 2.0;
+// float radius = 1.0 / 6.0;
 int samplesCount = 9;
 float spins = 7;
 float epsilon = 0.01;
 float bias = 0.012;
+float maxZFar = 256.0;
 
 vec2 pack2(float source);
 vec3 normalDecode(vec2 enc);
 
 // *-----------------------* //
 
-vec3 reconstructCSPosition(vec2 coord, float z) {
-	return vec3((coord.xy * projectionInfo.xy + projectionInfo.zw) * z, z);
+// float linearizeDepth(float depth)
+// {
+// 	return P[3][2] / (depth - 1.0);
+// }
+
+vec3 reconstructCSPosition(vec2 coord, float z)
+{
+	return vec3(-(coord.xy * projectionInfo.xy + projectionInfo.zw) * z, z);
 }
 
-vec3 getPosition(ivec2 offsetCoord) {
+vec3 getPosition(ivec2 offsetCoord)
+{
 	return reconstructCSPosition(vec2(offsetCoord) + vec2(0.5), texelFetch(texZ, offsetCoord, 0).r);
 }
 
-vec3 getOffsetPosition(ivec2 coord, vec2 offsetVector, float offsetRadius) {
+vec3 getOffsetPosition(ivec2 coord, vec2 offsetVector, float offsetRadius)
+{
 
-#define LOG_MAX_OFFSET 3
+	#define LOG_MAX_OFFSET 3
 
-#ifdef GL_ARB_gpu_shader5
-	int mipLevel = clamp(findMSB(int(offsetRadius)) - LOG_MAX_OFFSET, 0, zMipLevels);
-#else
-	int mipLevel = clamp(int(floor(log2(offsetRadius))) - LOG_MAX_OFFSET, 0, zMipLevels);
-#endif
+	#ifdef GL_ARB_gpu_shader5
+		int mipLevel = clamp(findMSB(int(offsetRadius)) - LOG_MAX_OFFSET, 0, zMipLevels);
+	#else
+		int mipLevel = clamp(int(floor(log2(offsetRadius))) - LOG_MAX_OFFSET, 0, zMipLevels);
+	#endif
 
 	ivec2 offsetCoord = ivec2(offsetRadius * offsetVector) + coord;
 
@@ -54,7 +65,8 @@ vec3 getOffsetPosition(ivec2 coord, vec2 offsetVector, float offsetRadius) {
 	return reconstructCSPosition(vec2(offsetCoord) + vec2(0.5), texelFetch(texZ, mipCoord, mipLevel).r);
 }
 
-vec3 reconstructCSFaceNormal(vec3 position) {
+vec3 reconstructCSFaceNormal(vec3 position)
+{
 	return normalize(cross(dFdy(position), dFdx(position)));
 }
 
@@ -64,12 +76,12 @@ void main()
 
 	vec3 position = getPosition(coord);
 
-	float randomRotation = (3 * coord.x ^ coord.y + coord.x * coord.y) * 10;
+	float randomRotation = (30 * coord.x ^ coord.y + coord.x * coord.y) * 10;
 
 	/** /
 	vec3 normal = reconstructCSFaceNormal(position);
 	/*/
-	vec3 normal = -normalDecode(texture(texNormal, uv).xy);
+	vec3 normal = normalDecode(texture(texNormal, uv).xy);
 	/**/
 
 	float diskRadius = pixelScale * radius / position.z;
@@ -108,7 +120,9 @@ void main()
 		o -= dFdy(o) * ((coord.y & 1) - 0.5);
 	}
 
-	vec2 packedZ = pack2(position.z / zFar);
+	vec2 packedZ = pack2(clamp(position.z / maxZFar, 0.0, 1.0));
 
 	outColor = vec4(o, packedZ, 1.0);
+	// outColor = vec4(vec3(edge), 1.0);
+	// outColor = vec4(normal, 1.0);
 }

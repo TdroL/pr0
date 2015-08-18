@@ -1,6 +1,8 @@
 #ifndef APP_FX_CSM_HPP
 #define APP_FX_CSM_HPP
 
+// #include <pch.hpp>
+
 #include <app/comp/projection.hpp>
 
 #include <core/rn/fb.hpp>

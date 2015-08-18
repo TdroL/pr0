@@ -8,14 +8,14 @@ ARDIR = lib
 ARNAME = libcore
 PROGRAM = main
 CXXFLAGS = -Wall -Winline -Wextra -Wfatal-errors -std=c++14 -m64 -march=native
-CXXFLAGS_DEBUG = -g -Og -Weffc++ -DDEBUG
+CXXFLAGS_DEBUG = -g -Og -Weffc++ -Winvalid-pch
 CXXFLAGS_RELEASE = -O3 -s -funroll-loops -msse -msse2 -msse3 -mfpmath=sse
 LFLAGS =
 LDIR =
 LIBS = -static -lgcc -lglfw3 -lgl_core_3_3 -lopengl32 -lstb_image -lfreetype -lminball
 
 DEFINES = \
-	-DGLM_FORCE_CXX11 \
+
 
 ifeq ($(MAKECMDGOALS),release)
 	CXXFLAGS += $(CXXFLAGS_RELEASE) \
@@ -24,7 +24,7 @@ else
 	CXXFLAGS += $(CXXFLAGS_DEBUG)
 	DEFINES += \
 		-DDEBUG \
-		-D_DEBUG \
+		-D_DEBUG
 
 endif
 
@@ -47,6 +47,12 @@ endif
 
 $(PROGRAM): $(OBJECTS)
 	@echo " Linking..."; $(CC) $(LFLAGS) $^ $(LIBS) -o $(PROGRAM)
+
+$(SRCDIR)/pch.hpp: $(SRCDIR)/pch.hpp.gch $(BUILDDIR)/pch.d
+
+$(SRCDIR)/pch.hpp.gch: $(SRCDIR)/pch.cpp $(BUILDDIR)/pch.d
+	@mkdir -p $(shell dirname $@)
+	@echo " PCH $<"; $(CC) $(CXXFLAGS) -x c++-header -c $< -o $@
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.cpp $(BUILDDIR)/%.d
 	@mkdir -p $(shell dirname $@)
@@ -74,6 +80,10 @@ run: all
 run-gdb: all
 	gdb $(PROGRAM) ${ARGS}
 
+clean-pch:
+	@echo "Cleaning pch file..."
+	@$(RM) -v $(SRCDIR)/pch.hpp.gch
+
 clean-dep:
 	@echo "Cleaning dep files..."
 	@find $(BUILDDIR) -name '*.d' -type f | xargs $(RM) -v
@@ -83,7 +93,7 @@ clean-obj:
 	@$(RM) -r ./$(PROGRAM)
 	@find $(BUILDDIR) -name '*.o' -type f | xargs $(RM) -v
 
-clean: clean-dep clean-obj
+clean: clean-dep clean-obj clean-pch
 
 ar:
 	@echo "Creating archive..."

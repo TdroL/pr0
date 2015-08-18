@@ -1,3 +1,5 @@
+#include <pch.hpp>
+
 #include "materialparser.hpp"
 
 #include <app/comp/material.hpp>

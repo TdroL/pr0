@@ -1,3 +1,5 @@
+#include <pch.hpp>
+
 #include "ngn.hpp"
 
 #include "rn.hpp"
@@ -6,7 +8,7 @@
 #include "ngn/key.hpp"
 #include "ngn/window.hpp"
 
-#include <iostream>
+// #include <iostream>
 
 namespace ngn
 {

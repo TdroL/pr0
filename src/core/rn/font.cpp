@@ -1,13 +1,15 @@
+#include <pch.hpp>
+
 #include "font.hpp"
-#include "../rn.hpp"
-#include "../rn/ext.hpp"
-#include "../util.hpp"
-#include "program.hpp"
+
 #include "mesh.hpp"
 #include "program.hpp"
-#include "../src/file.hpp"
 #include "../ngn.hpp"
 #include "../ngn/window.hpp"
+#include "../rn.hpp"
+#include "../rn/ext.hpp"
+#include "../src/file.hpp"
+#include "../util.hpp"
 
 #include <cassert>
 #include <algorithm>
@@ -301,20 +303,12 @@ void Font::reset()
 
 void Font::render(const string &text)
 {
-	bool cullFace;
-	RN_CHECK(cullFace = glIsEnabled(GL_CULL_FACE));
-	RN_CHECK(glDisable(GL_CULL_FACE));
-
 	float x = position.x;
 	float y = position.y - lineHeight * sy + max(static_cast<float>(lineHeight - fontSize), 0.f) * 0.5f * sy;
 
 	unique_ptr<glm::vec4[]> coords{new glm::vec4[text.size() * 6]};
 
 	prog.use();
-
-	RN_SCOPE_DISABLE(GL_DEPTH_TEST);
-	RN_SCOPE_ENABLE(GL_BLEND);
-	RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
 	RN_CHECK(glActiveTexture(GL_TEXTURE0 + 0));
 	RN_CHECK(glBindTexture(GL_TEXTURE_2D, tex));
@@ -374,11 +368,6 @@ void Font::render(const string &text)
 	RN_CHECK(glBindVertexArray(0));
 
 	prog.forgo();
-
-	if (cullFace)
-	{
-		RN_CHECK(glEnable(GL_CULL_FACE));
-	}
 }
 
 namespace

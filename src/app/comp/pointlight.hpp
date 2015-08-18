@@ -1,6 +1,7 @@
 #ifndef APP_COMP_POINTLIGHT_HPP
 #define APP_COMP_POINTLIGHT_HPP
 
+// #include <pch.hpp>
 #include <core/ecs/component.hpp>
 #include <glm/glm.hpp>
 
@@ -14,9 +15,9 @@ struct PointLight : public ecs::Component<PointLight>
 	// GLfloat spotExponent = 0.f;
 	// GLfloat spotCutoff = 180.f;
 	// GLfloat constantAttenuation = 1.f;
-	GLfloat intensity = 1.f;
-	GLfloat linearAttenuation = 0.f;
-	GLfloat quadraticAttenuation = 0.f;
+	float intensity = 1.f;
+	float linearAttenuation = 0.f;
+	float quadraticAttenuation = 0.f;
 	bool shadowCaster = false;
 };
 

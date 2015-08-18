@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
 
 		for (auto &layout : mesh->layouts)
 		{
-			if (layout.index == rn::LayoutLocation::vert) {
+			if (layout.index == rn::LayoutLocation::pos) {
 
 				if (layout.type != GL_FLOAT) {
 					clog << "Warning: bounding volumes calculation supports only float data types" << endl;

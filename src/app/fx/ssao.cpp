@@ -1,7 +1,11 @@
+#include <pch.hpp>
+
 #include "ssao.hpp"
+
 #include <core/rn/mesh.hpp>
 #include <core/rn/format.hpp>
 #include <core/ngn/window.hpp>
+
 #include <string>
 #include <cmath>
 #include <cassert>
@@ -118,13 +122,14 @@ void SSAO::init(const comp::Projection &projectionIn)
 	GLfloat pixelScale = fbZ.width * a.x;
 
 	glm::vec4 projectionInfo{
-		-2.0 / (fbZ.width  * P[0].x),
-		-2.0 / (fbZ.height * P[1].y),
-		(1.0 - P[2].x) / P[0].x,
-		(1.0 + P[2].y) / P[1].y
+		-2.0 / (fbZ.width  * P[0][0]),
+		-2.0 / (fbZ.height * P[1][1]),
+		(1.0 - P[2][0]) / P[0][0],
+		(1.0 - P[2][1]) / P[1][1]
 	};
 
-	progSAO.uniform("zFar", projection.zFar);
+	progSAO.uniform("P", projection.matrix);
+	progSAO.uniform("invP", projection.invMatrix);
 	progSAO.uniform("projectionInfo", projectionInfo);
 	progSAO.uniform("pixelScale", pixelScale);
 	progSAO.uniform("intensity", intensity);
@@ -220,14 +225,16 @@ void SSAO::computeAO(rn::FB &fbGBuffer)
 	RN_SCOPE_DISABLE(GL_BLEND);
 
 	RN_FB_BIND(fbAO);
-	fbAO.clear(GL_COLOR_BUFFER_BIT);
+	fbAO.clear(rn::BUFFER_COLOR);
 
 	progSAO.use();
 
-	progSAO.var("texColor", fbGBuffer.color(0)->bind(0));
-	progSAO.var("texNormal", fbGBuffer.color(1)->bind(1));
-	progSAO.var("texDepth", fbGBuffer.depth()->bind(2));
-	progSAO.var("texZ", fbZ.color(0)->bind(4));
+	size_t unit = 0;
+	progSAO.var("texColor", fbGBuffer.color(0)->bind(unit++));
+	progSAO.var("texNormal", fbGBuffer.color(1)->bind(unit++));
+	progSAO.var("texZYX", fbGBuffer.color(2)->bind(unit++));
+	progSAO.var("texDepth", fbGBuffer.depth()->bind(unit++));
+	progSAO.var("texZ", fbZ.color(0)->bind(unit++));
 
 	rn::Mesh::quad.render();
 

@@ -9,7 +9,7 @@ uniform vec3 clipInfo;
 
 void main()
 {
-	float depth = texelFetch(texDepth, ivec2(gl_FragCoord.xy), 0).r;
+	float depth = 1.0 - texelFetch(texDepth, ivec2(gl_FragCoord.xy), 0).r;
 
 	outColor = clipInfo[0] / (clipInfo[1] * depth + clipInfo[2]);
 }

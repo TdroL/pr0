@@ -7,8 +7,8 @@
 #include <rapidjson/document.h>
 
 #include <map>
-#include <string>
 #include <functional>
+#include <string>
 
 class Parser
 {

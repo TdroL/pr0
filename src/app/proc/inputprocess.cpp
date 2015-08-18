@@ -1,12 +1,14 @@
-#include "inputprocess.hpp"
+#include <pch.hpp>
 
-#include <core/ngn/key.hpp>
+#include "inputprocess.hpp"
 
 #include <app/comp/input.hpp>
 #include <app/comp/transform.hpp>
 #include <app/comp/temporaltransform.hpp>
 
-#include <iostream>
+#include <core/ngn/key.hpp>
+
+// #include <iostream>
 
 namespace proc
 {

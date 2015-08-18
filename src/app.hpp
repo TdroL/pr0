@@ -4,6 +4,7 @@
 #include <core/ecs/entity.hpp>
 
 #include <core/rn/fb.hpp>
+#include <core/rn/tb.hpp>
 #include <core/rn/font.hpp>
 #include <core/rn/mesh.hpp>
 #include <core/rn/prof.hpp>
@@ -24,17 +25,27 @@ public:
 	rn::Font font1{"DejaVuSansMono"};
 	rn::Font font2{"DejaVuSansMono"};
 
-	rn::Program progGBuffer{};
-	rn::Program progShadowMap{};
+	rn::Program progZPrefill{};
+	rn::Program progZDebug{};
+	rn::Program progLightingForward{};
+	rn::FB fbZPrefill{"App::fbZPrefill"};
+	rn::FB fbScreenForward{"App::fbScreenForward"};
+	rn::Prof profZPrefill{"App::profZPrefill"};
+	rn::Prof profSetupLights{"App::profSetupLights"};
+	rn::Prof profLighting{"App::profLighting"};
+	rn::TB directionalLightData{"App::directionalLightData"};
+	rn::TB pointLightData{"App::pointLightData"};
+	int directionalLightCount;
+	int pointLightCount;
 
+	rn::Program progGBuffer{};
+	// rn::Program progShadowMap{};
 	rn::Program progDirectionalLight{};
 	rn::Program progPointLight{};
 	rn::Program progFlatLight{};
-
 	rn::Program progSSAOBlit{};
-
-	rn::Program progFBOBlit{};
-	rn::Program progBlurGaussian7{};
+	rn::Program progFBBlit{};
+	// rn::Program progBlurGaussian7{};
 	rn::Program progBlurPreview{};
 	rn::Program progShadowMapPreview{};
 	rn::Program progTexPreview{};
@@ -42,8 +53,8 @@ public:
 	rn::FB fbGBuffer{"App::fbGBuffer"};
 	rn::FB fbScreen{"App::fbScreen"};
 	rn::FB fbUI{"App::fbUI"};
-	rn::FB fbShadowMap{"App::fbShadowMap"};
-	rn::FB fbShadowMapBlur{"App::fbShadowMapBlur"};
+	// rn::FB fbShadowMap{"App::fbShadowMap"};
+	// rn::FB fbShadowMapBlur{"App::fbShadowMapBlur"};
 
 	fx::SSAO ssao{};
 	fx::CSM csm{};
@@ -70,14 +81,15 @@ public:
 
 	void render();
 
+	void zPrefillForwardPass();
+	void setupLightsForwardPass();
+	void lightingForwardPass();
+
 	void gBufferPass();
 	void directionalLightsPass();
 	void pointLightsPass();
 	void flatLightPass();
-
 	void ssaoPass();
-
-	glm::mat4 makeShadowMap(const ecs::Entity &lightId, const phs::Frustum &frustum);
 };
 
 #endif

@@ -19,11 +19,16 @@ public:
 
 	std::string profName = "Unnamed query timer";
 
+	enum {
+		START = 0,
+		STOP = 1
+	};
+
 	GLuint queries[2][2] { { 0 } }; // { front { start, stop }, back { start, stop } }
 	GLuint64 times[2] { 0 }; // { front, back }
 
-	unsigned int front = 0;
-	unsigned int back = 0;
+	int front = -1;
+	int back = -1;
 
 	Prof();
 	explicit Prof(std::string &&profName);

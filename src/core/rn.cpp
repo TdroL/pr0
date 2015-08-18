@@ -1,16 +1,19 @@
+#include <pch.hpp>
+
+#include "rn.hpp"
+
+#include "ngn.hpp"
+#include "ngn/ino.hpp"
+#include "rn/ext.hpp"
+#include "rn/fb.hpp"
+#include "rn/font.hpp"
+#include "rn/mesh.hpp"
+#include "rn/prof.hpp"
+#include "util/count.hpp"
+
 #include <sstream>
 #include <iostream>
 #include <set>
-
-#include "rn.hpp"
-#include "rn/ext.hpp"
-#include "rn/font.hpp"
-#include "rn/fb.hpp"
-#include "rn/mesh.hpp"
-#include "rn/prof.hpp"
-#include "ngn.hpp"
-#include "ngn/ino.hpp"
-#include "util/count.hpp"
 
 namespace rn
 {
@@ -107,10 +110,12 @@ void reload()
 	RN_CHECK(glFrontFace(GL_CCW));
 
 	RN_CHECK(glEnable(GL_DEPTH_TEST));
-	// RN_CHECK(glEnable(GL_DEPTH_CLAMP));
 	RN_CHECK(glDepthMask(GL_TRUE));
-	RN_CHECK(glDepthFunc(GL_LEQUAL));
-	RN_CHECK(glDepthRange(0.0, 1.0));
+	RN_CHECK(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
+	// RN_CHECK(glDepthFunc(GL_LESS));
+	// RN_CHECK(glDepthRange(0.0, 1.0));
+	RN_CHECK(glDepthFunc(GL_GEQUAL));
+	RN_CHECK(glDepthRange(1.0, 0.0));
 
 	// glEnable(GL_MULTISAMPLE);
 
@@ -1587,6 +1592,11 @@ namespace
 #ifdef NGN_USE_GLEW
 		rn::flushErrors();
 #endif
+
+		if ( ! rn::ext::ARB_clip_control)
+		{
+			throw string{"rn initQ - rn requires GL_ARB_clip_control"};
+		}
 
 		rn::init();
 	});

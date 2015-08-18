@@ -1,7 +1,10 @@
+#include <pch.hpp>
+
 #include "tex2darray.hpp"
+
+#include "../ngn.hpp"
 #include "../rn.hpp"
 #include "../rn/ext.hpp"
-#include "../ngn.hpp"
 
 #include <utility>
 #include <iostream>

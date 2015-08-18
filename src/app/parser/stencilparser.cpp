@@ -1,8 +1,10 @@
+#include <pch.hpp>
+
 #include "stencilparser.hpp"
 
 #include <app/comp/stencil.hpp>
 
-#include <string>
+// #include <string>
 
 namespace
 {

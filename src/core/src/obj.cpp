@@ -1,3 +1,5 @@
+#include <pch.hpp>
+
 #include "obj.hpp"
 #include "../rn.hpp"
 #include "../rn/types.hpp"
@@ -62,6 +64,10 @@ void Mesh::open()
 			glm::vec3 vert;
 			stringstream{line.substr(2)} >> vert.x >> vert.y >> vert.z;
 
+			#if defined(GLM_LEFT_HANDED)
+			vert.z = -vert.z;
+			#endif
+
 			vert.x = normZero(vert.x);
 			vert.y = normZero(vert.y);
 			vert.z = normZero(vert.z);
@@ -82,6 +88,10 @@ void Mesh::open()
 		{
 			glm::vec3 vert;
 			stringstream{line.substr(3)} >> vert.x >> vert.y >> vert.z;
+
+			#if defined(GLM_LEFT_HANDED)
+			vert.z = -vert.z;
+			#endif
 
 			vert.x = normZero(vert.x);
 			vert.y = normZero(vert.y);

@@ -1,3 +1,5 @@
+#include <pch.hpp>
+
 #include "key.hpp"
 #include "../ngn.hpp"
 #include "../util/str.hpp"

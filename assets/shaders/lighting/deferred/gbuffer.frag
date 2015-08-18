@@ -22,4 +22,7 @@ void main()
 	outNormal = normalEncode(n);
 	// outZ = position.z;
 	outZ = position.zyx;
+
+	// outColor = vec4(position.xyz, 1.0);
+	// outColor = vec4(1.0);
 }

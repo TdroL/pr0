@@ -1,15 +1,17 @@
-#include "transformprocess.hpp"
+#include <pch.hpp>
 
-#include <core/ngn.hpp>
+#include "transformprocess.hpp"
 
 #include <app/comp/boundingobject.hpp>
 #include <app/comp/transform.hpp>
 #include <app/comp/temporaltransform.hpp>
 
-#include <glm/glm.hpp>
+#include <core/ngn.hpp>
+
 #include <glm/gtc/quaternion.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/constants.hpp>
+// #include <glm/glm.hpp>
+// #include <glm/gtc/matrix_transform.hpp>
+// #include <glm/gtc/constants.hpp>
 
 #include <cmath>
 

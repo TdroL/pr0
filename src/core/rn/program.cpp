@@ -1,8 +1,12 @@
+#include <pch.hpp>
+
 #include "program.hpp"
+
 #include "../rn.hpp"
 #include "../rn/ext.hpp"
 #include "../src/file.hpp"
 #include "../util/initq.hpp"
+
 #include <iostream>
 #include <algorithm>
 

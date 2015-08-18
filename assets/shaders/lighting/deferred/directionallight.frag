@@ -44,6 +44,7 @@ bool enableVisualizeCascades = false;
 
 vec3 normalDecode(vec2 enc);
 vec3 positionReconstruct(float z, vec2 uv);
+vec4 positionReconstruct2(sampler2D texDepth, vec2 uv, mat4 invP);
 float vsmVisibility(float dist, vec2 moments);
 
 float pcfVisibility(vec3 shadowCoord, int csmLayer, float kernelSize)
@@ -143,17 +144,68 @@ float calcVisibility(vec3 position)
 	return visibility;
 }
 
+float cookTorranceDiffuseGGX(vec3 n, vec3 h, float alpha2)
+{
+	float pi = 3.141592;
+	float n_h = dot(n, h);
+
+	float chi = sign(max(0.0, n_h));
+	float n_h2 = n_h * n_h;
+
+	float den = n_h2 * alpha2 + (1.0 - n_h2);
+
+	return chi * alpha2 / (pi * den * den);
+}
+
+vec3 cookTorranceFresnelSchlick(vec3 v, vec3 h, vec3 f0)
+{
+	float v_h = dot(v, h);
+	return f0 + (1.0 - f0) * pow(1.0 - v_h, 5.0);
+}
+
+float cookTorranceGeometry(vec3 v, vec3 h, vec3 n, float alpha2)
+{
+	float v_h = max(0.0, dot(v, h));
+	float v_n = max(0.0, dot(v, n));
+	float v_h2 = v_h * v_h;
+
+	float chi = sign(max(0.0, v_h / v_n));
+
+	float tan2 = (1.0 - v_h) / v_h;
+	return chi * 2.0 / (1.0 + sqrt(1.0 + alpha2 * tan2));
+
+	return 0.0;
+}
+
+vec3 cookTorrance(vec3 n, vec3 l, vec3 v, float alpha2, vec3 albedo, vec3 ior, float metallic)
+{
+	vec3 h = normalize(v + l);
+
+	float l_n = dot(l, n);
+	float v_n = dot(v, n);
+
+	vec3 f0 = abs((1.0 - ior) / (1.0 + ior));
+	f0 = f0 * f0;
+	f0 = mix(f0, albedo, metallic);
+
+	float D = cookTorranceDiffuseGGX(n, h, alpha2);
+	vec3 F = cookTorranceFresnelSchlick(v, h, f0);
+	float G = cookTorranceGeometry(v, h, n, alpha2);
+	return (D * F * G) / (4.0 * l_n * v_n);
+}
+
 void main()
 {
 	vec2 encodedNormal = texture(texNormal, uv).xy;
 	vec4 diffuseShininess = texture(texColor, uv);
-	float depth = texture(texDepth, uv).x * 2.0 - 1.0;
+	float depth = 1.0 - texture(texDepth, uv).x;
 
 	vec3 albedo = diffuseShininess.rgb;
 	float shininess = diffuseShininess.a;
 
 	vec3 normal = normalDecode(encodedNormal);
-	vec3 position = positionReconstruct(depth, uv);
+	// vec3 position = positionReconstruct(depth, uv);
+	vec3 position = positionReconstruct2(texDepth, uv, invP).xyz;
 
 	if (fixZValue)
 	{
@@ -162,10 +214,10 @@ void main()
 
 	if (useColor == 0u)
 	{
-		albedo = vec3(0.5);
+		// albedo = vec3(0.5);
 	}
 
-	float visibility = calcVisibility(position);
+	float visibility = 1.0; //calcVisibility(position);
 
 	if (showConstCascade)
 	{
@@ -182,14 +234,25 @@ void main()
 	float n_l = dot(n, l);
 	float n_h = dot(n, h);
 	float n_v = dot(n, v);
+	float h_v = dot(h, v);
 
+	float alpha = acos(n_h);
 	float theta = max(n_l, 0.0);
 
-	float exponent = acos(n_h) / shininess;
+	float exponent = alpha / shininess;
 	float gauss = sign(theta) * exp(-(exponent * exponent));
 
 	vec3 lightAmbientG = pow(lightAmbient.rgb, vec3(2.2));
 	vec3 lightColorG = pow(lightColor.rgb, vec3(2.2));
+
+	float roughness = shininess;
+	float roughness2 = roughness * roughness;
+
+	float fresnel = pow(1.0 + n_v, roughness2);
+	float beckmann = exp(-tan(alpha) / roughness2) / (3.141592 * roughness2 * pow(cos(alpha), 4.0));
+	// float geometric = min(1.0, min((2.0 * n_h * n_v) / h_v, (2.0 * n_h * n_l) / h_v));
+	float ggx = (roughness2 * sign(max(0.0, n_h))) / (3.141592 * n_l * n_l * pow(roughness2 + (1.0 - n_l * n_l) / (n_l * n_l), 2.0));
+	float geometric = min(1.0, min((2.0 * dot(n, h) * dot(n, v)) / dot(v, h), (2.0 * dot(n, h) * dot(n, l)) / dot(v, h)));
 
 	vec3 ambient  = lightAmbientG * albedo * occlusion;
 	vec3 diffuse  = lightColorG * albedo * theta;
@@ -236,7 +299,30 @@ void main()
 		}
 	}
 
-	outColor.rgb = pow(outColor.rgb, vec3(1.0 / 2.2));
 
+	outColor.rgb = pow(outColor.rgb, vec3(1.0 / 2.2));
+	outColor.rgb = vec3(h_v);
+	outColor.rgb = vec3(n_h);
+	outColor.rgb = vec3(n_v);
+	outColor.rgb = vec3(n_l);
+	outColor.rgb = vec3(n);
+	outColor.rgb = vec3(exp(-(exponent * exponent)));
+	// outColor.rgb = vec3(position);
+
+	// outColor.rgb = vec3(theta);
+	outColor.rgb = vec3(geometric);
+	outColor.rgb = vec3(beckmann);
+	outColor.rgb = albedo * (vec3(ggx) + theta);
+	outColor.rgb = pow(vec3(diffuseShininess), vec3(1.0 / 2.2));
+
+	outColor.rgb = vec3(occlusion);
+	// outColor.rgb = cookTorrance(n, l, v, roughness2, albedo, vec3(1.35), 1.0);
+	// outColor.rgb = pow(cookTorrance(n, l, v, roughness2, albedo, vec3(1.35), 0.1) * albedo, vec3(1.0/2.2));
+	// outColor.rgb = vec3(fresnel);
+	// outColor.rgb = vec3(theta + (fresnel * beckmann * geometric) / (4.0 * n_v * n_l));
+
+	// specular = lightColorG * (fresnel * beckmann * geometric) / (4.0 * n_v * n_l);
+
+	// outColor.rgb = ambient + (diffuse + specular) * visibility;
 	outColor.a = 1.0;
 }

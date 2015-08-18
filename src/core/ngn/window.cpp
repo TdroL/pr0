@@ -1,3 +1,5 @@
+#include <pch.hpp>
+
 #include "window.hpp"
 #include <cassert>
 #include <iostream>

@@ -1,10 +1,11 @@
+#include <pch.hpp>
+
 #include "meshparser.hpp"
 
 #include <app/comp/mesh.hpp>
-
 #include <core/asset/mesh.hpp>
 
-#include <string>
+// #include <string>
 
 namespace
 {

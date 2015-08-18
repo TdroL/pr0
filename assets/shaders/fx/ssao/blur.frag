@@ -5,6 +5,7 @@ layout(location = 0) out vec4 outColor;
 in vec2 uv;
 
 uniform sampler2D texSource;
+uniform sampler2D texDepth;
 uniform vec2 scale;
 
 float unpack2(vec2 source);
@@ -12,7 +13,7 @@ float unpack2(vec2 source);
 void main()
 {
 #if !defined(RADIUS)
-	#define RADIUS 6
+	#define RADIUS 10
 #endif
 
 	int radius = RADIUS;
@@ -78,17 +79,16 @@ void main()
 	{
 		if (r == 0) continue;
 
-		vec4 tap = texture(texSource, uv + axis * r * stride).rgba;
+		vec4 tap = texture(texSource, uv + axis * r * stride);
 		float tapZ = unpack2(tap.gb);
 
 		float tapOcclusion = tap.r;
-		float tapWeight = gaussianKernel[abs(r)] * max(0.0, 1.0 - (edgeSharpness * 2000.0) * abs(tapZ - z));
+		float tapWeight = (0.3 + gaussianKernel[abs(r)]) * max(0.0, 1.0 - (edgeSharpness * 2000.0) * abs(z - tapZ));
 
 		sumOcclussion += tapOcclusion * tapWeight;
 		sumWeight += tapWeight;
 	}
 
 	outColor.r = sumOcclussion / sumWeight;
-
 	outColor.gba = origin.gba;
 }

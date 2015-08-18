@@ -1,3 +1,5 @@
+#include <pch.hpp>
+
 #include "nameparser.hpp"
 
 #include <app/comp/name.hpp>

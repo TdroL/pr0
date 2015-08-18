@@ -58,7 +58,8 @@ using namespace std;
 
 util::Timer sunTimer{};
 
-util::Toggle toggleSSAO{"SSAO (b)", 1};
+util::Toggle toggleDeferred{"Deferred (-)", 0};
+util::Toggle toggleSSAO{"SSAO (b)", 0};
 util::Toggle toggleSSAOBlur{"SSAOBlur (n)", 1};
 util::Toggle toggleDebugPreview{"DebugPreview (m)", 0};
 util::Toggle toggleZPreview{"ZPreview (,)", 0};
@@ -117,6 +118,10 @@ void App::init()
 	ssao.init(ecs::get<Projection>(cameraId));
 	csm.init();
 
+	profZPrefill.init();
+	profSetupLights.init();
+	profLighting.init();
+
 	profRender.init();
 	profGBuffer.init();
 	profDirectionalLight.init();
@@ -141,7 +146,7 @@ void App::initProg()
 {
 	try
 	{
-		progFBOBlit.load("rn/fboBlit.frag", "rn/fbo.vert");
+		progFBBlit.load("rn/fboBlit.frag", "rn/fbo.vert");
 	}
 	catch (const string &e)
 	{
@@ -186,7 +191,7 @@ void App::initProg()
 
 	try
 	{
-		progBlurGaussian7.load("rn/blurGaussian7.frag", "rn/fbo.vert");
+		progZPrefill.load("lighting/forward/zPrefill.frag", "lighting/forward/zPrefill.vert");
 	}
 	catch (const string &e)
 	{
@@ -195,12 +200,39 @@ void App::initProg()
 
 	try
 	{
-		progShadowMap.load("lighting/shadows/depthVSM.frag", "P.vert");
+		progZDebug.load("lighting/forward/zDebug.frag", "rn/fbo.vert");
 	}
 	catch (const string &e)
 	{
 		cerr << "Warning: " << e << endl;
 	}
+
+	try
+	{
+		progLightingForward.load("lighting/forward/lighting.frag", "lighting/forward/lighting.vert");
+	}
+	catch (const string &e)
+	{
+		cerr << "Warning: " << e << endl;
+	}
+
+	// try
+	// {
+	// 	progBlurGaussian7.load("rn/blurGaussian7.frag", "rn/fbo.vert");
+	// }
+	// catch (const string &e)
+	// {
+	// 	cerr << "Warning: " << e << endl;
+	// }
+
+	// try
+	// {
+	// 	progShadowMap.load("lighting/shadows/depthVSM.frag", "P.vert");
+	// }
+	// catch (const string &e)
+	// {
+	// 	cerr << "Warning: " << e << endl;
+	// }
 
 	try
 	{
@@ -307,8 +339,63 @@ void App::initFB()
 		fbScreen.attachDepth(texDepth);
 	}
 
-	fbScreen.clearColor = glm::vec4{0.f, 0.f, 0.f, 1.f};
+	fbScreen.clearColor = glm::vec4{0.f, 0.f, 0.f, 0.f};
 	fbScreen.reload();
+
+	// fbZPrefill
+	{
+		auto texNormals = make_shared<rn::Tex2D>("App::fbZPrefill.color[0]");
+
+		texNormals->width = win::internalWidth;
+		texNormals->height = win::internalHeight;
+		texNormals->internalFormat = rn::format::RG16F.layout;
+		texNormals->reload();
+
+		fbZPrefill.attachColor(0, texNormals);
+	}
+
+	{
+		auto texNormals = make_shared<rn::Tex2D>("App::fbZPrefill.color[1]");
+
+		texNormals->width = win::internalWidth;
+		texNormals->height = win::internalHeight;
+		texNormals->internalFormat = rn::format::RGB32F.layout;
+		texNormals->reload();
+
+		fbZPrefill.attachColor(1, texNormals);
+	}
+
+	{
+		auto texDepth = make_shared<rn::Tex2D>("App::fbZPrefill.depth");
+		texDepth->width = win::internalWidth;
+		texDepth->height = win::internalHeight;
+		texDepth->internalFormat = rn::format::D32F.layout;
+		texDepth->reload();
+
+		fbZPrefill.attachDepth(texDepth);
+	}
+
+	fbZPrefill.clearColor = glm::vec4{0.f, 0.f, 0.f, 0.f};
+	fbZPrefill.reload();
+
+	// fbScreenForward
+	{
+		auto texColor = make_shared<rn::Tex2D>("App::fbScreenForward.color[0]");
+		texColor->width = win::internalWidth;
+		texColor->height = win::internalHeight;
+		texColor->internalFormat = rn::format::RGBA16F.layout;
+		texColor->reload();
+
+		fbScreenForward.attachColor(0, texColor);
+	}
+
+	{
+		auto texDepth = static_pointer_cast<rn::Tex2D>(fbZPrefill.shareDepth());
+		fbScreenForward.attachDepth(texDepth);
+	}
+
+	fbScreenForward.clearColor = glm::vec4{0.f, 0.f, 0.f, 0.f};
+	fbScreenForward.reload();
 
 	// fbUI
 	{
@@ -362,45 +449,48 @@ void App::initFB()
 	});
 
 	// fbShadowMap
-	{
-		auto texDebug = make_shared<rn::Tex2D>("App::fbShadowMap.color[0]");
-		texDebug->width = 1024;
-		texDebug->height = 1024;
-		texDebug->wrapS = rn::WRAP_BORDER;
-		texDebug->wrapT = rn::WRAP_BORDER;
-		texDebug->borderColor = glm::vec4{1.f};
-		texDebug->internalFormat = rn::format::RGB32F.layout;
-		texDebug->reload();
+	// {
+	// 	auto texDebug = make_shared<rn::Tex2D>("App::fbShadowMap.color[0]");
+	// 	texDebug->width = 1024;
+	// 	texDebug->height = 1024;
+	// 	texDebug->wrapS = rn::WRAP_BORDER;
+	// 	texDebug->wrapT = rn::WRAP_BORDER;
+	// 	texDebug->borderColor = glm::vec4{1.f};
+	// 	texDebug->internalFormat = rn::format::RGB32F.layout;
+	// 	texDebug->reload();
 
-		fbShadowMap.attachColor(0, texDebug);
+	// 	fbShadowMap.attachColor(0, texDebug);
 
-		auto texDepth = make_shared<rn::Tex2D>("App::fbShadowMap.depth");
-		texDepth->width = 1024;
-		texDepth->height = 1024;
-		texDepth->wrapS = rn::WRAP_BORDER;
-		texDepth->wrapT = rn::WRAP_BORDER;
-		texDepth->borderColor = glm::vec4{1.f};
-		texDepth->internalFormat = rn::format::D32F.layout;
-		texDepth->reload();
+	// 	auto texDepth = make_shared<rn::Tex2D>("App::fbShadowMap.depth");
+	// 	texDepth->width = 1024;
+	// 	texDepth->height = 1024;
+	// 	texDepth->wrapS = rn::WRAP_BORDER;
+	// 	texDepth->wrapT = rn::WRAP_BORDER;
+	// 	texDepth->borderColor = glm::vec4{1.f};
+	// 	texDepth->internalFormat = rn::format::D32F.layout;
+	// 	texDepth->reload();
 
-		fbShadowMap.attachDepth(texDepth);
-	}
+	// 	fbShadowMap.attachDepth(texDepth);
+	// }
 
-	fbShadowMap.clearColor = glm::vec4{1.f};
-	fbShadowMap.reload();
+	// fbShadowMap.clearColor = glm::vec4{1.f};
+	// fbShadowMap.reload();
 
 	// fbShadowMapBlur
-	{
-		auto texDebug = make_shared<rn::Tex2D>("App::fbShadowMapBlur.color[0]");
-		texDebug->width = 1024;
-		texDebug->height = 1024;
-		texDebug->internalFormat = rn::format::RGB32F.layout;
-		texDebug->reload();
+	// {
+	// 	auto texDebug = make_shared<rn::Tex2D>("App::fbShadowMapBlur.color[0]");
+	// 	texDebug->width = 1024;
+	// 	texDebug->height = 1024;
+	// 	texDebug->internalFormat = rn::format::RGB32F.layout;
+	// 	texDebug->reload();
 
-		fbShadowMapBlur.attachColor(0, texDebug);
-	}
+	// 	fbShadowMapBlur.attachColor(0, texDebug);
+	// }
 
-	fbShadowMapBlur.reload();
+	// fbShadowMapBlur.reload();
+
+	directionalLightData.reload();
+	pointLightData.reload();
 }
 
 void App::initScene()
@@ -426,7 +516,7 @@ void App::initScene()
 		auto &position = ecs::get<Position>(cameraId).position;
 		position.x = 0.f;
 		position.y = 0.125f;
-		position.z = 10.f;
+		position.z = -10.f;
 
 		auto &rotation = ecs::get<Rotation>(cameraId).rotation;
 		rotation.x = 0.f;
@@ -434,14 +524,16 @@ void App::initScene()
 		rotation.z = 0.f;
 
 		auto &projection = ecs::get<Projection>(cameraId);
-		projection.zFar = 500.f;
+		projection.zNear = 0.25f;
+		projection.zFar = numeric_limits<float>::infinity();
 
 		auto resizeCallback = [&] ()
 		{
 			auto &projection = ecs::get<Projection>(cameraId);
 
 			projection.aspect = static_cast<float>(win::internalWidth) / static_cast<float>(win::internalHeight);
-			projection.matrix = glm::perspective(glm::radians(projection.fovy), projection.aspect, projection.zNear, projection.zFar);
+			// projection.matrix = glm::perspective(glm::radians(projection.fovy), projection.aspect, projection.zNear, (projection.zFar = projection.zNear + 512.0));
+			projection.matrix = glm::infinitePerspective(glm::radians(projection.fovy), projection.aspect, projection.zNear);
 			projection.invMatrix = glm::inverse(projection.matrix);
 
 			progGBuffer.uniform("P", projection.matrix);
@@ -549,7 +641,7 @@ void App::initScene()
 		auto &position = ecs::get<Position>(lightIds[2]).position;
 		position.x = 2.f;
 		position.y = 0.5f;
-		position.z = -4.f;
+		position.z = 4.f;
 
 		auto &transform = ecs::get<Transform>(lightIds[2]);
 		transform.translation.x = position.x;
@@ -614,8 +706,8 @@ void App::initScene()
 	}
 
 	{
-		glm::vec3 translate{0.0};
-		glm::vec3 rotate{0.0};
+		glm::vec3 translate{0.f};
+		glm::vec3 rotate{0.f};
 
 		proc::Camera::update(cameraId, translate, rotate);
 	}
@@ -639,18 +731,18 @@ void App::update()
 
 		translate.x = (key::pressed('d') - key::pressed('a'));
 		translate.y = (key::pressed(KEY_SPACE) - key::pressed(KEY_CTRL));
-		translate.z = (key::pressed('s') - key::pressed('w'));
+		translate.z = (key::pressed('w') - key::pressed('s'));
 
 		if (translate.x != 0.f || translate.z != 0.f)
 		{
-			glm::vec2 planar = glm::normalize(translate.xz());
+			glm::vec2 planar = glm::normalize(glm::vec2{translate.x, translate.z});
 
 			translate.x = planar.x;
 			translate.z = planar.y;
 		}
 
-		rotate.y = (key::pressed(KEY_LEFT) - key::pressed(KEY_RIGHT));
-		rotate.x = (key::pressed(KEY_UP) - key::pressed(KEY_DOWN));
+		rotate.y = (key::pressed(KEY_RIGHT) - key::pressed(KEY_LEFT));
+		rotate.x = (key::pressed(KEY_DOWN) - key::pressed(KEY_UP));
 
 		float translateSpeed = (key::pressed(KEY_LSHIFT) ? 0.1 : 20.0);
 		float rotateSpeed = (key::pressed(KEY_LSHIFT) ? 5.0 : 90.0);
@@ -750,6 +842,11 @@ void App::update()
 		sunTimer.togglePause();
 	}
 
+	if (key::hit('-'))
+	{
+		toggleDeferred.change();
+	}
+
 	if (key::hit('b'))
 	{
 		toggleSSAO.change();
@@ -843,189 +940,436 @@ void App::update()
 
 void App::render()
 {
-	profRender.start();
-
-	fbScreen.bind();
-
-	RN_CHECK(glClearColor(0.f, 0.f, 0.f, 0.f));
-	RN_CHECK(glClearDepth(numeric_limits<GLfloat>::max()));
-	RN_CHECK(glClearStencil(0));
-	RN_CHECK(glStencilMask(0xF));
+	RN_CHECK(glClearColor(0.f, 0.f, 0.f, 1.f));
+	RN_CHECK(glClearDepth(0.0));
 	RN_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
-	profGBuffer.start();
-	gBufferPass();
-	profGBuffer.stop();
-
-	// fbScreen.clear(rn::BUFFER_COLOR);
-	fbGBuffer.blit(fbScreen, rn::BUFFER_STENCIL);
-	// fbGBuffer.blit(nullptr, rn::BUFFER_STENCIL);
-
-	if (!toggleLights.value)
+	if ( ! toggleDeferred.value)
 	{
-		fbGBuffer.blit(fbScreen, rn::BUFFER_COLOR);
-		// fbGBuffer.blit(nullptr, rn::BUFFER_COLOR);
+		profRender.start();
+
+		profZPrefill.start();
+		zPrefillForwardPass();
+		profZPrefill.stop();
+
+		profSetupLights.start();
+		setupLightsForwardPass();
+		profSetupLights.stop();
+
+		profLighting.start();
+		lightingForwardPass();
+		profLighting.stop();
+
+		{
+			RN_SCOPE_DISABLE(GL_DEPTH_TEST);
+
+			progFBBlit.use();
+			progFBBlit.uniform("texSource", fbScreenForward.color(0)->bind(0));
+
+			rn::Mesh::quad.render();
+
+			progFBBlit.forgo();
+		}
+
+		// if (false)
+		{
+			RN_SCOPE_DISABLE(GL_DEPTH_TEST);
+
+			progZDebug.use();
+			progZDebug.uniform("texNormal", fbZPrefill.color(0)->bind(0));
+			progZDebug.uniform("texDebug", fbZPrefill.color(1)->bind(1));
+			progZDebug.uniform("texScreen", fbScreenForward.color(0)->bind(2));
+
+			rn::Mesh::quad.render();
+
+			progZDebug.forgo();
+		}
+
+		profRender.stop();
+
+		{
+			RN_SCOPE_DISABLE(GL_DEPTH_TEST);
+			RN_SCOPE_DISABLE(GL_CULL_FACE);
+			RN_SCOPE_ENABLE(GL_BLEND);
+			// RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+			RN_CHECK(glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE));
+
+			double ft = ngn::time() - ngn::ct;
+
+			fbUI.bind();
+			fbUI.clear(rn::BUFFER_COLOR);
+
+			ostringstream oss;
+			oss << setprecision(4) << fixed;
+			oss << "dt=" << ngn::dt * 1000.0 << "ms\n";
+			oss << "ft=" << ft * 1000.0 << "ms\n";
+			oss << "fps=" << 1.0 / ngn::dt << "\n";
+			oss << "fps=" << 1.0 / ft << " (frame)\n";
+			oss << "triangles=" << rn::stats.triangles << "\n";
+			oss << "\n";
+
+			oss << "render=" << profRender.ms() << "ms (" << (1000.0 / profRender.ms()) << ")\n";
+			oss << "  ZPrefill=" << profZPrefill.ms() << "ms\n";
+			oss << "  SetupLights=" << profSetupLights.ms() << "ms\n";
+			oss << "  Lighting=" << profLighting.ms() << "ms\n";
+
+			oss << "\n";
+			oss << "F4 - reload scene\n";
+			oss << "F5 - reload shaders\n";
+			oss << "F6 - reload meshes\n";
+			oss << "F7 - reload fonts\n";
+			oss << "F8 - reload FBOs\n";
+			oss << "F9 - reload textures\n";
+			oss << "F10 - change vsync mode (current: " << vsyncNames[currentVsync] << ")\n";
+			oss << "F11 - change window mode (current: " << modeNames[currentMode] << ")\n";
+			oss << "\n";
+			oss << "Movement: W, A, S, D\n";
+			oss << "Camera: arrows\n";
+			oss << "Point Light: Keypad 8, 4, 5, 6\n\n";
+			oss << "Toggles:\n";
+
+			for (auto &toggle : util::Toggle::collection)
+			{
+				oss << "  " << toggle->toggleName << " = " << toggle->value << "\n";
+			}
+
+			font1.render(oss.str());
+
+			oss.str(""s);
+			oss.clear();
+
+			oss << "CSM:\n";
+			oss << "  V[0][0]=" << glm::to_string(csm.Vs[0][0]) << "\n";
+			oss << "  V[0][1]=" << glm::to_string(csm.Vs[0][1]) << "\n";
+			oss << "  V[0][2]=" << glm::to_string(csm.Vs[0][2]) << "\n";
+			oss << "  V[0][3]=" << glm::to_string(csm.Vs[0][3]) << "\n";
+			oss << "\n";
+			oss << "  P[0][0]=" << glm::to_string(csm.Ps[0][0]) << "\n";
+			oss << "  P[0][1]=" << glm::to_string(csm.Ps[0][1]) << "\n";
+			oss << "  P[0][2]=" << glm::to_string(csm.Ps[0][2]) << "\n";
+			oss << "  P[0][3]=" << glm::to_string(csm.Ps[0][3]) << "\n";
+
+			font2.position.x = -0.125f;
+			font2.render(oss.str());
+
+			fbUI.unbind();
+
+			RN_SCOPE_ENABLE(GL_BLEND);
+			RN_SCOPE_DISABLE(GL_DEPTH_TEST);
+			RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+
+			progFBBlit.use();
+			progFBBlit.uniform("texSource", fbUI.color(0)->bind(0));
+			rn::Mesh::quad.render();
+			progFBBlit.forgo();
+
+			RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+		}
+	}
+	else
+	{
+		profRender.start();
+
+		fbScreen.bind();
+		fbScreen.clear(rn::BUFFER_COLOR | rn::BUFFER_DEPTH | rn::BUFFER_STENCIL);
+
+		profGBuffer.start();
+		gBufferPass();
+		profGBuffer.stop();
+
+		// fbScreen.clear(rn::BUFFER_COLOR);
+		fbGBuffer.blit(fbScreen, rn::BUFFER_STENCIL);
+		// fbGBuffer.blit(nullptr, rn::BUFFER_STENCIL);
+
+		if (!toggleLights.value)
+		{
+			fbGBuffer.blit(fbScreen, rn::BUFFER_COLOR);
+			// fbGBuffer.blit(nullptr, rn::BUFFER_COLOR);
+		}
+
+		profSSAO.start();
+		ssaoPass();
+		profSSAO.stop();
+
+		if (toggleLights.value)
+		{
+			profDirectionalLight.start();
+			directionalLightsPass();
+			profDirectionalLight.stop();
+
+			// profPointLight.start();
+			// pointLightsPass();
+			// profPointLight.stop();
+
+			profFlatLight.start();
+			flatLightPass();
+			profFlatLight.stop();
+
+			// fbScreen.blit(nullptr, rn::BUFFER_COLOR/*, rn::MAG_LINEAR*/);
+		}
+
+		if (toggleDebugPreview.value)
+		{
+			RN_SCOPE_DISABLE(GL_BLEND);
+			RN_SCOPE_ENABLE(GL_STENCIL_TEST);
+			RN_CHECK(glStencilFunc(GL_EQUAL, Stencil::MASK_SHADED, Stencil::MASK_ALL));
+			RN_CHECK(glStencilMask(0x0));
+
+			progSSAOBlit.use();
+
+			progSSAOBlit.var("texSource", ssao.fbAO.color(0)->bind(0));
+			progSSAOBlit.var("texColor", fbGBuffer.color(0)->bind(1));
+			progSSAOBlit.var("texNormal", fbGBuffer.color(1)->bind(2));
+			progSSAOBlit.var("texDepth", fbGBuffer.depth()->bind(3));
+			progSSAOBlit.var("texZ", ssao.fbZ.color(0)->bind(4));
+
+			rn::Mesh::quad.render();
+
+			progSSAOBlit.forgo();
+		}
+
+		if (toggleZPreview.value)
+		{
+			RN_SCOPE_DISABLE(GL_BLEND);
+			RN_SCOPE_DISABLE(GL_DEPTH_TEST);
+			RN_SCOPE_DISABLE(GL_STENCIL_TEST);
+
+			progTexPreview.use();
+			progTexPreview.var("texSource", ssao.fbZ.color(0)->bind(0));
+
+			rn::Mesh::quad.render();
+
+			progTexPreview.forgo();
+		}
+
+		{
+			RN_SCOPE_DISABLE(GL_BLEND);
+			RN_SCOPE_DISABLE(GL_DEPTH_TEST);
+			RN_SCOPE_DISABLE(GL_STENCIL_TEST);
+
+			progShadowMapPreview.use();
+			// progShadowMapPreview.var("texSource", fbShadowMap.color(0)->bind(0));
+			// progShadowMapPreview.var("texSource", csm.fbShadows[0].color(0)->bind(0));
+
+			auto unit = csm.texDepths->bind(0);
+			RN_CHECK(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_MODE, GL_NONE));
+
+			progShadowMapPreview.var("texSource", unit);
+			progShadowMapPreview.var("layer", toggleCascade.value);
+
+			rn::Mesh::quad.render();
+
+			progShadowMapPreview.forgo();
+
+			RN_CHECK(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE));
+			RN_CHECK_PARAM(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_FUNC, csm.texDepths->compareFunc), rn::getEnumName(csm.texDepths->compareFunc));
+		}
+
+		fbScreen.unbind();
+		fbScreen.blit(nullptr, rn::BUFFER_COLOR);
+
+		profRender.stop();
+
+		{
+			RN_SCOPE_DISABLE(GL_DEPTH_TEST);
+			RN_SCOPE_DISABLE(GL_CULL_FACE);
+			RN_SCOPE_ENABLE(GL_BLEND);
+			// RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+			RN_CHECK(glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE));
+
+			double ft = ngn::time() - ngn::ct;
+
+			fbUI.bind();
+			fbUI.clear(rn::BUFFER_COLOR);
+
+			ostringstream oss;
+			oss << setprecision(4) << fixed;
+			oss << "dt=" << ngn::dt * 1000.0 << "ms\n";
+			oss << "ft=" << ft * 1000.0 << "ms\n";
+			oss << "fps=" << 1.0 / ngn::dt << "\n";
+			oss << "fps=" << 1.0 / ft << " (frame)\n";
+			oss << "triangles=" << rn::stats.triangles << "\n";
+			oss << "\n";
+
+			oss << "render=" << profRender.ms() << "ms (" << 1000.0 / profRender.ms() << ")\n";
+			oss << "  GBuffer=" << profGBuffer.ms() << "ms\n";
+			oss << "  DirectionalLight=" << profDirectionalLight.ms() << "ms\n";
+			oss << "  PointLight=" << profPointLight.ms() << "ms\n";
+			oss << "  FlatLight=" << profFlatLight.ms() << "ms\n";
+			oss << "  SSAO=" << profSSAO.ms() << "ms\n";
+			oss << "    Z=" << ssao.profZ.ms() << "ms\n";
+			oss << "    MipMaps=" << ssao.profMipMaps.ms() << "ms\n";
+			oss << "    AO=" << ssao.profAO.ms() << "ms\n";
+			oss << "    Blur=" << ssao.profBlur.ms() << "ms\n";
+			oss << "  CSM=???ms\n";
+			oss << "    Render=" << csm.profRender.ms() << "ms\n";
+			oss << "    Blur=" << csm.profBlur.ms() << "ms\n";
+
+			oss << "\n";
+			oss << "F4 - reload scene\n";
+			oss << "F5 - reload shaders\n";
+			oss << "F6 - reload meshes\n";
+			oss << "F7 - reload fonts\n";
+			oss << "F8 - reload FBOs\n";
+			oss << "F9 - reload textures\n";
+			oss << "F10 - change vsync mode (current: " << vsyncNames[currentVsync] << ")\n";
+			oss << "F11 - change window mode (current: " << modeNames[currentMode] << ")\n";
+			oss << "\n";
+			oss << "Movement: W, A, S, D\n";
+			oss << "Camera: arrows\n";
+			oss << "Point Light: Keypad 8, 4, 5, 6\n\n";
+			oss << "Toggles:\n";
+
+			for (auto &toggle : util::Toggle::collection)
+			{
+				oss << "  " << toggle->toggleName << " = " << toggle->value << "\n";
+			}
+
+			font1.render(oss.str());
+
+			oss.str(""s);
+			oss.clear();
+
+			oss << "CSM:\n";
+			oss << "  V[0][0]=" << glm::to_string(csm.Vs[0][0]) << "\n";
+			oss << "  V[0][1]=" << glm::to_string(csm.Vs[0][1]) << "\n";
+			oss << "  V[0][2]=" << glm::to_string(csm.Vs[0][2]) << "\n";
+			oss << "  V[0][3]=" << glm::to_string(csm.Vs[0][3]) << "\n";
+			oss << "\n";
+			oss << "  P[0][0]=" << glm::to_string(csm.Ps[0][0]) << "\n";
+			oss << "  P[0][1]=" << glm::to_string(csm.Ps[0][1]) << "\n";
+			oss << "  P[0][2]=" << glm::to_string(csm.Ps[0][2]) << "\n";
+			oss << "  P[0][3]=" << glm::to_string(csm.Ps[0][3]) << "\n";
+
+			font2.position.x = -0.125f;
+			font2.render(oss.str());
+
+			fbUI.unbind();
+
+			RN_SCOPE_ENABLE(GL_BLEND);
+			RN_SCOPE_DISABLE(GL_DEPTH_TEST);
+			RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+
+			progFBBlit.use();
+			progFBBlit.uniform("texSource", fbUI.color(0)->bind(0));
+			rn::Mesh::quad.render();
+			progFBBlit.forgo();
+
+			RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+		}
+	}
+}
+
+void App::zPrefillForwardPass()
+{
+	const auto &projection = ecs::get<Projection>(cameraId);
+	const auto &P = projection.matrix;
+	const auto &view = ecs::get<View>(cameraId);
+	const auto &V = view.matrix;
+
+	const phs::Frustum frustum{P * V};
+
+	// RN_SCOPE_DISABLE(GL_BLEND);
+
+	RN_FB_BIND(fbZPrefill);
+
+	// fbZPrefill.bind();
+	fbZPrefill.clear(rn::BUFFER_COLOR | rn::BUFFER_DEPTH | rn::BUFFER_STENCIL);
+
+	progZPrefill.use();
+	progZPrefill.uniform("P", P);
+	progZPrefill.uniform("V", V);
+
+	GLint locationM = progZPrefill.getName("M");
+
+	for (auto &entity : ecs::findWith<Transform, Mesh, Material>())
+	{
+		if (ecs::has<BoundingObject>(entity) && ! proc::FrustumProcess::isVisible(entity, frustum))
+		{
+			continue;
+		}
+
+		proc::MeshRenderer::renderZ(entity, progZPrefill, locationM);
 	}
 
-	profSSAO.start();
-	ssaoPass();
-	profSSAO.stop();
+	progZPrefill.forgo();
 
-	if (toggleLights.value)
+	// fbZPrefill.unbind();
+}
+
+void App::setupLightsForwardPass()
+{
+	const auto &view = ecs::get<View>(cameraId);
+	const auto &V = view.matrix;
+
+	pointLightData.clear();
+
+	directionalLightCount = 0;
+	for (auto &entity : ecs::findWith<PointLight, Position>())
 	{
-		profDirectionalLight.start();
-		directionalLightsPass();
-		profDirectionalLight.stop();
+		const auto &light = ecs::get<PointLight>(entity);
+		glm::vec3 position{V * glm::vec4{ecs::get<Position>(entity).position, 1.0f}};
 
-		// profPointLight.start();
-		// pointLightsPass();
-		// profPointLight.stop();
-
-		profFlatLight.start();
-		flatLightPass();
-		profFlatLight.stop();
-
-		// fbScreen.blit(nullptr, rn::BUFFER_COLOR/*, rn::MAG_LINEAR*/);
+		pointLightData.appendData(light.color, light.linearAttenuation, light.quadraticAttenuation, position);
+		directionalLightCount++;
 	}
 
-	if (toggleDebugPreview.value)
+	pointLightData.upload();
+
+	directionalLightData.clear();
+
+	pointLightCount = 0;
+	for (auto &entity : ecs::findWith<DirectionalLight>())
 	{
-		RN_SCOPE_DISABLE(GL_BLEND);
-		RN_SCOPE_ENABLE(GL_STENCIL_TEST);
-		RN_CHECK(glStencilFunc(GL_EQUAL, Stencil::MASK_SHADED, Stencil::MASK_ALL));
-		RN_CHECK(glStencilMask(0x0));
+		const auto &light = ecs::get<DirectionalLight>(entity);
+		glm::vec3 direction{V * glm::vec4{light.direction, 0.0f}};
+		direction = glm::normalize(direction);
 
-		progSSAOBlit.use();
-
-		progSSAOBlit.var("texSource", ssao.fbAO.color(0)->bind(0));
-		progSSAOBlit.var("texColor", fbGBuffer.color(0)->bind(1));
-		progSSAOBlit.var("texNormal", fbGBuffer.color(1)->bind(2));
-		progSSAOBlit.var("texDepth", fbGBuffer.depth()->bind(3));
-		progSSAOBlit.var("texZ", ssao.fbZ.color(0)->bind(4));
-
-		rn::Mesh::quad.render();
-
-		progSSAOBlit.forgo();
+		directionalLightData.appendData(light.ambient, light.color, direction, light.intensity);
+		pointLightCount++;
 	}
 
-	if (toggleZPreview.value)
+	directionalLightData.upload();
+}
+
+void App::lightingForwardPass()
+{
+	const auto &projection = ecs::get<Projection>(cameraId);
+	const auto &P = projection.matrix;
+	const auto &view = ecs::get<View>(cameraId);
+	const auto &V = view.matrix;
+
+	const phs::Frustum frustum{P * V};
+
+	RN_FB_BIND(fbScreenForward);
+
+	fbScreenForward.clear(rn::BUFFER_COLOR);
+
+	RN_CHECK(glDepthMask(GL_FALSE));
+	// RN_SCOPE_DISABLE(GL_DEPTH_TEST);
+
+	progLightingForward.use();
+	progLightingForward.uniform("P", P);
+	progLightingForward.uniform("V", V);
+
+	progLightingForward.uniform("lightD", directionalLightData.bind(0));
+	progLightingForward.uniform("lightP", pointLightData.bind(1));
+	progLightingForward.uniform("lightDCount", directionalLightCount);
+	progLightingForward.uniform("lightPCount", pointLightCount);
+
+	for (auto &entity : ecs::findWith<Transform, Mesh, Material>())
 	{
-		RN_SCOPE_DISABLE(GL_BLEND);
-		RN_SCOPE_DISABLE(GL_DEPTH_TEST);
-		RN_SCOPE_DISABLE(GL_STENCIL_TEST);
+		if (ecs::has<BoundingObject>(entity) && ! proc::FrustumProcess::isVisible(entity, frustum))
+		{
+			continue;
+		}
 
-		progTexPreview.use();
-		progTexPreview.var("texSource", ssao.fbZ.color(0)->bind(0));
-
-		rn::Mesh::quad.render();
-
-		progTexPreview.forgo();
+		proc::MeshRenderer::render(entity, progLightingForward);
 	}
 
-	{
-		progShadowMapPreview.use();
-		// progShadowMapPreview.var("texSource", fbShadowMap.color(0)->bind(0));
-		// progShadowMapPreview.var("texSource", csm.fbShadows[0].color(0)->bind(0));
+	progLightingForward.forgo();
 
-		auto unit = csm.texDepths->bind(0);
-		RN_CHECK(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_MODE, GL_NONE));
-
-		progShadowMapPreview.var("texSource", unit);
-		progShadowMapPreview.var("layer", toggleCascade.value);
-
-		rn::Mesh::quad.render();
-
-		progShadowMapPreview.forgo();
-
-		RN_CHECK(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE));
-		RN_CHECK_PARAM(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_FUNC, csm.texDepths->compareFunc), rn::getEnumName(csm.texDepths->compareFunc));
-	}
-
-	fbScreen.unbind();
-
-	fbScreen.blit(nullptr, rn::BUFFER_COLOR);
-
-	profRender.stop();
-
-	double ft = ngn::time() - ngn::ct;
-
-	fbUI.bind();
-	fbUI.clear(rn::BUFFER_COLOR);
-
-	ostringstream oss;
-	oss << setprecision(4) << fixed;
-	oss << "dt=" << ngn::dt * 1000.0 << "ms\n";
-	oss << "ft=" << ft * 1000.0 << "ms\n";
-	oss << "fps=" << 1.0 / ngn::dt << "\n";
-	oss << "fps=" << 1.0 / ft << " (frame)\n";
-	oss << "triangles=" << rn::stats.triangles << "\n";
-	oss << "\n";
-
-	oss << "render=" << profRender.ms() << "ms (" << 1000.0 / profRender.ms() << ")\n";
-	oss << "  GBuffer=" << profGBuffer.ms() << "ms\n";
-	oss << "  DirectionalLight=" << profDirectionalLight.ms() << "ms\n";
-	oss << "  PointLight=" << profPointLight.ms() << "ms\n";
-	oss << "  FlatLight=" << profFlatLight.ms() << "ms\n";
-	oss << "  SSAO=" << profSSAO.ms() << "ms\n";
-	oss << "    Z=" << ssao.profZ.ms() << "ms\n";
-	oss << "    MipMaps=" << ssao.profMipMaps.ms() << "ms\n";
-	oss << "    AO=" << ssao.profAO.ms() << "ms\n";
-	oss << "    Blur=" << ssao.profBlur.ms() << "ms\n";
-	oss << "  CSM=???ms\n";
-	oss << "    Render=" << csm.profRender.ms() << "ms\n";
-	oss << "    Blur=" << csm.profBlur.ms() << "ms\n";
-
-	oss << "\n";
-	oss << "F4 - reload scene\n";
-	oss << "F5 - reload shaders\n";
-	oss << "F6 - reload meshes\n";
-	oss << "F7 - reload fonts\n";
-	oss << "F8 - reload FBOs\n";
-	oss << "F9 - reload textures\n";
-	oss << "F10 - change vsync mode (current: " << vsyncNames[currentVsync] << ")\n";
-	oss << "F11 - change window mode (current: " << modeNames[currentMode] << ")\n";
-	oss << "\n";
-	oss << "Movement: W, A, S, D\n";
-	oss << "Camera: arrows\n";
-	oss << "Point Light: Keypad 8, 4, 5, 6\n\n";
-	oss << "Toggles:\n";
-
-	for (auto &toggle : util::Toggle::collection)
-	{
-		oss << "  " << toggle->toggleName << " = " << toggle->value << "\n";
-	}
-
-	font1.render(oss.str());
-
-	oss.str(""s);
-	oss.clear();
-
-	oss << "CSM:\n";
-	oss << "  V[0][0]=" << glm::to_string(csm.Vs[0][0]) << "\n";
-	oss << "  V[0][1]=" << glm::to_string(csm.Vs[0][1]) << "\n";
-	oss << "  V[0][2]=" << glm::to_string(csm.Vs[0][2]) << "\n";
-	oss << "  V[0][3]=" << glm::to_string(csm.Vs[0][3]) << "\n";
-	oss << "\n";
-	oss << "  P[0][0]=" << glm::to_string(csm.Ps[0][0]) << "\n";
-	oss << "  P[0][1]=" << glm::to_string(csm.Ps[0][1]) << "\n";
-	oss << "  P[0][2]=" << glm::to_string(csm.Ps[0][2]) << "\n";
-	oss << "  P[0][3]=" << glm::to_string(csm.Ps[0][3]) << "\n";
-
-	font2.position.x = -0.125f;
-	font2.render(oss.str());
-
-	fbUI.unbind();
-
-	RN_SCOPE_ENABLE(GL_BLEND);
-	RN_SCOPE_DISABLE(GL_DEPTH_TEST);
-	RN_CHECK(glBlendFunc(GL_ONE, GL_ONE));
-
-	progFBOBlit.use();
-	progFBOBlit.uniform("texSource", fbUI.color(0)->bind(0));
-	rn::Mesh::quad.render();
-	progFBOBlit.forgo();
-
-	RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+	RN_CHECK(glDepthMask(GL_TRUE));
 }
 
 void App::gBufferPass()
@@ -1168,8 +1512,8 @@ void App::directionalLightsPass()
 			progDirectionalLight.var("texDepth", fbGBuffer.depth()->bind(unit++));
 			progDirectionalLight.var("texAO", ssao.fbAO.color(0)->bind(unit++));
 
-			progDirectionalLight.var("texShadowMoments", fbShadowMap.color(0)->bind(unit++));
-			progDirectionalLight.var("texShadowDepth", fbShadowMap.depth()->bind(unit++));
+			// progDirectionalLight.var("texShadowMoments", fbShadowMap.color(0)->bind(unit++));
+			// progDirectionalLight.var("texShadowDepth", fbShadowMap.depth()->bind(unit++));
 			// progDirectionalLight.var("texCSM", csm.fbShadows[0].color(0)->bind(unit++));
 
 			progDirectionalLight.var("csmSplits", static_cast<GLint>(csm.splits));
@@ -1272,7 +1616,7 @@ void App::ssaoPass()
 {
 	ssao.clear();
 
-	if (!toggleSSAO.value)
+	if ( ! toggleSSAO.value)
 	{
 		return;
 	}
@@ -1283,173 +1627,4 @@ void App::ssaoPass()
 	if (toggleSSAOBlur.value) {
 		ssao.blur(fbGBuffer);
 	}
-}
-
-glm::mat4 App::makeShadowMap(const ecs::Entity &lightId, const phs::Frustum &frustum)
-{
-	// csm.cameraId = cameraId;
-
-	// csm.calculateMatrices(lightId);
-	// csm.renderCascades();
-
-	const auto &cameraPosition = ecs::get<Position>(cameraId).position;
-	// const auto &projection = ecs::get<Projection>(cameraId);
-	// const auto &view = ecs::get<View>(cameraId);
-	// const auto &P = projection.matrix;
-	// const auto &V = view.matrix;
-
-	const auto &light = ecs::get<DirectionalLight>(lightId);
-
-	// const auto shadowMapV = glm::lookAt(glm::normalize(light.direction), glm::vec3{0.f, 0.f, 0.f}, glm::vec3{0.f, 1.f, 0.f});
-	// const auto shadowMapV = glm::lookAt(cameraPosition, cameraPosition - light.direction, glm::vec3{0.f, 1.f, 0.f});
-
-	// const auto invVP = glm::inverse(P * V);
-	// glm::vec4 frustumCorners[8] = {
-	// 	invVP * glm::vec4{ 1.f,  1.f, -1.f, 1.f}, // rtn
-	// 	invVP * glm::vec4{-1.f,  1.f, -1.f, 1.f}, // ltn
-	// 	invVP * glm::vec4{ 1.f, -1.f, -1.f, 1.f}, // rbn
-	// 	invVP * glm::vec4{-1.f, -1.f, -1.f, 1.f}, // lbn
-	// 	invVP * glm::vec4{ 1.f,  1.f,  1.f, 1.f}, // rtf
-	// 	invVP * glm::vec4{-1.f,  1.f,  1.f, 1.f}, // ltf
-	// 	invVP * glm::vec4{ 1.f, -1.f,  1.f, 1.f}, // rbf
-	// 	invVP * glm::vec4{-1.f, -1.f,  1.f, 1.f}, // lbf
-	// };
-
-	// frustumCorners[0] /= frustumCorners[0].w;
-	// frustumCorners[1] /= frustumCorners[1].w;
-	// frustumCorners[2] /= frustumCorners[2].w;
-	// frustumCorners[3] /= frustumCorners[3].w;
-	// frustumCorners[4] /= frustumCorners[4].w;
-	// frustumCorners[5] /= frustumCorners[5].w;
-	// frustumCorners[6] /= frustumCorners[6].w;
-	// frustumCorners[7] /= frustumCorners[7].w;
-
-	// float t = (10.f - projection.zNear) / (projection.zFar - projection.zNear);
-
-	// frustumCorners[4] = glm::lerp(frustumCorners[0], frustumCorners[4], t);
-	// frustumCorners[5] = glm::lerp(frustumCorners[1], frustumCorners[5], t);
-	// frustumCorners[6] = glm::lerp(frustumCorners[2], frustumCorners[6], t);
-	// frustumCorners[7] = glm::lerp(frustumCorners[3], frustumCorners[7], t);
-
-	// glm::vec4 shadowFrustumCorners[] = {
-	// 	shadowMapV * frustumCorners[0],
-	// 	shadowMapV * frustumCorners[1],
-	// 	shadowMapV * frustumCorners[2],
-	// 	shadowMapV * frustumCorners[3],
-	// 	shadowMapV * frustumCorners[4],
-	// 	shadowMapV * frustumCorners[5],
-	// 	shadowMapV * frustumCorners[6],
-	// 	shadowMapV * frustumCorners[7]
-	// };
-
-	// float shadowFrustumLeft = shadowFrustumCorners[0].x;
-	// float shadowFrustumRight = shadowFrustumCorners[0].x;
-	// float shadowFrustumBottom = shadowFrustumCorners[0].y;
-	// float shadowFrustumTop = shadowFrustumCorners[0].y;
-	// float shadowFrustumZNear = shadowFrustumCorners[0].z;
-	// float shadowFrustumZFar = shadowFrustumCorners[0].z;
-
-	// cout << "shadowFrustumCorners[rtn]=" << glm::to_string(shadowFrustumCorners[0].xyz()) << endl;
-	// cout << "shadowFrustumCorners[ltn]=" << glm::to_string(shadowFrustumCorners[1].xyz()) << endl;
-	// cout << "shadowFrustumCorners[rbn]=" << glm::to_string(shadowFrustumCorners[2].xyz()) << endl;
-	// cout << "shadowFrustumCorners[lbn]=" << glm::to_string(shadowFrustumCorners[3].xyz()) << endl;
-	// cout << "shadowFrustumCorners[rtf]=" << glm::to_string(shadowFrustumCorners[4].xyz()) << endl;
-	// cout << "shadowFrustumCorners[ltf]=" << glm::to_string(shadowFrustumCorners[5].xyz()) << endl;
-	// cout << "shadowFrustumCorners[rbf]=" << glm::to_string(shadowFrustumCorners[6].xyz()) << endl;
-	// cout << "shadowFrustumCorners[lbf]=" << glm::to_string(shadowFrustumCorners[7].xyz()) << endl;
-
-	// for (const auto &corner : shadowFrustumCorners)
-	// {
-	// 	shadowFrustumLeft = min(shadowFrustumLeft, corner.x);
-	// 	shadowFrustumRight = max(shadowFrustumRight, corner.x);
-	// 	shadowFrustumBottom = min(shadowFrustumBottom, corner.y);
-	// 	shadowFrustumTop = max(shadowFrustumTop, corner.y);
-	// 	shadowFrustumZNear = max(shadowFrustumZNear, corner.z);
-	// 	shadowFrustumZFar = min(shadowFrustumZFar, corner.z);
-	// }
-
-	// glm::vec3 lightDirection = glm::normalize(ecs::get<DirectionalLight>(lightId).direction);
-	// float zMax = -numeric_limits<float>::max();
-
-	// for (auto &entity : ecs::findWith<Transform, Mesh, BoundingObject, Occluder>())
-	// {
-	// 	auto &boundingObject = ecs::get<BoundingObject>(entity);
-
-	// 	float dist = glm::dot(lightDirection, boundingObject.sphere.position) + boundingObject.sphere.radius;
-
-	// 	zMax = max(zMax, dist);
-	// }
-
-	// shadowFrustumZNear = max(shadowFrustumZNear, zMax);
-
-	// const auto shadowMapP = glm::ortho(-10.f, 10.f, -10.f, 10.f, -10.f, 20.f);
-	// const auto shadowMapP = glm::ortho(shadowFrustumLeft, shadowFrustumRight, shadowFrustumBottom, shadowFrustumTop, -shadowFrustumZNear, -shadowFrustumZFar);
-
-	const auto shadowMapV = glm::lookAt(cameraPosition, cameraPosition - light.direction, glm::vec3{0.f, 1.f, 0.f});
-
-	const auto shadowMapP = glm::ortho(-10.f, 10.f, -10.f, 10.f, -10.f, 20.f);
-	const auto shadowMapVP = shadowMapP * shadowMapV;
-
-	const phs::Frustum shadowFrustum{shadowMapVP};
-
-	{
-		RN_FB_BIND(fbShadowMap);
-
-		RN_SCOPE_DISABLE(GL_BLEND);
-
-		// RN_CHECK(glCullFace(GL_FRONT));
-
-		fbShadowMap.clear(rn::BUFFER_COLOR | rn::BUFFER_DEPTH);
-
-		progShadowMap.use();
-		progShadowMap.var("P", shadowMapP);
-		progShadowMap.var("V", shadowMapV);
-
-		for (auto &entity : ecs::findWith<Transform, Mesh, Occluder>())
-		{
-			if (ecs::has<BoundingObject>(entity) && ! proc::FrustumProcess::isVisible(entity, shadowFrustum))
-			{
-				continue;
-			}
-
-			proc::MeshRenderer::render(entity, progShadowMap);
-		}
-
-		progShadowMap.forgo();
-		// RN_CHECK(glCullFace(GL_BACK));
-	}
-
-	// blur shadowmap: x pass
-	{
-		RN_FB_BIND(fbShadowMapBlur);
-
-		RN_SCOPE_DISABLE(GL_DEPTH_TEST);
-
-		progBlurGaussian7.use();
-
-		progBlurGaussian7.var("texSource", fbShadowMap.color(0)->bind(0));
-		progBlurGaussian7.var("scale", glm::vec2{1.f, 0.f});
-
-		rn::Mesh::quad.render();
-
-		progBlurGaussian7.forgo();
-	}
-
-	// blur shadowmap: y pass
-	{
-		RN_FB_BIND(fbShadowMap);
-
-		RN_SCOPE_DISABLE(GL_DEPTH_TEST);
-
-		progBlurGaussian7.use();
-
-		progBlurGaussian7.var("texSource", fbShadowMapBlur.color(0)->bind(0));
-		progBlurGaussian7.var("scale", glm::vec2{0.f, 1.f});
-
-		rn::Mesh::quad.render();
-
-		progBlurGaussian7.forgo();
-	}
-
-	return shadowMapVP;
 }

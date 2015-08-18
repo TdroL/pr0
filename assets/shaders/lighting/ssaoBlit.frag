@@ -9,14 +9,14 @@ uniform sampler2D texZ;
 
 void main()
 {
-	/**/
+	/** /
 	outColor.rgb = texture(texSource, uv).rrr;
 	/*/
-	outColor.rgb = texture(texSource, uv).rgb;
+	outColor.rgb = texture(texSource, uv).rrr;
 	/**/
 
 	int level = 0;
-	outColor.rgb = texelFetch(texZ, ivec2(uv * textureSize(texZ, level)), level).rrr;
-	outColor.rgb = texelFetch(texSource, ivec2(gl_FragCoord.xy), 0).rgb;
+	// outColor.rgb = texelFetch(texZ, ivec2(uv * textureSize(texZ, level)), level).rgb;
+	// outColor.rgb = texelFetch(texSource, ivec2(gl_FragCoord.xy), 0).rgb;
 	outColor.a = 1.0;
 }

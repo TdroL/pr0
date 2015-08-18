@@ -1,3 +1,5 @@
+#include <pch.hpp>
+
 #include "rebuildboundingobjectprocess.hpp"
 
 #include <app/comp/boundingobject.hpp>
@@ -6,7 +8,7 @@
 
 #include <core/asset/mesh.hpp>
 
-#include <glm/gtc/matrix_transform.hpp>
+// #include <glm/gtc/matrix_transform.hpp>
 
 #include <cmath>
 

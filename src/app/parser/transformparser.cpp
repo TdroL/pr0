@@ -1,8 +1,10 @@
+#include <pch.hpp>
+
 #include "transformparser.hpp"
 
 #include <app/comp/transform.hpp>
 
-#include <iostream>
+// #include <iostream>
 
 namespace
 {

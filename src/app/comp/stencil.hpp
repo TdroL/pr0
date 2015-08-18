@@ -2,7 +2,7 @@
 #define APP_COMP_STENCIL_HPP
 
 #include <core/ecs/component.hpp>
-#include <core/rn.hpp>
+// #include <core/rn.hpp>
 
 namespace comp
 {
@@ -15,7 +15,7 @@ struct Stencil : public ecs::Component<Stencil>
 		MASK_ALL = 1 | 2
 	};
 
-	GLint ref = 0;
+	int ref = 0;
 };
 
 } // comp

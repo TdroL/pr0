@@ -1,12 +1,15 @@
+#include <pch.hpp>
+
 #include "camera.hpp"
-#include <glm/gtc/quaternion.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/constants.hpp>
-#include <cmath>
+
 #include <app/comp/position.hpp>
 #include <app/comp/rotation.hpp>
 #include <app/comp/view.hpp>
 
+#include <glm/gtc/quaternion.hpp>
+// #include <glm/gtc/matrix_transform.hpp>
+// #include <glm/gtc/constants.hpp>
+#include <cmath>
 
 namespace proc
 {

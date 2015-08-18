@@ -1,8 +1,10 @@
+#include <pch.hpp>
+
 #include "temporaltransformparser.hpp"
 
 #include <app/comp/temporaltransform.hpp>
 
-#include <iostream>
+// #include <iostream>
 
 namespace
 {

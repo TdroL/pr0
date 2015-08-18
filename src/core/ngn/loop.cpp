@@ -1,3 +1,5 @@
+#include <pch.hpp>
+
 #include "loop.hpp"
 #include "../ngn.hpp"
 #include <string>

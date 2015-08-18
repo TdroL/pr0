@@ -1,3 +1,5 @@
+#include <pch.hpp>
+
 #include "inputparser.hpp"
 
 #include <core/util/str.hpp>

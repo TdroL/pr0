@@ -1,6 +1,8 @@
 #ifndef APP_FX_SSAO_HPP
 #define APP_FX_SSAO_HPP
 
+#include <app/comp/projection.hpp>
+
 #include <core/rn.hpp>
 #include <core/rn/fb.hpp>
 #include <core/rn/program.hpp>
@@ -8,8 +10,6 @@
 
 #include <string>
 #include <vector>
-
-#include "../comp/projection.hpp"
 
 namespace fx
 {

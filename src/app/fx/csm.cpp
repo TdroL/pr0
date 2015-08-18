@@ -1,4 +1,4 @@
-#define GLM_SWIZZLE
+#include <pch.hpp>
 
 #include "csm.hpp"
 
@@ -27,10 +27,10 @@
 #include <sstream>
 #include <iomanip>
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+// #include <glm/glm.hpp>
+// #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/compatibility.hpp>
-#include <glm/gtx/string_cast.hpp>
+// #include <glm/gtx/string_cast.hpp>
 
 namespace fx
 {
