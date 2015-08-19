@@ -24,7 +24,7 @@ map<string, Parser::functionType> & Parser::parsersMap()
 
 void Parser::parse(ecs::Entity &entity, const Parser::objectType &object)
 {
-	if (!object.IsObject())
+	if ( ! object.IsObject())
 	{
 		return;
 	}
@@ -39,7 +39,7 @@ void Parser::parse(ecs::Entity &entity, const Parser::objectType &object)
 
 void Parser::enter(const Parser::objectType &object, const char *name, function<void(const Parser::objectType &)> enterFunction)
 {
-	if (!object.HasMember(name))
+	if ( ! object.HasMember(name))
 	{
 		return;
 	}
@@ -52,7 +52,7 @@ void Parser::enter(const Parser::objectType &object, const char *name, function<
 template<>
 void Parser::assign<string>(const objectType &object, const char *name, string &target)
 {
-	if (!object.HasMember(name))
+	if ( ! object.HasMember(name))
 	{
 		return;
 	}
@@ -68,7 +68,7 @@ void Parser::assign<string>(const objectType &object, const char *name, string &
 template<>
 void Parser::assign<bool>(const objectType &object, const char *name, bool &target)
 {
-	if (!object.HasMember(name))
+	if ( ! object.HasMember(name))
 	{
 		return;
 	}
@@ -84,7 +84,7 @@ void Parser::assign<bool>(const objectType &object, const char *name, bool &targ
 template<>
 void Parser::assign<float>(const objectType &object, const char *name, float &target)
 {
-	if (!object.HasMember(name))
+	if ( ! object.HasMember(name))
 	{
 		return;
 	}
@@ -100,7 +100,7 @@ void Parser::assign<float>(const objectType &object, const char *name, float &ta
 template<>
 void Parser::assign<double>(const objectType &object, const char *name, double &target)
 {
-	if (!object.HasMember(name))
+	if ( ! object.HasMember(name))
 	{
 		return;
 	}
@@ -116,7 +116,7 @@ void Parser::assign<double>(const objectType &object, const char *name, double &
 template<>
 void Parser::assign<int>(const objectType &object, const char *name, int &target)
 {
-	if (!object.HasMember(name))
+	if ( ! object.HasMember(name))
 	{
 		return;
 	}
@@ -132,7 +132,7 @@ void Parser::assign<int>(const objectType &object, const char *name, int &target
 template<>
 void Parser::assign<unsigned int>(const objectType &object, const char *name, unsigned int &target)
 {
-	if (!object.HasMember(name))
+	if ( ! object.HasMember(name))
 	{
 		return;
 	}
@@ -148,7 +148,7 @@ void Parser::assign<unsigned int>(const objectType &object, const char *name, un
 template<>
 void Parser::assign<int64_t>(const objectType &object, const char *name, int64_t &target)
 {
-	if (!object.HasMember(name))
+	if ( ! object.HasMember(name))
 	{
 		return;
 	}
@@ -164,7 +164,7 @@ void Parser::assign<int64_t>(const objectType &object, const char *name, int64_t
 template<>
 void Parser::assign<uint64_t>(const objectType &object, const char *name, uint64_t &target)
 {
-	if (!object.HasMember(name))
+	if ( ! object.HasMember(name))
 	{
 		return;
 	}
@@ -180,7 +180,7 @@ void Parser::assign<uint64_t>(const objectType &object, const char *name, uint64
 template<>
 void Parser::assign<glm::vec2>(const objectType &object, const char *name, glm::vec2 &target)
 {
-	if (!object.HasMember(name))
+	if ( ! object.HasMember(name))
 	{
 		return;
 	}
@@ -230,7 +230,7 @@ void Parser::assign<glm::vec2>(const objectType &object, const char *name, glm::
 template<>
 void Parser::assign<glm::vec3>(const objectType &object, const char *name, glm::vec3 &target)
 {
-	if (!object.HasMember(name))
+	if ( ! object.HasMember(name))
 	{
 		return;
 	}
@@ -282,7 +282,7 @@ void Parser::assign<glm::vec3>(const objectType &object, const char *name, glm::
 template<>
 void Parser::assign<glm::vec4>(const objectType &object, const char *name, glm::vec4 &target)
 {
-	if (!object.HasMember(name))
+	if ( ! object.HasMember(name))
 	{
 		return;
 	}

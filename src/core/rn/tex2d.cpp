@@ -180,7 +180,7 @@ void Tex2D::reload()
 		dataEnd = source->data.get() + source->size;
 	}
 
-	if (!width || !height)
+	if ( ! width || ! height)
 	{
 		RN_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
 

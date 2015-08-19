@@ -45,13 +45,13 @@ void trim(string &s)
 
 bool isInt(const string &s)
 {
-	return !s.empty() && s.find_first_not_of("0123456789") == string::npos;
+	return ! s.empty() && s.find_first_not_of("0123456789") == string::npos;
 }
 
 bool isNumeric(const string &s)
 {
 	int dots = 0;
-	return !s.empty() && end(s) == find_if(begin(s), end(s), [&dots](char c)
+	return ! s.empty() && end(s) == find_if(begin(s), end(s), [&dots](char c)
 	{
 		if (c == '.')
 		{
@@ -65,7 +65,7 @@ bool isNumeric(const string &s)
 			return false;
 		}
 
-		return !isdigit(c);
+		return ! isdigit(c);
 	});
 }
 

@@ -115,7 +115,7 @@ void reload()
 	// RN_CHECK(glDepthFunc(GL_LESS));
 	// RN_CHECK(glDepthRange(0.0, 1.0));
 	RN_CHECK(glDepthFunc(GL_GEQUAL));
-	RN_CHECK(glDepthRange(1.0, 0.0));
+	// RN_CHECK(glDepthRange(1.0, 0.0));
 
 	// glEnable(GL_MULTISAMPLE);
 
@@ -1589,9 +1589,9 @@ namespace
 {
 	const util::InitQAttacher attach(ngn::initQ(), []
 	{
-#ifdef NGN_USE_GLEW
-		rn::flushErrors();
-#endif
+		#ifdef NGN_USE_GLEW
+			rn::flushErrors();
+		#endif
 
 		if ( ! rn::ext::ARB_clip_control)
 		{

@@ -118,6 +118,16 @@ void App::init()
 	ssao.init(ecs::get<Projection>(cameraId));
 	csm.init();
 
+	// profZPrefill
+	// profSetupLights
+	// profLighting
+	// profRender
+	// profGBuffer
+	// profDirectionalLight
+	// profPointLight
+	// profFlatLight
+	// profSSAO
+
 	profZPrefill.init();
 	profSetupLights.init();
 	profLighting.init();
@@ -533,7 +543,8 @@ void App::initScene()
 
 			projection.aspect = static_cast<float>(win::internalWidth) / static_cast<float>(win::internalHeight);
 			// projection.matrix = glm::perspective(glm::radians(projection.fovy), projection.aspect, projection.zNear, (projection.zFar = projection.zNear + 512.0));
-			projection.matrix = glm::infinitePerspective(glm::radians(projection.fovy), projection.aspect, projection.zNear);
+			// projection.matrix = glm::infinitePerspective(glm::radians(projection.fovy), projection.aspect, projection.zNear);
+			projection.matrix = glm::infiniteReversePerspective(glm::radians(projection.fovy), projection.aspect, projection.zNear);
 			projection.invMatrix = glm::inverse(projection.matrix);
 
 			progGBuffer.uniform("P", projection.matrix);
@@ -1081,7 +1092,7 @@ void App::render()
 		fbGBuffer.blit(fbScreen, rn::BUFFER_STENCIL);
 		// fbGBuffer.blit(nullptr, rn::BUFFER_STENCIL);
 
-		if (!toggleLights.value)
+		if ( ! toggleLights.value)
 		{
 			fbGBuffer.blit(fbScreen, rn::BUFFER_COLOR);
 			// fbGBuffer.blit(nullptr, rn::BUFFER_COLOR);

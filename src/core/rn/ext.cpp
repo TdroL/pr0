@@ -4,23 +4,22 @@
 
 #include "../rn.hpp"
 
-#include <string>
-#include <cstring>
+#include <iostream>
 
 namespace rn
 {
 
 using namespace std;
 
-Ext::Ext(const char *name)
-	: name{name}
+Ext::Ext(string &&name)
+	: name{move(name)}
 {
 	ext::list.push_back(this);
 }
 
-bool Ext::test()
+bool Ext::test() const
 {
-	if (!name || name[0] == '\0')
+	if (name.empty())
 	{
 		throw string{"rn::Ext::test() - name not set"};
 	}
@@ -32,19 +31,13 @@ bool Ext::test()
 	{
 		const char *ext = reinterpret_cast<const char *>(glGetStringi(GL_EXTENSIONS, i));
 
-		if (ext != nullptr && strcmp(name, ext) == 0)
+		if (name == string{ext})
 		{
 			return true;
 		}
 	}
 
 	return false;
-}
-
-Ext::operator bool()
-{
-	static bool result = test();
-	return result;
 }
 
 namespace ext

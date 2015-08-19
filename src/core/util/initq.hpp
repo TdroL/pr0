@@ -1,7 +1,7 @@
 #ifndef UTIL_INITQ_HPP
 #define UTIL_INITQ_HPP
 
-#include <vector>
+#include <deque>
 #include <string>
 #include <functional>
 
@@ -13,7 +13,7 @@ class InitQ
 public:
 	bool autorun = false;
 	std::string name = "Unnamed init queue";
-	std::vector<std::function<void()>> queue{};
+	std::deque<std::function<void()>> queue{};
 
 	InitQ() = default;
 	explicit InitQ(std::string &&name);
@@ -21,6 +21,7 @@ public:
 	void run();
 
 	void attach(std::function<void()> &&fn);
+	void attachFirst(std::function<void()> &&fn);
 };
 
 class InitQAttacher

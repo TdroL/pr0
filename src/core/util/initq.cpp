@@ -33,6 +33,16 @@ void InitQ::attach(std::function<void()> &&fn)
 	}
 }
 
+void InitQ::attachFirst(std::function<void()> &&fn)
+{
+	queue.push_front(move(fn));
+
+	if (autorun)
+	{
+		queue.front()();
+	}
+}
+
 InitQAttacher::InitQAttacher(InitQ &container, std::function<void()> &&fn)
 {
 	container.attach(move(fn));

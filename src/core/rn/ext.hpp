@@ -2,6 +2,7 @@
 #define RN_EXT_HPP
 
 #include <vector>
+#include <string>
 
 namespace rn
 {
@@ -10,13 +11,28 @@ class Ext
 {
 public:
 
-	const char * name;
+	const std::string name;
 
-	explicit Ext(const char *name);
+	explicit Ext(std::string &&name);
 
-	bool test();
+	int result = -1;
 
-	operator bool();
+	bool test() const;
+
+	operator bool()
+	{
+		return asBool();
+	}
+
+	bool asBool()
+	{
+		if (result == -1)
+		{
+			result = test() ? 1 : 0;
+		}
+
+		return result > 0;
+	}
 };
 
 namespace ext

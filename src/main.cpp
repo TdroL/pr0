@@ -48,13 +48,6 @@ int main(int argc, char const* argv[])
 	{
 		ngn::ino::init(argc, argv);
 
-		ngn::init();
-
-		UTIL_SCOPE_EXIT([] ()
-		{
-			ngn::deinit();
-		});
-
 		UTIL_DEBUG
 		{
 			if (ngn::ino::has("--help"))
@@ -64,25 +57,48 @@ int main(int argc, char const* argv[])
 				clog << "  --frames=<num>  - limits number of rendered frames" << endl;
 				clog << "  --log-gl-calls  - logs every OpenGL call" << endl;
 
-				return EXIT_SUCCESS;
+				exit(EXIT_SUCCESS);
 			}
 
 			if (ngn::ino::has("--print-exts"))
 			{
-				clog << "Extensions:" << endl;
-				clog << rn::getExtensionsInfo() << endl;
-				clog << endl;
-				clog << "Supported extensions:" << endl;
-				clog << boolalpha;
-				for (auto *ext : rn::ext::list)
+				ngn::initQ().attachFirst([&] ()
 				{
-					clog << ext->name << " = " << (bool) *ext << endl;
-				}
-				clog << noboolalpha;
+					clog << "Extensions:" << endl;
+					clog << rn::getExtensionsInfo() << endl;
+					clog << endl;
+					clog << "Supported extensions:" << endl;
+					clog << boolalpha;
+					for (auto *ext : rn::ext::list)
+					{
+						clog << ext->name << " = " << (bool) (*ext) << endl;
+					}
+					clog << noboolalpha;
 
-				return EXIT_SUCCESS;
+					exit(EXIT_SUCCESS);
+				});
+
+				// clog << "Extensions:" << endl;
+				// clog << rn::getExtensionsInfo() << endl;
+				// clog << endl;
+				// clog << "Supported extensions:" << endl;
+				// clog << boolalpha;
+				// for (auto *ext : rn::ext::list)
+				// {
+				// 	clog << ext->name << " = " << (bool) (*ext) << endl;
+				// }
+				// clog << noboolalpha;
+
+				// return EXIT_SUCCESS;
 			}
 		}
+
+		ngn::init();
+
+		UTIL_SCOPE_EXIT([] ()
+		{
+			ngn::deinit();
+		});
 
 		App app{};
 		app.init();

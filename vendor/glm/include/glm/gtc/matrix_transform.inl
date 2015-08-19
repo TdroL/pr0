@@ -373,6 +373,26 @@ namespace glm
 		return Result;
 	}
 
+	template <typename T>
+	GLM_FUNC_DECL tmat4x4<T, defaultp> infiniteReversePerspective
+	(
+		T fovy,
+		T aspect,
+		T zNear
+	)
+	{
+		tmat4x4<T, defaultp> Result(T(0));
+
+		T const tanHalfFovy = tan(fovy / T(2));
+
+		Result[0][0] = T(1) / (aspect * tanHalfFovy);
+		Result[1][1] = T(1) / (tanHalfFovy);
+		Result[2][3] = T(1);
+		Result[3][2] = zNear;
+
+		return Result;
+	}
+
 	// Infinite projection matrix: http://www.terathon.com/gdc07_lengyel.pdf
 	template <typename T>
 	GLM_FUNC_QUALIFIER tmat4x4<T, defaultp> tweakedInfinitePerspective
