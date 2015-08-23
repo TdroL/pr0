@@ -34,6 +34,7 @@
 // #include <app/parser/positionparser.hpp>
 // #include <app/parser/projectionparser.hpp>
 // #include <app/parser/rotationparser.hpp>
+#include <app/parser/shadingparser.hpp>
 #include <app/parser/stencilparser.hpp>
 // #include <app/parser/temporaltransformparser.hpp>
 #include <app/parser/transformparser.hpp>

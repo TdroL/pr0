@@ -1,6 +1,7 @@
 #include <pch.hpp>
 
 #include "mesh.hpp"
+#include "ext.hpp"
 
 #include "../ngn.hpp"
 #include "../ngn/fs.hpp"
@@ -150,8 +151,6 @@ void Mesh::reload()
 
 	for (const auto & layout : layouts)
 	{
-		// clog << layout.index << ", " << layout.size << ", " << rn::getEnumName(layout.type) << ", " << layout.stride << ", " << dec << reinterpret_cast<size_t>(layout.pointer) << " vbo=" << vbo << " ibo=" << ibo << endl;
-
 		if (layout.index == rn::LayoutLocation::pos)
 		{
 			buildBounds(vertexData, layout);
@@ -159,17 +158,18 @@ void Mesh::reload()
 		}
 	}
 
-	RN_CHECK(glGenBuffers(1, &vbo));
-	RN_CHECK(glBindBuffer(GL_ARRAY_BUFFER, vbo));
-	RN_CHECK(glBufferData(GL_ARRAY_BUFFER, vertexData.size, vertexData.data, vertexData.usage));
+	RN_CHECK(glCreateBuffers(1, &vbo));
+	RN_CHECK(glNamedBufferData(vbo, vertexData.size, vertexData.data, vertexData.usage));
 
 	if (indexData.size)
 	{
-		RN_CHECK(glGenBuffers(1, &ibo));
-		RN_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo));
-		RN_CHECK(glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexData.size, indexData.data, indexData.usage));
+		RN_CHECK(glCreateBuffers(1, &ibo));
+		RN_CHECK(glNamedBufferData(ibo, indexData.size, indexData.data, indexData.usage));
 	}
-
+	else
+	{
+		ibo = 0;
+	}
 
 	reloadSoft();
 
@@ -188,20 +188,22 @@ void Mesh::reloadSoft()
 {
 	if (vbo)
 	{
-		RN_CHECK(glGenVertexArrays(1, &vao));
-		RN_CHECK(glBindVertexArray(vao));
+		RN_CHECK(glCreateVertexArrays(1, &vao));
 
-		// clog << meshName << " (" << vao << ") layouts:" << endl;
-		for (const auto & layout : layouts)
+		if (ibo)
 		{
-			// clog << layout.index << ", " << layout.size << ", " << rn::getEnumName(layout.type) << ", " << layout.stride << ", " << dec << reinterpret_cast<size_t>(layout.pointer) << " vbo=" << vbo << " ibo=" << ibo << endl;
-			RN_CHECK(glEnableVertexAttribArray(layout.index));
-			RN_CHECK(glBindBuffer(GL_ARRAY_BUFFER, vbo));
-			RN_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo));
-			RN_CHECK(glVertexAttribPointer(layout.index, layout.size, layout.type, GL_FALSE, layout.stride, layout.pointer));
+			RN_CHECK(glVertexArrayElementBuffer(vao, ibo));
 		}
 
-		RN_CHECK(glBindVertexArray(0));
+		for (const auto & layout : layouts)
+		{
+			RN_CHECK(glVertexArrayAttribBinding(vao, layout.index, 0));
+			RN_CHECK_PARAM(glVertexArrayAttribFormat(vao, layout.index, layout.size, layout.type, GL_FALSE, layout.offset), meshName << ": " << vao << ", " << layout.index << ", " << layout.size << ", " << rn::getEnumName(layout.type) << ", " << layout.offset);
+			// RN_CHECK_PARAM(glVertexArrayAttribFormat(vao, layout.index, layout.size, layout.type, GL_FALSE, layout.offset), vao);
+			RN_CHECK(glEnableVertexArrayAttrib(vao, layout.index));
+
+			RN_CHECK(glVertexArrayVertexBuffer(vao, 0, vbo, 0, layout.stride));
+		}
 	}
 }
 
@@ -256,7 +258,7 @@ void Mesh::buildBounds(const rn::BufferData &vertexData, const rn::VertexLayout 
 		return;
 	}
 
-	const uint8_t *data = reinterpret_cast<uint8_t *>(vertexData.data) + reinterpret_cast<size_t>(layout.pointer);
+	const uint8_t *data = reinterpret_cast<uint8_t *>(vertexData.data) + static_cast<size_t>(layout.offset);
 	const uint8_t *end = reinterpret_cast<uint8_t *>(vertexData.data) + vertexData.size;
 
 	while ((data + sizeof(GLfloat) * 3) < end)
@@ -308,6 +310,11 @@ namespace
 {
 	const util::InitQAttacher attach(rn::initQ(), []
 	{
+		if ( ! rn::ext::ARB_direct_state_access)
+		{
+			throw string{"rn::Mesh initQ - rn::Mesh requires GL_ARB_direct_state_access"};
+		}
+
 		auto &&source = src::mem::mesh({
 			-1.0f,  1.0f,  0.0f, 1.0f,
 			-1.0f, -1.0f,  0.0f, 0.0f,

@@ -329,7 +329,12 @@ void Mesh::open()
 	indices.clear();
 	indices.shrink_to_fit();
 	indices.reserve(1);
-	indices.emplace_back(static_cast<GLenum>(GL_TRIANGLES), static_cast<GLsizeiptr>(indexCache.size()), static_cast<GLenum>(GL_UNSIGNED_INT), static_cast<GLsizeiptr>(0));
+	indices.emplace_back(
+		static_cast<GLenum>(GL_TRIANGLES),
+		static_cast<GLsizeiptr>(indexCache.size()),
+		static_cast<GLenum>(GL_UNSIGNED_INT),
+		static_cast<GLsizeiptr>(0)
+	);
 
 	layouts.clear();
 	layouts.shrink_to_fit();
@@ -340,32 +345,40 @@ void Mesh::open()
 		case Branch::vert:
 		{
 			GLsizei stride = 3 * sizeof(GLfloat);
-			layouts.emplace_back(rn::LayoutLocation::pos, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(0 * sizeof(GLfloat)));
+			// layouts.emplace_back(rn::LayoutLocation::pos, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, static_cast<GLuint>(0 * sizeof(GLfloat)));
+			layouts.emplace_back(rn::LayoutLocation::pos, 3, GL_FLOAT, stride, 0 * sizeof(GLfloat));
 
 			break;
 		}
 		case Branch::vert_uv:
 		{
 			GLsizei stride = 5 * sizeof(GLfloat);
-			layouts.emplace_back(rn::LayoutLocation::pos, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(0 * sizeof(GLfloat)));
-			layouts.emplace_back(rn::LayoutLocation::tex, static_cast<GLint>(2), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(3 * sizeof(GLfloat)));
+			// layouts.emplace_back(rn::LayoutLocation::pos, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, static_cast<GLuint>(0 * sizeof(GLfloat)));
+			layouts.emplace_back(rn::LayoutLocation::pos, 3, GL_FLOAT, stride, 0 * sizeof(GLfloat));
+			// layouts.emplace_back(rn::LayoutLocation::tex, static_cast<GLint>(2), static_cast<GLenum>(GL_FLOAT), stride, static_cast<GLuint>(3 * sizeof(GLfloat)));
+			layouts.emplace_back(rn::LayoutLocation::tex, 2, GL_FLOAT, stride, 3 * sizeof(GLfloat));
 
 			break;
 		}
 		case Branch::vert_norm:
 		{
 			GLsizei stride = 6 * sizeof(GLfloat);
-			layouts.emplace_back(rn::LayoutLocation::pos, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(0 * sizeof(GLfloat)));
-			layouts.emplace_back(rn::LayoutLocation::norm, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(3 * sizeof(GLfloat)));
+			// layouts.emplace_back(rn::LayoutLocation::pos, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, static_cast<GLuint>(0 * sizeof(GLfloat)));
+			layouts.emplace_back(rn::LayoutLocation::pos, 3, GL_FLOAT, stride, 0 * sizeof(GLfloat));
+			// layouts.emplace_back(rn::LayoutLocation::norm, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, static_cast<GLuint>(3 * sizeof(GLfloat)));
+			layouts.emplace_back(rn::LayoutLocation::norm, 3, GL_FLOAT, stride, 3 * sizeof(GLfloat));
 
 			break;
 		}
 		case Branch::vert_uv_norm:
 		{
 			GLsizei stride = 8 * sizeof(GLfloat);
-			layouts.emplace_back(rn::LayoutLocation::pos, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(0 * sizeof(GLfloat)));
-			layouts.emplace_back(rn::LayoutLocation::tex, static_cast<GLint>(2), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(3 * sizeof(GLfloat)));
-			layouts.emplace_back(rn::LayoutLocation::norm, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, reinterpret_cast<GLvoid *>(5 * sizeof(GLfloat)));
+			// layouts.emplace_back(rn::LayoutLocation::pos, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, static_cast<GLuint>(0 * sizeof(GLfloat)));
+			layouts.emplace_back(rn::LayoutLocation::pos, 3, GL_FLOAT, stride, 0 * sizeof(GLfloat));
+			// layouts.emplace_back(rn::LayoutLocation::tex, static_cast<GLint>(2), static_cast<GLenum>(GL_FLOAT), stride, static_cast<GLuint>(3 * sizeof(GLfloat)));
+			layouts.emplace_back(rn::LayoutLocation::tex, 2, GL_FLOAT, stride, 3 * sizeof(GLfloat));
+			// layouts.emplace_back(rn::LayoutLocation::norm, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, static_cast<GLuint>(5 * sizeof(GLfloat)));
+			layouts.emplace_back(rn::LayoutLocation::norm, 3, GL_FLOAT, stride, 5 * sizeof(GLfloat));
 
 			break;
 		}

@@ -8,7 +8,7 @@
 	#include <GL/glew.h>
 #elif defined(NGN_USE_GL3W)
 	#include <GL/gl3w.h>
-#else
+#elif defined(NGN_USE_GLLOADGEN)
 	#include <GL/gl_core_3_3.h>
 #endif
 

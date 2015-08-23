@@ -36,8 +36,9 @@ public:
 	GLsizei width = 0;
 	GLsizei height = 0;
 
-	glm::vec4 clearColor{0.f, 0.f, 0.f, 0.f};
-	GLfloat clearDepth = 0.f;
+	glm::vec4 clearColorValue{0.f, 0.f, 0.f, 0.f};
+	GLfloat clearDepthValue = 0.f;
+	GLint clearStencilValue = 0;
 
 	std::vector<TexContainer> colorContainers{};
 	TexContainer depthContainer{};
@@ -63,6 +64,8 @@ public:
 	std::shared_ptr<rn::Tex> shareDepth();
 
 	void clear(BuffersMask mask);
+	void clearColor(size_t layer);
+	void clearDepthStencil();
 
 	void blit(FB &target, BuffersMask mask, MagFilter filter = MAG_NEAREST);
 	void blit(FB *target, BuffersMask mask, MagFilter filter = MAG_NEAREST);

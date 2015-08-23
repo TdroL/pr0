@@ -84,7 +84,7 @@ void CSM::init()
 		fb.attachColor(0, texColors, i);
 		fb.attachDepth(texDepths, i);
 
-		fb.clearColor = glm::vec4{1.f};
+		fb.clearColorValue = glm::vec4{1.f};
 		fb.reload();
 	}
 

@@ -159,17 +159,27 @@ void Font::reload()
 	sx = 2.0f / win::internalWidth;
 	sy = 2.0f / win::internalHeight;
 
-	RN_CHECK(glGenVertexArrays(1, &vao));
-	RN_CHECK(glGenBuffers(1, &vbo));
+	// RN_CHECK(glGenVertexArrays(1, &vao));
+	// RN_CHECK(glGenBuffers(1, &vbo));
+
+	// RN_CHECK(glCreateVertexArrays(1, &vao));
+	RN_CHECK(glCreateBuffers(1, &vbo));
+	reloadSoft();
 
 	// clog << "rn::Font::reload() - " << fontName << " vao=" << vao << " vbo=" << vbo << endl;
 
-	RN_CHECK(glGenTextures(1, &tex));
-	RN_CHECK(glBindTexture(GL_TEXTURE_2D, tex));
-	RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
-	RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
-	RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
-	RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+	// RN_CHECK(glGenTextures(1, &tex));
+	// RN_CHECK(glBindTexture(GL_TEXTURE_2D, tex));
+	// RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+	// RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+	// RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+	// RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+
+	RN_CHECK(glCreateTextures(GL_TEXTURE_2D, 1, &tex));
+	RN_CHECK(glTextureParameteri(tex, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+	RN_CHECK(glTextureParameteri(tex, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+	RN_CHECK(glTextureParameteri(tex, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+	RN_CHECK(glTextureParameteri(tex, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
 
 	RN_CHECK(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
 
@@ -210,8 +220,8 @@ void Font::reload()
 	atlasWidth = w;
 	atlasHeight = h;
 
-	RN_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr));
-	// RN_CHECK_PARAM(glTexStorage2D(GL_TEXTURE_2D, 1, GL_R8, w, h), rn::getEnumName(GL_R8));
+	// RN_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr));
+	RN_CHECK_PARAM(glTextureStorage2D(tex, 1, GL_R8, w, h), rn::getEnumName(GL_R8));
 
 	int ox = 0;
 	int oy = 0;
@@ -236,7 +246,8 @@ void Font::reload()
 
 		if (g->bitmap.buffer)
 		{
-			RN_CHECK(glTexSubImage2D(GL_TEXTURE_2D, 0, ox, oy, g->bitmap.width, g->bitmap.rows, GL_RED, GL_UNSIGNED_BYTE, g->bitmap.buffer));
+			// RN_CHECK(glTexSubImage2D(GL_TEXTURE_2D, 0, ox, oy, g->bitmap.width, g->bitmap.rows, GL_RED, GL_UNSIGNED_BYTE, g->bitmap.buffer));
+			RN_CHECK(glTextureSubImage2D(tex, 0, ox, oy, g->bitmap.width, g->bitmap.rows, GL_RED, GL_UNSIGNED_BYTE, g->bitmap.buffer));
 		}
 		else
 		{
@@ -259,7 +270,7 @@ void Font::reload()
 	}
 
 	RN_CHECK(glPixelStorei(GL_UNPACK_ALIGNMENT, 4));
-	RN_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
+	// RN_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
 
 	UTIL_DEBUG
 	{
@@ -271,7 +282,15 @@ void Font::reload()
 
 void Font::reloadSoft()
 {
-	RN_CHECK(glGenVertexArrays(1, &vao));
+	// RN_CHECK(glGenVertexArrays(1, &vao));
+	RN_CHECK(glCreateVertexArrays(1, &vao));
+
+	GLuint index = 0;
+	RN_CHECK(glVertexArrayAttribBinding(vao, index, 0));
+	RN_CHECK(glVertexArrayAttribFormat(vao, index, 4, GL_FLOAT, GL_FALSE, 0));
+	RN_CHECK(glEnableVertexArrayAttrib(vao, index));
+
+	RN_CHECK(glVertexArrayVertexBuffer(vao, 0, vbo, 0, sizeof(glm::vec4)));
 }
 
 void Font::reset()
@@ -310,16 +329,24 @@ void Font::render(const string &text)
 
 	prog.use();
 
-	RN_CHECK(glActiveTexture(GL_TEXTURE0 + 0));
-	RN_CHECK(glBindTexture(GL_TEXTURE_2D, tex));
-
-	prog.uniform("tex", 0);
+	// RN_CHECK(glActiveTexture(GL_TEXTURE0 + 0));
+	// RN_CHECK(glBindTexture(GL_TEXTURE_2D, tex));
+	GLuint unit = 0;
+	RN_CHECK(glBindTextureUnit(unit, tex));
+	prog.uniform<GLint>("tex", unit);
 	prog.uniform("color", color);
 
-	RN_CHECK(glBindVertexArray(vao));
-	RN_CHECK(glEnableVertexAttribArray(0));
-	RN_CHECK(glBindBuffer(GL_ARRAY_BUFFER, vbo));
-	RN_CHECK(glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0));
+	// RN_CHECK(glBindVertexArray(vao));
+	// RN_CHECK(glEnableVertexAttribArray(0));
+	// RN_CHECK(glBindBuffer(GL_ARRAY_BUFFER, vbo));
+	// RN_CHECK(glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0));
+
+
+	// glVertexAttribPointer(semantic::attr::POSITION, 2, GL_FLOAT, GL_FALSE, sizeof(glf::vertex_v2fv2f), BUFFER_OFFSET(0));
+
+	// glEnableVertexAttribArray(VertexArrayName, semantic::attr::POSITION);
+	// glVertexArrayAttribBinding(VertexArrayName, semantic::attr::POSITION, 0);
+	// glVertexArrayAttribFormat(VertexArrayName, semantic::attr::POSITION, 2, GL_FLOAT, GL_FALSE, 0);
 
 	GLsizei n = 0;
 
@@ -360,12 +387,15 @@ void Font::render(const string &text)
 		coords[n++] = glm::vec4{x2 + w, -y2 - h, fc.tx + fc.bw / aw, fc.ty + fc.bh / ah};
 	}
 
-	RN_CHECK(glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * text.size() * 6, coords.get(), GL_DYNAMIC_DRAW));
+	RN_CHECK(glNamedBufferData(vbo, sizeof(glm::vec4) * text.size() * 6, coords.get(), GL_DYNAMIC_DRAW));
+
+	RN_CHECK(glBindVertexArray(vao));
+
 	RN_CHECK(glDrawArrays(GL_TRIANGLES, 0, n));
 
-	rn::stats.triangles += n;
-
 	RN_CHECK(glBindVertexArray(0));
+
+	rn::stats.triangles += n;
 
 	prog.forgo();
 }
@@ -377,6 +407,11 @@ namespace
 		if ( ! rn::ext::ARB_texture_storage)
 		{
 			throw string{"rn::Font initQ - rn::Font requires GL_ARB_texture_storage"};
+		}
+
+		if ( ! rn::ext::ARB_direct_state_access)
+		{
+			throw string{"rn::Font initQ - rn::Font requires GL_ARB_direct_state_access"};
 		}
 
 		rn::Font::init();

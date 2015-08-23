@@ -5,7 +5,6 @@ layout(location = 0) out vec4 outColor;
 in vec2 uv;
 
 uniform sampler2D texSource;
-uniform sampler2D texDepth;
 uniform vec2 scale;
 
 float unpack2(vec2 source);

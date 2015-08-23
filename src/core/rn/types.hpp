@@ -3,6 +3,7 @@
 
 #include "../rn.hpp"
 #include <vector>
+#include <iostream>
 
 namespace rn
 {
@@ -20,16 +21,18 @@ struct VertexLayout
 	GLint size = 0;
 	GLenum type = GL_FLOAT;
 	GLsizei stride = 0;
-	GLvoid *pointer = 0;
+	GLuint offset = 0;
 
 	VertexLayout() = default;
-	VertexLayout(GLuint index, GLint size, GLenum type, GLsizei stride, GLvoid *pointer)
-		: index{index}, size{size}, type{type}, stride{stride}, pointer{pointer}
-	{}
+	VertexLayout(GLuint index, GLint size, GLenum type, GLsizei stride, GLuint offset)
+		: index{index}, size{size}, type{type}, stride{stride}, offset{offset}
+	{
+		// std::cout << "layout: " << index << ", " << size << ", " << rn::getEnumName(type) << ", " << stride << ", " << offset << std::endl;
+	}
 
-	VertexLayout(int index, int size, int type, int stride, int pointer)
-		: index{static_cast<GLuint>(index)}, size{static_cast<GLint>(size)}, type{static_cast<GLenum>(type)}, stride{static_cast<GLsizei>(stride)}, pointer{reinterpret_cast<GLvoid *>(pointer)}
-	{}
+	// VertexLayout(int index, int size, int type, int stride, int offset)
+	// 	: index{static_cast<GLuint>(index)}, size{static_cast<GLint>(size)}, type{static_cast<GLenum>(type)}, stride{static_cast<GLsizei>(stride)}, offset{static_cast<GLuint>(offset)}
+	// {}
 
 	VertexLayout(const VertexLayout &) = default;
 	VertexLayout(VertexLayout &&) = default;

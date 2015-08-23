@@ -15,7 +15,7 @@ LDIR =
 LIBS = -static -lgcc -lglfw3 -lgl_core_3_3 -lopengl32 -lstb_image -lfreetype -lminball
 
 DEFINES = \
-
+	-DNGN_USE_GLLOADGEN
 
 ifeq ($(MAKECMDGOALS),release)
 	CXXFLAGS += $(CXXFLAGS_RELEASE) \

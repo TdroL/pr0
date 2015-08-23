@@ -23,7 +23,7 @@ public:
 
 	GLsizei width = 0;
 	GLsizei height = 0;
-	GLint levels = 0;
+	GLint mipLevels = 0;
 
 	GLint internalFormat = format::RGBA8.layout;
 	GLenum format = format::RGBA8.components;
@@ -68,7 +68,14 @@ public:
 	bool isDepth() override;
 	bool isDepthStencil() override;
 
-	GLsizei bind(GLsizei unit) override;
+	GLsizei bind(GLsizei unit) const override;
+
+	virtual void setParam(GLenum pname, GLfloat param) override;
+	virtual void setParam(GLenum pname, GLint param) override;
+	virtual void setParam(GLenum pname, const GLfloat *param) override;
+	virtual void setParam(GLenum pname, const GLint *param) override;
+	virtual void setParamI(GLenum pname, const GLuint *param) override;
+	virtual void setParamI(GLenum pname, const GLint *param) override;
 
 	GLenum getAttachmentType() override;
 };

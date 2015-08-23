@@ -47,7 +47,12 @@ void Mesh::setIndices(vector<GLuint> &&indices, GLenum mode)
 		indexData.data = indexCache.data();
 		indexData.usage = GL_STATIC_DRAW;
 
-		this->indices.emplace_back(static_cast<GLenum>(mode), static_cast<GLsizeiptr>(indexCache.size()), static_cast<GLenum>(GL_UNSIGNED_INT), static_cast<GLsizeiptr>(0));
+		this->indices.emplace_back(
+			static_cast<GLenum>(mode),
+			static_cast<GLsizeiptr>(indexCache.size()),
+			static_cast<GLenum>(GL_UNSIGNED_INT),
+			static_cast<GLsizeiptr>(0)
+		);
 	}
 }
 

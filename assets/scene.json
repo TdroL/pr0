@@ -28,6 +28,9 @@
 			"diffuse": [0.25, 0.5, 0.75, 1.0],
 			"shininess": 0.0
 		},
+		"shading": {
+			"group": "flat"
+		},
 		"stencil": {
 			"ref": "flat"
 		}
@@ -42,6 +45,9 @@
 		"material": {
 			"diffuse": [0.75, 0.75, 0.75, 1.0],
 			"shininess": 0.0675
+		},
+		"shading": {
+			"group": "shaded"
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -62,6 +68,9 @@
 			"diffuse": [0.19, 0.15, 0.11, 1.0],
 			"shininess": 0.5
 		},
+		"shading": {
+			"group": "shaded"
+		},
 		"stencil": {
 			"ref": "shaded"
 		},
@@ -80,6 +89,9 @@
 		"material": {
 			"diffuse": [0.16, 0.04, 0.16, 1.0],
 			"shininess": 0.25
+		},
+		"shading": {
+			"group": "shaded"
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -101,6 +113,9 @@
 			"diffuse": [0.16, 0.16, 0.04, 1.0],
 			"shininess": 0.125
 		},
+		"shading": {
+			"group": "shaded"
+		},
 		"stencil": {
 			"ref": "shaded"
 		},
@@ -120,6 +135,9 @@
 		"material": {
 			"diffuse": [0.16, 0.16, 0.04, 1.0],
 			"shininess": 0.25
+		},
+		"shading": {
+			"group": "shaded"
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -142,6 +160,9 @@
 			"diffuse": [0.16, 0.16, 0.04, 1.0],
 			"shininess": 0.125
 		},
+		"shading": {
+			"group": "shaded"
+		},
 		"stencil": {
 			"ref": "shaded"
 		},
@@ -155,13 +176,16 @@
 			"name": "Torus #2"
 		},
 		"transform": {
-			"translation": [4.5, 0.0, -2.5],
+			"translation": [4.5, 0.0, -1.5],
 			"scale": [1.0],
 			"rotation": [-45.0, 0.0, -45.0]
 		},
 		"material": {
-			"diffuse": [0.16, 0.16, 0.04, 1.0],
+			"diffuse": [0.16, 0.04, 0.04, 1.0],
 			"shininess": 0.125
+		},
+		"shading": {
+			"group": "shaded"
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -183,6 +207,9 @@
 			"diffuse": [0.04, 0.16, 0.04, 1.0],
 			"shininess": 0.0675
 		},
+		"shading": {
+			"group": "shaded"
+		},
 		"stencil": {
 			"ref": "shaded"
 		},
@@ -200,6 +227,9 @@
 		"material": {
 			"diffuse": [0.18, 0.18, 0.18, 1.0],
 			"shininess": 0.03375
+		},
+		"shading": {
+			"group": "shaded"
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -225,6 +255,9 @@
 			"diffuse": [0.5, 0.5, 0.5, 1],
 			"shininess": 0.04
 		},
+		"shading": {
+			"group": "shaded"
+		},
 		"stencil": {
 			"ref": "shaded"
 		},
@@ -243,6 +276,9 @@
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
 			"shininess": 0.08
+		},
+		"shading": {
+			"group": "shaded"
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -263,6 +299,9 @@
 			"diffuse": [0.5, 0.5, 0.5, 1],
 			"shininess": 0.12
 		},
+		"shading": {
+			"group": "shaded"
+		},
 		"stencil": {
 			"ref": "shaded"
 		},
@@ -281,6 +320,9 @@
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
 			"shininess": 0.16
+		},
+		"shading": {
+			"group": "shaded"
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -301,6 +343,9 @@
 			"diffuse": [0.5, 0.5, 0.5, 1],
 			"shininess": 0.2
 		},
+		"shading": {
+			"group": "shaded"
+		},
 		"stencil": {
 			"ref": "shaded"
 		},
@@ -319,6 +364,9 @@
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
 			"shininess": 0.24
+		},
+		"shading": {
+			"group": "shaded"
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -339,6 +387,9 @@
 			"diffuse": [0.5, 0.5, 0.5, 1],
 			"shininess": 0.28
 		},
+		"shading": {
+			"group": "shaded"
+		},
 		"stencil": {
 			"ref": "shaded"
 		},
@@ -357,6 +408,9 @@
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
 			"shininess": 0.32
+		},
+		"shading": {
+			"group": "shaded"
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -377,6 +431,9 @@
 			"diffuse": [0.5, 0.5, 0.5, 1],
 			"shininess": 0.36
 		},
+		"shading": {
+			"group": "shaded"
+		},
 		"stencil": {
 			"ref": "shaded"
 		},
@@ -395,6 +452,9 @@
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
 			"shininess": 0.4
+		},
+		"shading": {
+			"group": "shaded"
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -415,6 +475,9 @@
 			"diffuse": [0.5, 0.5, 0.5, 1],
 			"shininess": 0.44
 		},
+		"shading": {
+			"group": "shaded"
+		},
 		"stencil": {
 			"ref": "shaded"
 		},
@@ -433,6 +496,9 @@
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
 			"shininess": 0.48
+		},
+		"shading": {
+			"group": "shaded"
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -453,6 +519,9 @@
 			"diffuse": [0.5, 0.5, 0.5, 1],
 			"shininess": 0.52
 		},
+		"shading": {
+			"group": "shaded"
+		},
 		"stencil": {
 			"ref": "shaded"
 		},
@@ -471,6 +540,9 @@
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
 			"shininess": 0.56
+		},
+		"shading": {
+			"group": "shaded"
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -491,6 +563,9 @@
 			"diffuse": [0.5, 0.5, 0.5, 1],
 			"shininess": 0.6
 		},
+		"shading": {
+			"group": "shaded"
+		},
 		"stencil": {
 			"ref": "shaded"
 		},
@@ -509,6 +584,9 @@
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
 			"shininess": 0.64
+		},
+		"shading": {
+			"group": "shaded"
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -529,6 +607,9 @@
 			"diffuse": [0.5, 0.5, 0.5, 1],
 			"shininess": 0.68
 		},
+		"shading": {
+			"group": "shaded"
+		},
 		"stencil": {
 			"ref": "shaded"
 		},
@@ -547,6 +628,9 @@
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
 			"shininess": 0.72
+		},
+		"shading": {
+			"group": "shaded"
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -567,6 +651,9 @@
 			"diffuse": [0.5, 0.5, 0.5, 1],
 			"shininess": 0.76
 		},
+		"shading": {
+			"group": "shaded"
+		},
 		"stencil": {
 			"ref": "shaded"
 		},
@@ -585,6 +672,9 @@
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
 			"shininess": 0.8
+		},
+		"shading": {
+			"group": "shaded"
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -605,6 +695,9 @@
 			"diffuse": [0.5, 0.5, 0.5, 1],
 			"shininess": 0.84
 		},
+		"shading": {
+			"group": "shaded"
+		},
 		"stencil": {
 			"ref": "shaded"
 		},
@@ -623,6 +716,9 @@
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
 			"shininess": 0.88
+		},
+		"shading": {
+			"group": "shaded"
 		},
 		"stencil": {
 			"ref": "shaded"
@@ -643,6 +739,9 @@
 			"diffuse": [0.5, 0.5, 0.5, 1],
 			"shininess": 0.92
 		},
+		"shading": {
+			"group": "shaded"
+		},
 		"stencil": {
 			"ref": "shaded"
 		},
@@ -662,6 +761,9 @@
 			"diffuse": [0.5, 0.5, 0.5, 1],
 			"shininess": 0.96
 		},
+		"shading": {
+			"group": "shaded"
+		},
 		"stencil": {
 			"ref": "shaded"
 		},
@@ -680,6 +782,9 @@
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
 			"shininess": 1.0
+		},
+		"shading": {
+			"group": "shaded"
 		},
 		"stencil": {
 			"ref": "shaded"

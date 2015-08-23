@@ -26,7 +26,7 @@ void SSAO::init(const comp::Projection &projectionIn)
 	auto texZ = make_shared<rn::Tex2D>("fx::SSAO::fbZ.color[0]");
 	texZ->width = win::internalWidth;
 	texZ->height = win::internalHeight;
-	texZ->levels = zMipLevels;
+	texZ->mipLevels = zMipLevels;
 	texZ->minFilter = rn::MIN_NEAREST_NEAREST;
 	texZ->magFilter = rn::MAG_LINEAR;
 	texZ->wrapS = rn::WRAP_CLAMP;
@@ -52,7 +52,7 @@ void SSAO::init(const comp::Projection &projectionIn)
 	texAO->internalFormat = rn::format::RGB8.layout;
 	texAO->reload();
 
-	fbAO.clearColor = glm::vec4{1.f, 0.f, 0.f, 0.f};
+	fbAO.clearColorValue = glm::vec4{1.f, 0.f, 0.f, 0.f};
 	fbAO.attachColor(0, texAO);
 	fbAO.reload();
 
@@ -169,7 +169,7 @@ void SSAO::clear()
 	}
 }
 
-void SSAO::genMipMaps(rn::FB &fbGBuffer)
+void SSAO::genMipMaps(const rn::Tex *texDepth)
 {
 	RN_SCOPE_DISABLE(GL_BLEND);
 	RN_SCOPE_DISABLE(GL_DEPTH_TEST);
@@ -183,7 +183,7 @@ void SSAO::genMipMaps(rn::FB &fbGBuffer)
 
 		progReconstructZ.use();
 
-		progReconstructZ.var("texDepth", fbGBuffer.depth()->bind(0));
+		progReconstructZ.var("texDepth", texDepth->bind(0));
 
 		rn::Mesh::quad.render();
 
@@ -217,7 +217,7 @@ void SSAO::genMipMaps(rn::FB &fbGBuffer)
 	profMipMaps.stop();
 }
 
-void SSAO::computeAO(rn::FB &fbGBuffer)
+void SSAO::computeAO(const rn::Tex *texNormal)
 {
 	profAO.start();
 
@@ -230,11 +230,8 @@ void SSAO::computeAO(rn::FB &fbGBuffer)
 	progSAO.use();
 
 	size_t unit = 0;
-	progSAO.var("texColor", fbGBuffer.color(0)->bind(unit++));
-	progSAO.var("texNormal", fbGBuffer.color(1)->bind(unit++));
-	progSAO.var("texZYX", fbGBuffer.color(2)->bind(unit++));
-	progSAO.var("texDepth", fbGBuffer.depth()->bind(unit++));
 	progSAO.var("texZ", fbZ.color(0)->bind(unit++));
+	progSAO.var("texNormal", texNormal->bind(unit++));
 
 	rn::Mesh::quad.render();
 
@@ -243,7 +240,7 @@ void SSAO::computeAO(rn::FB &fbGBuffer)
 	profAO.stop();
 }
 
-void SSAO::blur(rn::FB &fbGBuffer)
+void SSAO::blur()
 {
 	profBlur.start();
 
@@ -251,8 +248,6 @@ void SSAO::blur(rn::FB &fbGBuffer)
 	RN_SCOPE_DISABLE(GL_BLEND);
 
 	progBlur.use();
-	progBlur.var("texNormal", fbGBuffer.color(1)->bind(1));
-	progBlur.var("texDepth", fbGBuffer.depth()->bind(2));
 
 	{
 		RN_FB_BIND(fbBlur);

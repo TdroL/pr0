@@ -5,6 +5,7 @@
 
 #include <core/rn.hpp>
 #include <core/rn/fb.hpp>
+#include <core/rn/tex.hpp>
 #include <core/rn/program.hpp>
 #include <core/rn/prof.hpp>
 
@@ -43,9 +44,9 @@ public:
 
 	void clear();
 
-	void genMipMaps(rn::FB &fbGBuffer);
-	void computeAO(rn::FB &fbGBuffer);
-	void blur(rn::FB &fbGBuffer);
+	void genMipMaps(const rn::Tex *texDepth);
+	void computeAO(const rn::Tex *texNormal);
+	void blur();
 };
 
 } // fx

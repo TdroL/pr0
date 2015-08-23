@@ -27,6 +27,7 @@
 #include <app/comp/position.hpp>
 #include <app/comp/projection.hpp>
 #include <app/comp/rotation.hpp>
+#include <app/comp/shading.hpp>
 #include <app/comp/stencil.hpp>
 #include <app/comp/temporaltransform.hpp>
 #include <app/comp/transform.hpp>
@@ -138,6 +139,25 @@ void App::init()
 	profPointLight.init();
 	profFlatLight.init();
 	profSSAO.init();
+
+	cout << "profZPrefill " << endl;
+	cout << "  front=" << profZPrefill.front << " back=" << profZPrefill.back << " queries=[" << profZPrefill.queries[0][0] << ", " << profZPrefill.queries[0][1] << ", " << profZPrefill.queries[1][0] << ", " << profZPrefill.queries[1][1] << "]" << endl;
+	cout << "profSetupLights " << endl;
+	cout << "  front=" << profSetupLights.front << " back=" << profSetupLights.back << " queries=[" << profSetupLights.queries[0][0] << ", " << profSetupLights.queries[0][1] << ", " << profSetupLights.queries[1][0] << ", " << profSetupLights.queries[1][1] << "]" << endl;
+	cout << "profLighting " << endl;
+	cout << "  front=" << profLighting.front << " back=" << profLighting.back << " queries=[" << profLighting.queries[0][0] << ", " << profLighting.queries[0][1] << ", " << profLighting.queries[1][0] << ", " << profLighting.queries[1][1] << "]" << endl;
+	cout << "profRender " << endl;
+	cout << "  front=" << profRender.front << " back=" << profRender.back << " queries=[" << profRender.queries[0][0] << ", " << profRender.queries[0][1] << ", " << profRender.queries[1][0] << ", " << profRender.queries[1][1] << "]" << endl;
+	cout << "profGBuffer " << endl;
+	cout << "  front=" << profGBuffer.front << " back=" << profGBuffer.back << " queries=[" << profGBuffer.queries[0][0] << ", " << profGBuffer.queries[0][1] << ", " << profGBuffer.queries[1][0] << ", " << profGBuffer.queries[1][1] << "]" << endl;
+	cout << "profDirectionalLight " << endl;
+	cout << "  front=" << profDirectionalLight.front << " back=" << profDirectionalLight.back << " queries=[" << profDirectionalLight.queries[0][0] << ", " << profDirectionalLight.queries[0][1] << ", " << profDirectionalLight.queries[1][0] << ", " << profDirectionalLight.queries[1][1] << "]" << endl;
+	cout << "profPointLight " << endl;
+	cout << "  front=" << profPointLight.front << " back=" << profPointLight.back << " queries=[" << profPointLight.queries[0][0] << ", " << profPointLight.queries[0][1] << ", " << profPointLight.queries[1][0] << ", " << profPointLight.queries[1][1] << "]" << endl;
+	cout << "profFlatLight " << endl;
+	cout << "  front=" << profFlatLight.front << " back=" << profFlatLight.back << " queries=[" << profFlatLight.queries[0][0] << ", " << profFlatLight.queries[0][1] << ", " << profFlatLight.queries[1][0] << ", " << profFlatLight.queries[1][1] << "]" << endl;
+	cout << "profSSAO " << endl;
+	cout << "  front=" << profSSAO.front << " back=" << profSSAO.back << " queries=[" << profSSAO.queries[0][0] << ", " << profSSAO.queries[0][1] << ", " << profSSAO.queries[1][0] << ", " << profSSAO.queries[1][1] << "]" << endl;
 
 	/* Test: switch to window mode */
 	UTIL_DEBUG
@@ -349,7 +369,7 @@ void App::initFB()
 		fbScreen.attachDepth(texDepth);
 	}
 
-	fbScreen.clearColor = glm::vec4{0.f, 0.f, 0.f, 0.f};
+	fbScreen.clearColorValue = glm::vec4{0.f, 0.f, 0.f, 0.f};
 	fbScreen.reload();
 
 	// fbZPrefill
@@ -385,7 +405,7 @@ void App::initFB()
 		fbZPrefill.attachDepth(texDepth);
 	}
 
-	fbZPrefill.clearColor = glm::vec4{0.f, 0.f, 0.f, 0.f};
+	fbZPrefill.clearColorValue = glm::vec4{0.f, 0.f, 0.f, 0.f};
 	fbZPrefill.reload();
 
 	// fbScreenForward
@@ -404,7 +424,7 @@ void App::initFB()
 		fbScreenForward.attachDepth(texDepth);
 	}
 
-	fbScreenForward.clearColor = glm::vec4{0.f, 0.f, 0.f, 0.f};
+	fbScreenForward.clearColorValue = glm::vec4{0.f, 0.f, 0.f, 0.f};
 	fbScreenForward.reload();
 
 	// fbUI
@@ -418,7 +438,7 @@ void App::initFB()
 		fbUI.attachColor(0, texColor);
 	}
 
-	fbUI.clearColor = glm::vec4{0.f, 0.f, 0.f, 0.f};
+	fbUI.clearColorValue = glm::vec4{0.f, 0.f, 0.f, 0.f};
 	fbUI.reload();
 
 	event::subscribe<win::WindowResizeEvent>([&] (const win::WindowResizeEvent &)
@@ -483,7 +503,7 @@ void App::initFB()
 	// 	fbShadowMap.attachDepth(texDepth);
 	// }
 
-	// fbShadowMap.clearColor = glm::vec4{1.f};
+	// fbShadowMap.clearColorValue = glm::vec4{1.f};
 	// fbShadowMap.reload();
 
 	// fbShadowMapBlur
@@ -963,6 +983,10 @@ void App::render()
 		zPrefillForwardPass();
 		profZPrefill.stop();
 
+		profSSAO.start();
+		ssaoPass();
+		profSSAO.stop();
+
 		profSetupLights.start();
 		setupLightsForwardPass();
 		profSetupLights.stop();
@@ -1018,12 +1042,15 @@ void App::render()
 			oss << "fps=" << 1.0 / ft << " (frame)\n";
 			oss << "triangles=" << rn::stats.triangles << "\n";
 			oss << "\n";
-
-			oss << "render=" << profRender.ms() << "ms (" << (1000.0 / profRender.ms()) << ")\n";
-			oss << "  ZPrefill=" << profZPrefill.ms() << "ms\n";
-			oss << "  SetupLights=" << profSetupLights.ms() << "ms\n";
-			oss << "  Lighting=" << profLighting.ms() << "ms\n";
-
+			oss << "render=" << profRender.ms() << "ms/" << profRender.latency() << "f (" << (1000.0 / profRender.ms()) << ")\n";
+			oss << "  ZPrefill=" << profZPrefill.ms() << "ms/" << profZPrefill.latency() << "f\n";
+			oss << "  SSAO=" << profSSAO.ms() << "ms/" << profSSAO.latency() << "f\n";
+			oss << "    Z=" << ssao.profZ.ms() << "ms/" << ssao.profZ.latency() << "f\n";
+			oss << "    MipMaps=" << ssao.profMipMaps.ms() << "ms/" << ssao.profMipMaps.latency() << "f\n";
+			oss << "    AO=" << ssao.profAO.ms() << "ms/" << ssao.profAO.latency() << "f\n";
+			oss << "    Blur=" << ssao.profBlur.ms() << "ms/" << ssao.profBlur.latency() << "f\n";
+			oss << "  SetupLights=" << profSetupLights.ms() << "ms/" << profSetupLights.latency() << "f\n";
+			oss << "  Lighting=" << profLighting.ms() << "ms/" << profLighting.latency() << "f\n";
 			oss << "\n";
 			oss << "F4 - reload scene\n";
 			oss << "F5 - reload shaders\n";
@@ -1034,8 +1061,8 @@ void App::render()
 			oss << "F10 - change vsync mode (current: " << vsyncNames[currentVsync] << ")\n";
 			oss << "F11 - change window mode (current: " << modeNames[currentMode] << ")\n";
 			oss << "\n";
-			oss << "Movement: W, A, S, D\n";
-			oss << "Camera: arrows\n";
+			oss << "Movement: W, A, S, D, SPACE, CTRL (SHIFT - slower movement)\n";
+			oss << "Camera: arrows (SHIFT - slower rotation)\n";
 			oss << "Point Light: Keypad 8, 4, 5, 6\n\n";
 			oss << "Toggles:\n";
 
@@ -1162,18 +1189,17 @@ void App::render()
 			// progShadowMapPreview.var("texSource", fbShadowMap.color(0)->bind(0));
 			// progShadowMapPreview.var("texSource", csm.fbShadows[0].color(0)->bind(0));
 
-			auto unit = csm.texDepths->bind(0);
-			RN_CHECK(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_MODE, GL_NONE));
+			RN_CHECK(glTextureParameteri(csm.texDepths->id, GL_TEXTURE_COMPARE_MODE, GL_NONE));
 
-			progShadowMapPreview.var("texSource", unit);
+			progShadowMapPreview.var("texSource", csm.texDepths->bind(0));
 			progShadowMapPreview.var("layer", toggleCascade.value);
 
 			rn::Mesh::quad.render();
 
 			progShadowMapPreview.forgo();
 
-			RN_CHECK(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE));
-			RN_CHECK_PARAM(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_FUNC, csm.texDepths->compareFunc), rn::getEnumName(csm.texDepths->compareFunc));
+			RN_CHECK(glTextureParameteri(csm.texDepths->id, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE));
+			RN_CHECK_PARAM(glTextureParameteri(csm.texDepths->id, GL_TEXTURE_COMPARE_FUNC, csm.texDepths->compareFunc), rn::getEnumName(csm.texDepths->compareFunc));
 		}
 
 		fbScreen.unbind();
@@ -1349,28 +1375,37 @@ void App::lightingForwardPass()
 	const auto &P = projection.matrix;
 	const auto &view = ecs::get<View>(cameraId);
 	const auto &V = view.matrix;
+	const auto VP = P * V;
 
-	const phs::Frustum frustum{P * V};
+	const phs::Frustum frustum{VP};
 
 	RN_FB_BIND(fbScreenForward);
 
 	fbScreenForward.clear(rn::BUFFER_COLOR);
 
 	RN_CHECK(glDepthMask(GL_FALSE));
-	// RN_SCOPE_DISABLE(GL_DEPTH_TEST);
 
 	progLightingForward.use();
 	progLightingForward.uniform("P", P);
 	progLightingForward.uniform("V", V);
 
-	progLightingForward.uniform("lightD", directionalLightData.bind(0));
-	progLightingForward.uniform("lightP", pointLightData.bind(1));
+	progLightingForward.uniform("fbScale", glm::vec2{1.f / fbScreenForward.width, 1.f / fbScreenForward.height});
+
+	size_t unit = 0;
+	progLightingForward.uniform("texAO", ssao.fbAO.color(0)->bind(unit++));
+	progLightingForward.uniform("lightD", directionalLightData.bind(unit++));
+	progLightingForward.uniform("lightP", pointLightData.bind(unit++));
 	progLightingForward.uniform("lightDCount", directionalLightCount);
 	progLightingForward.uniform("lightPCount", pointLightCount);
 
 	for (auto &entity : ecs::findWith<Transform, Mesh, Material>())
 	{
 		if (ecs::has<BoundingObject>(entity) && ! proc::FrustumProcess::isVisible(entity, frustum))
+		{
+			continue;
+		}
+
+		if (ecs::has<Shading>(entity) && ecs::get<Shading>(entity).group != Shading::GROUP_SHADED)
 		{
 			continue;
 		}
@@ -1632,10 +1667,24 @@ void App::ssaoPass()
 		return;
 	}
 
-	ssao.genMipMaps(fbGBuffer);
-	ssao.computeAO(fbGBuffer);
+	rn::Tex *texDepth;
+	rn::Tex *texNormal;
+
+	if ( ! toggleDeferred.value)
+	{
+		texDepth = fbZPrefill.depth();
+		texNormal = fbZPrefill.color(0);
+	}
+	else
+	{
+		texDepth = fbGBuffer.depth();
+		texNormal = fbGBuffer.color(1);
+	}
+
+	ssao.genMipMaps(texDepth);
+	ssao.computeAO(texNormal);
 
 	if (toggleSSAOBlur.value) {
-		ssao.blur(fbGBuffer);
+		ssao.blur();
 	}
 }

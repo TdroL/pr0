@@ -9,8 +9,6 @@ uniform mat4 P;
 uniform mat4 invP;
 
 uniform sampler2D texZ;
-uniform sampler2D texZYX;
-uniform sampler2D texDepth;
 uniform sampler2D texNormal;
 
 uniform vec4 projectionInfo;
@@ -123,6 +121,4 @@ void main()
 	vec2 packedZ = pack2(clamp(position.z / maxZFar, 0.0, 1.0));
 
 	outColor = vec4(o, packedZ, 1.0);
-	// outColor = vec4(vec3(edge), 1.0);
-	// outColor = vec4(normal, 1.0);
 }

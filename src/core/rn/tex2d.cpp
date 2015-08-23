@@ -1,10 +1,10 @@
 #include <pch.hpp>
 
 #include "tex2d.hpp"
+#include "ext.hpp"
 
 #include "../ngn.hpp"
 #include "../rn.hpp"
-#include "../rn/ext.hpp"
 
 #include <utility>
 #include <iostream>
@@ -66,7 +66,7 @@ Tex2D::Tex2D(Tex2D &&rhs)
 	id = move(rhs.id);
 	width = move(rhs.width);
 	height = move(rhs.height);
-	levels = move(rhs.levels);
+	mipLevels = move(rhs.mipLevels);
 	internalFormat = move(rhs.internalFormat);
 	format = move(rhs.format);
 	type = move(rhs.type);
@@ -98,7 +98,7 @@ Tex2D & Tex2D::operator=(Tex2D &&rhs)
 	id = move(rhs.id);
 	width = move(rhs.width);
 	height = move(rhs.height);
-	levels = move(rhs.levels);
+	mipLevels = move(rhs.mipLevels);
 	internalFormat = move(rhs.internalFormat);
 	format = move(rhs.format);
 	type = move(rhs.type);
@@ -123,18 +123,26 @@ void Tex2D::reload()
 
 	reset();
 
-	RN_CHECK(glGenTextures(1, &id));
+	// RN_CHECK(glGenTextures(1, &id));
 
-	RN_CHECK(glBindTexture(GL_TEXTURE_2D, id));
+	// RN_CHECK(glBindTexture(GL_TEXTURE_2D, id));
 
-	RN_CHECK_PARAM(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter), rn::getEnumName(minFilter));
-	RN_CHECK_PARAM(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter), rn::getEnumName(magFilter));
-	RN_CHECK_PARAM(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapS), rn::getEnumName(wrapS));
-	RN_CHECK_PARAM(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapT), rn::getEnumName(wrapT));
+	RN_CHECK(glCreateTextures(GL_TEXTURE_2D, 1, &id));
+
+	// RN_CHECK_PARAM(glTextureParameteri(id, GL_TEXTURE_MIN_FILTER, minFilter), rn::getEnumName(minFilter));
+	// RN_CHECK_PARAM(glTextureParameteri(id, GL_TEXTURE_MAG_FILTER, magFilter), rn::getEnumName(magFilter));
+	// RN_CHECK_PARAM(glTextureParameteri(id, GL_TEXTURE_WRAP_S, wrapS), rn::getEnumName(wrapS));
+	// RN_CHECK_PARAM(glTextureParameteri(id, GL_TEXTURE_WRAP_T, wrapT), rn::getEnumName(wrapT));
+
+	setParam(GL_TEXTURE_MIN_FILTER, minFilter);
+	setParam(GL_TEXTURE_MAG_FILTER, magFilter);
+	setParam(GL_TEXTURE_WRAP_S, wrapS);
+	setParam(GL_TEXTURE_WRAP_T, wrapT);
 
 	if (wrapS == WRAP_BORDER || wrapT == WRAP_BORDER)
 	{
-		RN_CHECK(glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(borderColor)));
+		// RN_CHECK(glTextureParameterfv(id, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(borderColor)));
+		setParam(GL_TEXTURE_BORDER_COLOR, glm::value_ptr(borderColor));
 	}
 
 	GLsizei mipWidth = width;
@@ -149,7 +157,7 @@ void Tex2D::reload()
 
 		width = source->width;
 		height = source->height;
-		levels = source->levels;
+		mipLevels = source->levels;
 
 		format = source->format;
 		type = source->type;
@@ -182,7 +190,7 @@ void Tex2D::reload()
 
 	if ( ! width || ! height)
 	{
-		RN_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
+		// RN_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
 
 		UTIL_DEBUG
 		{
@@ -194,10 +202,13 @@ void Tex2D::reload()
 		return;
 	}
 
-	if (levels > 0)
+	if (mipLevels > 0)
 	{
-		RN_CHECK_PARAM(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, levels), levels);
+		// RN_CHECK_PARAM(glTextureParameteri(id, GL_TEXTURE_MAX_LEVEL, mipLevels), mipLevels);
+		setParam(GL_TEXTURE_MAX_LEVEL, mipLevels);
 	}
+
+	RN_CHECK_PARAM(glTextureStorage2D(id, mipLevels + 1, internalFormat, width, height), mipLevels << ", " << rn::getEnumName(internalFormat) << ", " << width << ", " << height);
 
 	if (data)
 	{
@@ -235,13 +246,16 @@ void Tex2D::reload()
 		}
 
 		if (isDepth() && compareFunc != COMPARE_NONE) {
-			RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE));
-			RN_CHECK_PARAM(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, compareFunc), rn::getEnumName(compareFunc));
+			// RN_CHECK(glTextureParameteri(id, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE));
+			// RN_CHECK_PARAM(glTextureParameteri(id, GL_TEXTURE_COMPARE_FUNC, compareFunc), rn::getEnumName(compareFunc));
+			setParam(GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+			setParam(GL_TEXTURE_COMPARE_FUNC, compareFunc);
 		}
 
-		for (GLint i = 0; i <= levels && data < dataEnd; i++)
+		for (GLint i = 0; i <= mipLevels && data < dataEnd; i++)
 		{
-			RN_CHECK_PARAM(glTexImage2D(GL_TEXTURE_2D, i, internalFormat, mipWidth, mipHeight, 0, format, type, reinterpret_cast<GLvoid *>(data)), i << ", " << rn::getEnumName(internalFormat) << ", " << mipWidth << ", " << mipHeight << ", " << rn::getEnumName(format) << ", " << rn::getEnumName(type) << ", " << reinterpret_cast<void *>(data));
+			// RN_CHECK_PARAM(glTexImage2D(GL_TEXTURE_2D, i, internalFormat, mipWidth, mipHeight, 0, format, type, reinterpret_cast<GLvoid *>(data)), i << ", " << rn::getEnumName(internalFormat) << ", " << mipWidth << ", " << mipHeight << ", " << rn::getEnumName(format) << ", " << rn::getEnumName(type) << ", " << reinterpret_cast<void *>(data));
+			RN_CHECK_PARAM(glTextureSubImage2D(id, i, 0, 0, mipWidth, mipHeight, format, type, reinterpret_cast<GLvoid *>(data)), i << ", " << mipWidth << ", " << mipHeight << ", " << rn::getEnumName(format) << ", " << rn::getEnumName(type) << ", " << reinterpret_cast<void *>(data));
 
 			data += mipWidth * mipHeight * pixesSize;
 
@@ -289,20 +303,22 @@ void Tex2D::reload()
 		}
 
 		if (isDepth() && compareFunc != COMPARE_NONE) {
-			RN_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE));
-			RN_CHECK_PARAM(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, compareFunc), rn::getEnumName(compareFunc));
+			// RN_CHECK(glTextureParameteri(id, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE));
+			// RN_CHECK_PARAM(glTextureParameteri(id, GL_TEXTURE_COMPARE_FUNC, compareFunc), rn::getEnumName(compareFunc));
+			setParam(GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+			setParam(GL_TEXTURE_COMPARE_FUNC, compareFunc);
 		}
 
-		for (GLint i = 0; i <= levels; i++)
-		{
-			RN_CHECK_PARAM(glTexImage2D(GL_TEXTURE_2D, i, internalFormat, mipWidth, mipHeight, 0, format, type, nullptr), i << ", " << rn::getEnumName(internalFormat) << ", " << mipWidth << ", " << mipHeight << ", " << rn::getEnumName(format) << ", " << rn::getEnumName(type));
+		// for (GLint i = 0; i <= mipLevels; i++)
+		// {
+		// 	RN_CHECK_PARAM(glTexImage2D(GL_TEXTURE_2D, i, internalFormat, mipWidth, mipHeight, 0, format, type, nullptr), i << ", " << rn::getEnumName(internalFormat) << ", " << mipWidth << ", " << mipHeight << ", " << rn::getEnumName(format) << ", " << rn::getEnumName(type));
 
-			mipWidth = max(1, mipWidth / 2);
-			mipHeight = max(1, mipHeight / 2);
-		}
+		// 	mipWidth = max(1, mipWidth / 2);
+		// 	mipHeight = max(1, mipHeight / 2);
+		// }
 	}
 
-	RN_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
+	// RN_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
 
 	UTIL_DEBUG
 	{
@@ -349,12 +365,44 @@ bool Tex2D::isDepthStencil()
 	}
 }
 
-GLsizei Tex2D::bind(GLsizei unit)
+GLsizei Tex2D::bind(GLsizei unit) const
 {
-	RN_CHECK(glActiveTexture(GL_TEXTURE0 + unit));
-	RN_CHECK(glBindTexture(GL_TEXTURE_2D, id));
+	// RN_CHECK(glActiveTexture(GL_TEXTURE0 + unit));
+	// RN_CHECK(glBindTexture(GL_TEXTURE_2D, id));
+
+	RN_CHECK(glBindTextureUnit(unit, id));
 
 	return unit;
+}
+
+void Tex2D::setParam(GLenum pname, GLfloat param)
+{
+	RN_CHECK_PARAM(glTextureParameterf(id, pname, param), rn::getEnumName(pname) << " " << param);
+}
+
+void Tex2D::setParam(GLenum pname, GLint param)
+{
+	RN_CHECK_PARAM(glTextureParameteri(id, pname, param), rn::getEnumName(pname) << " " << param);
+}
+
+void Tex2D::setParam(GLenum pname, const GLfloat *param)
+{
+	RN_CHECK_PARAM(glTextureParameterfv(id, pname, param), rn::getEnumName(pname) << " " << param);
+}
+
+void Tex2D::setParam(GLenum pname, const GLint *param)
+{
+	RN_CHECK_PARAM(glTextureParameteriv(id, pname, param), rn::getEnumName(pname) << " " << param);
+}
+
+void Tex2D::setParamI(GLenum pname, const GLuint *param)
+{
+	RN_CHECK_PARAM(glTextureParameterIuiv(id, pname, param), rn::getEnumName(pname) << " " << param);
+}
+
+void Tex2D::setParamI(GLenum pname, const GLint *param)
+{
+	RN_CHECK_PARAM(glTextureParameterIiv(id, pname, param), rn::getEnumName(pname) << " " << param);
 }
 
 GLenum Tex2D::getAttachmentType()
@@ -374,6 +422,17 @@ GLenum Tex2D::getAttachmentType()
 		default:
 			return GL_COLOR_ATTACHMENT0;
 	}
+}
+
+namespace
+{
+	const util::InitQAttacher attach(rn::initQ(), []
+	{
+		if ( ! rn::ext::ARB_direct_state_access)
+		{
+			throw string{"rn::Tex2D initQ - rn::Tex2D requires GL_ARB_direct_state_access"};
+		}
+	});
 }
 
 } // rn

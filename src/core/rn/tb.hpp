@@ -22,7 +22,7 @@ public:
 	typedef uint8_t DataType;
 
 	GLuint id = 0;
-	GLuint texId = 0;
+	GLuint tex = 0;
 
 	GLint internalFormat = format::RGBA32F.layout;
 

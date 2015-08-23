@@ -17,6 +17,8 @@ public:
 	static void reloadAll();
 	static void swapAll();
 
+	static constexpr size_t maxQueries = 10;
+
 	std::string profName = "Unnamed query timer";
 
 	enum {
@@ -24,11 +26,16 @@ public:
 		STOP = 1
 	};
 
-	GLuint queries[2][2] { { 0 } }; // { front { start, stop }, back { start, stop } }
-	GLuint64 times[2] { 0 }; // { front, back }
+	GLuint queries[maxQueries][2] { { 0 } }; // { front { start, stop }, back { start, stop } }
+	// GLuint64 times[2] { 0 }; // { front, back }
 
-	int front = -1;
-	int back = -1;
+	bool active = false;
+
+	GLuint64 dt = 0; // delta time
+	int df = 0; // delta frames (delay)
+
+	int front = 0;
+	int back = 0;
 
 	Prof();
 	explicit Prof(std::string &&profName);
@@ -44,9 +51,9 @@ public:
 	void swap();
 
 	void start();
-
 	void stop();
 
+	int latency();
 	GLuint64 ns();
 	double ms();
 };
