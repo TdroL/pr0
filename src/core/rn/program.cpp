@@ -317,6 +317,11 @@ void Program::reload()
 
 		switch (item.second.type)
 		{
+			case Type::uniform_none:
+			{
+				// do nothing
+				break;
+			}
 			case Type::uniform_int:
 			{
 				var(item.second.id, item.second.i);
@@ -834,10 +839,12 @@ namespace
 {
 	const util::InitQAttacher attach(rn::initQ(), []
 	{
+		/*
 		if ( ! rn::ext::ARB_direct_state_access && ! rn::ext::ARB_separate_shader_objects)
 		{
 			throw string{"rn::Program initQ - rn::Program requires GL_ARB_direct_state_access or GL_ARB_separate_shader_objects"};
 		}
+		*/
 
 		rn::Program::init();
 	});

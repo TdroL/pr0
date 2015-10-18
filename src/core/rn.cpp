@@ -106,21 +106,21 @@ void reload()
 	RN_VALIDATE(rn::reload());
 
 	RN_CHECK(glEnable(GL_CULL_FACE));
-	RN_CHECK(glCullFace(GL_BACK));
-	RN_CHECK(glFrontFace(GL_CCW));
+	RN_CHECK(glCullFace(rn::Default::cullFace /*GL_BACK*/));
+	RN_CHECK(glFrontFace(rn::Default::frontFace /*GL_CCW*/));
 
 	RN_CHECK(glEnable(GL_DEPTH_TEST));
-	RN_CHECK(glDepthMask(GL_TRUE));
-	RN_CHECK(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
+	RN_CHECK(glDepthMask(rn::Default::depthMask /*GL_TRUE*/));
+	RN_CHECK(glClipControl(rn::Default::clipControlOrigin, rn::Default::clipControlDepth /*GL_LOWER_LEFT, GL_ZERO_TO_ONE*/));
 	// RN_CHECK(glDepthFunc(GL_LESS));
 	// RN_CHECK(glDepthRange(0.0, 1.0));
-	RN_CHECK(glDepthFunc(GL_GEQUAL));
+	RN_CHECK(glDepthFunc(rn::Default::depthFunc /*GL_GEQUAL*/));
 	// RN_CHECK(glDepthRange(1.0, 0.0));
 
 	// glEnable(GL_MULTISAMPLE);
 
 	// RN_CHECK(glEnable(GL_BLEND));
-	RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+	RN_CHECK(glBlendFunc(rn::Default::blendFuncSFactor, rn::Default::blendFuncDFactor /*GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA*/));
 
 	RN_CHECK(glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS));
 	RN_CHECK(glDebugMessageCallback(debugHandler, nullptr));
@@ -1596,6 +1596,11 @@ namespace
 		if ( ! rn::ext::ARB_clip_control)
 		{
 			throw string{"rn initQ - rn requires GL_ARB_clip_control"};
+		}
+
+		if ( ! rn::ext::ARB_direct_state_access)
+		{
+			throw string{"rn initQ - rn requires GL_ARB_direct_state_access"};
 		}
 
 		rn::init();

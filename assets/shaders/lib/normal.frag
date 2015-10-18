@@ -1,4 +1,4 @@
-#version 330 core
+#version 440 core
 
 vec2 normalEncode(vec3 n)
 {

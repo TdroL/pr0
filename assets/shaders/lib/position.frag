@@ -1,4 +1,4 @@
-#version 330 core
+#version 440 core
 
 uniform mat4 invP;
 uniform vec4 projectionInfo;

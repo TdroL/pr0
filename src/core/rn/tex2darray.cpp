@@ -316,10 +316,12 @@ namespace
 {
 	const util::InitQAttacher attach(rn::initQ(), []
 	{
+		/*
 		if ( ! rn::ext::ARB_direct_state_access)
 		{
 			throw string{"rn::Tex2DArray initQ - rn::Tex2DArray requires GL_ARB_direct_state_access"};
 		}
+		*/
 	});
 }
 

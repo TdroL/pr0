@@ -1,4 +1,4 @@
-#version 330 core
+#version 440 core
 
 layout(location = 0) in vec3 vertPosition;
 layout(location = 2) in vec3 vertNormal;

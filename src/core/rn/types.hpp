@@ -114,6 +114,7 @@ struct UniformValue
 {
 	enum Type
 	{
+		uniform_none,
 		uniform_int,
 		uniform_uint,
 		uniform_float,
@@ -155,7 +156,7 @@ struct UniformValue
 		std::pair<glm::mat4 *, GLsizei> vm4;
 	};
 
-	UniformValue() : type{uniform_int}, id{0}, m4{0} {}
+	UniformValue() : type{uniform_none}, id{0}, m4{0} {}
 
 	GLint & set(GLint i);
 	GLuint & set(GLuint ui);

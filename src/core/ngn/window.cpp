@@ -1,6 +1,7 @@
 #include <pch.hpp>
 
 #include "window.hpp"
+
 #include <cassert>
 #include <iostream>
 
@@ -14,13 +15,14 @@ using namespace std;
 
 string title{"pr0"};
 GLFWwindow *handler = nullptr;
+GLFWwindow *initial = nullptr;
 int width = -1;
 int height = -1;
 bool linkInternalResolution = true;
 int internalWidth = 1920;
 int internalHeight = 1080;
-const int contextMajor = 3;
-const int contextMinor = 3;
+const int contextMajor = 4;
+const int contextMinor = 4;
 
 Mode currentMode = Mode::windowed;
 int currentVsync = 0;

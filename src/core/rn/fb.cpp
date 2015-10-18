@@ -470,10 +470,12 @@ namespace
 {
 	const util::InitQAttacher attach(rn::initQ(), []
 	{
+		/*
 		if ( ! rn::ext::ARB_direct_state_access)
 		{
 			throw string{"rn::FB initQ - rn::FB requires GL_ARB_direct_state_access"};
 		}
+		*/
 	});
 }
 

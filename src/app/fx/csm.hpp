@@ -22,10 +22,11 @@ namespace fx
 class CSM
 {
 public:
-	bool useSmartSplitting = true;
+	static const size_t textureResolution = 2*1024;
 
-	size_t splits = 4;
-	int shadowResolution = 1024*2;
+	unsigned int kernelSize = 7;
+	size_t splits = 5;
+	bool blendCascades = true;
 	float maxShadowDistance = 256.f;
 
 	std::vector<float> cascades{};
@@ -34,17 +35,22 @@ public:
 	std::shared_ptr<rn::Tex2DArray> texDepths{};
 	std::shared_ptr<rn::Tex2DArray> texColors{};
 	std::vector<rn::FB> fbShadows{};
-	// rn::FB fbBlurBuffer{};
 
 	std::vector<glm::mat4> Ps{};
 	std::vector<glm::mat4> Vs{};
 
 	rn::Program progDepth{};
+
+	// rn::FB fbBlurBuffer{};
 	// rn::Program progBlurH{};
 	// rn::Program progBlurV{};
 
 	rn::Prof profRender{"fx::CSM::profRender"};
 	rn::Prof profBlur{"fx::CSM::profBlur"};
+
+	std::vector<float> radiuses2{};
+	std::vector<glm::mat4> VPs{};
+	std::vector<glm::vec3> centersV{};
 
 	std::string debugLog{};
 

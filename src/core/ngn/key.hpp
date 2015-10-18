@@ -2,6 +2,7 @@
 #define NGN_KEY_HPP
 
 #include "../rn.hpp"
+#include <GLFW/glfw3.h>
 #include <string>
 
 namespace ngn

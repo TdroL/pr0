@@ -12,7 +12,7 @@ CXXFLAGS_DEBUG = -g -Og -Weffc++ -Winvalid-pch
 CXXFLAGS_RELEASE = -O3 -s -funroll-loops -msse -msse2 -msse3 -mfpmath=sse
 LFLAGS =
 LDIR =
-LIBS = -static -lgcc -lglfw3 -lgl_core_3_3 -lopengl32 -lstb_image -lfreetype -lminball
+LIBS = -static -lgcc -lglfw3 -lgl_core_4_4 -lopengl32 -lstb_image -lfreetype -lminball
 
 DEFINES = \
 	-DNGN_USE_GLLOADGEN
@@ -48,9 +48,9 @@ endif
 $(PROGRAM): $(OBJECTS)
 	@echo " Linking..."; $(CC) $(LFLAGS) $^ $(LIBS) -o $(PROGRAM)
 
-$(SRCDIR)/pch.hpp: $(SRCDIR)/pch.hpp.gch $(BUILDDIR)/pch.d
+$(SRCDIR)/pch.hpp: $(BUILDDIR)/pch.d $(SRCDIR)/pch.hpp.gch
 
-$(SRCDIR)/pch.hpp.gch: $(SRCDIR)/pch.cpp $(BUILDDIR)/pch.d
+$(SRCDIR)/pch.hpp.gch:
 	@mkdir -p $(shell dirname $@)
 	@echo " PCH $<"; $(CC) $(CXXFLAGS) -x c++-header -c $< -o $@
 
@@ -73,6 +73,8 @@ release: clean all
 	@echo "Release the Cracken!"
 
 force: clean all
+
+pch: $(SRCDIR)/pch.hpp.gch
 
 run: all
 	./$(PROGRAM) ${ARGS}
@@ -101,4 +103,4 @@ ar:
 	@ar cr $(ARDIR)/$(ARNAME).a `find $(BUILDDIR) -name '*.o' -type f`
 	@echo "  $(ARDIR)/$(ARNAME).a  done"
 
-.PHONY: all release force run run-gdb clean clean-dep clean-obj archive
+.PHONY: all release force pch run run-gdb clean clean-dep clean-obj archive

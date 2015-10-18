@@ -9,7 +9,7 @@
 #elif defined(NGN_USE_GL3W)
 	#include <GL/gl3w.h>
 #elif defined(NGN_USE_GLLOADGEN)
-	#include <GL/gl_core_3_3.h>
+	#include <GL/gl_core_4_4.h>
 #endif
 
 #include <GLFW/glfw3.h>
@@ -43,6 +43,18 @@ struct Stats
 		triangles = 0;
 		meshes = 0;
 	}
+};
+
+struct Default
+{
+	static constexpr GLenum cullFace = GL_BACK;
+	static constexpr GLenum frontFace = GL_CCW;
+	static constexpr GLenum depthMask = GL_TRUE;
+	static constexpr GLenum clipControlOrigin = GL_LOWER_LEFT;
+	static constexpr GLenum clipControlDepth = GL_ZERO_TO_ONE;
+	static constexpr GLenum depthFunc = GL_GEQUAL;
+	static constexpr GLenum blendFuncSFactor = GL_SRC_ALPHA;
+	static constexpr GLenum blendFuncDFactor = GL_ONE_MINUS_SRC_ALPHA;
 };
 
 extern Stats stats;

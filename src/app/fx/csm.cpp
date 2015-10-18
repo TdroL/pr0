@@ -58,19 +58,23 @@ void CSM::init()
 	Ps.resize(splits);
 	Vs.resize(splits);
 
+	radiuses2.resize(splits);
+	VPs.resize(splits);
+	centersV.resize(splits);
+
 	texDepths = make_shared<rn::Tex2DArray>("fx::CSM::texDepths");
-	texDepths->width = shadowResolution;
-	texDepths->height = shadowResolution;
+	texDepths->width = textureResolution;
+	texDepths->height = textureResolution;
 	texDepths->size = splits;
-	texDepths->minFilter = rn::MinFilter::MIN_LINEAR;
-	texDepths->magFilter = rn::MagFilter::MAG_LINEAR;
-	texDepths->compareFunc = rn::CompareFunc::COMPARE_LEQUAL;
+	texDepths->minFilter = rn::MinFilter::MIN_NEAREST;
+	texDepths->magFilter = rn::MagFilter::MAG_NEAREST;
+	// texDepths->compareFunc = rn::CompareFunc::COMPARE_GEQUAL;
 	texDepths->internalFormat = rn::format::D32F.layout;
 	texDepths->reload();
 
 	texColors = make_shared<rn::Tex2DArray>("fx::CSM::texColors");
-	texColors->width = texDepths->width;
-	texColors->height = texDepths->height;
+	texColors->width = textureResolution;
+	texColors->height = textureResolution;
 	texColors->size = splits;
 	texColors->internalFormat = rn::format::RGBA32F.layout;
 	texColors->reload();
@@ -85,6 +89,7 @@ void CSM::init()
 		fb.attachDepth(texDepths, i);
 
 		fb.clearColorValue = glm::vec4{1.f};
+		fb.clearDepthValue = 1.f;
 		fb.reload();
 	}
 
@@ -101,7 +106,7 @@ void CSM::init()
 
 	try
 	{
-		progDepth.load("fx/csm/depth.frag", "P.vert");
+		progDepth.load("fx/csm/depth.frag", "fx/csm/depth.vert");
 	}
 	catch (const string &e)
 	{
@@ -136,7 +141,7 @@ void CSM::calculateMatrices(const ecs::Entity &cameraId, const ecs::Entity &ligh
 
 	const auto &projection = ecs::get<Projection>(cameraId);
 	const auto &view = ecs::get<View>(cameraId);
-	const auto &cameraPosition = ecs::get<Position>(cameraId).position;
+	// const auto &cameraPosition = ecs::get<Position>(cameraId).position;
 
 	const float zNear = projection.zNear;
 	const float zFar = min(projection.zFar, maxShadowDistance);
@@ -146,47 +151,32 @@ void CSM::calculateMatrices(const ecs::Entity &cameraId, const ecs::Entity &ligh
 	const auto lightDirection = glm::normalize(light.direction);
 	glm::vec2 zMinMax = findSceneZMinMax(lightDirection);
 
+	//# cout << "  position=" << glm::to_string(cameraPosition) << endl;
+
 	vector<float> splitFar(splits, zFar);
 	vector<float> splitNear(splits, zNear);
 
-	if (useSmartSplitting)
+	float lambda = 0.8f;
+	float j = 1.f;
+
+	for (size_t i = 0; i < splits; i++)
 	{
-		float lambda = 0.8f;
-		float j = 1.f;
+		splitFar[i] = glm::mix(
+			zNear + (j / (float) splits) * (zFar - zNear),
+			zNear * pow(zFar / zNear, j / (float) splits),
+			lambda
+		);
+		j += 1.f;
 
-		for (size_t i = 0; i < splits; i++)
+		if (i + 1 < splits)
 		{
-			splitFar[i] = glm::mix(
-				zNear + (j / (float) splits) * (zFar - zNear),
-				zNear * pow(zFar / zNear, j / (float) splits),
-				lambda
-			);
-			j += 1.f;
-
-			if (i + 1 < splits)
-			{
-				splitNear[i + 1] = splitFar[i];
-			}
-		}
-	}
-	else
-	{
-		std::vector<float> manualSplits{ 0.025f, 0.075f, 0.25f, 1.f };
-
-		for (size_t i = 0; i < splits; i++)
-		{
-			splitFar[i] = glm::mix(zNear, zFar, manualSplits[i]);
-
-			if (i + 1 < splits)
-			{
-				splitNear[i + 1] = splitFar[i];
-			}
+			splitNear[i + 1] = splitFar[i];
 		}
 	}
 
-	float radiusPadding = static_cast<float>(shadowResolution) / static_cast<float>(shadowResolution - 1);
+	float radiusPadding = static_cast<float>(textureResolution) / static_cast<float>(textureResolution - 1);
 	float radiusBias = 1.f;
-	glm::mat4 V = glm::lookAt(glm::vec3{0.f}, -light.direction, glm::vec3{0.f, 1.f, 0.f});
+	glm::mat4 V = glm::lookAt(glm::vec3{0.f}, -lightDirection, glm::vec3{0.f, 1.f, 0.f});
 	glm::mat4 invV = glm::inverse(V);
 
 	// cout << "l=" << glm::to_string(light.direction) << endl;
@@ -200,20 +190,31 @@ void CSM::calculateMatrices(const ecs::Entity &cameraId, const ecs::Entity &ligh
 		size_t i = j - 1;
 
 		glm::mat4 splitP = glm::perspective(fovy, aspect, splitNear[i], splitFar[i]);
-		glm::mat4 invProj = glm::inverse(splitP);
+		// glm::mat4 invProj = glm::inverse(splitP);
 		phs::Sphere splitSphere{splitP};
 
 		// glm::mat4 invProj = invV * glm::inverse(splitP * V);
 
+		//# cout << "  [" << i << "] camPosition=" << glm::to_string(ecs::get<Position>(cameraId).position) << endl;
+		//# cout << "  [" << i << "] splitSphere.position=" << glm::to_string(glm::vec3{splitSphere.position}) << endl;
+		//# cout << "  [" << i << "] splitSphere.radius=" << splitSphere.radius << endl;
 		glm::vec3 center = glm::vec3{view.invMatrix * glm::vec4{splitSphere.position, 1.f}};
+		//# cout << "  [" << i << "] center=" << glm::to_string(center) << endl;
 		float radius = splitSphere.radius * radiusPadding + radiusBias;
 
 		// correct near plane to include objects behind cascade bounding sphere
 		float c_l = glm::dot(lightDirection, center);
-		float zNearCorrection = zMinMax.y - min(c_l + radius, zMinMax.y);
+		float c_l_r = c_l + radius;
+		// float zNearCorrection = max(c_l + radius, zMinMax.y) - zMinMax.y;
+		float zNearCorrection = max(c_l_r, zMinMax.y) - c_l_r;
+
+		//# cout << "  [" << i << "] zNearCorrection=" << zNearCorrection << endl;
+		//# cout << "  [" << i << "] center=" << glm::to_string(center) << endl;
+		//# cout << "  [" << i << "] c_l=" << c_l << endl;
+		//# cout << "  [" << i << "] radius=" << radius << endl;
 
 		// stabilize cascade center
-		float qStep = (radius + radius) / static_cast<float>(shadowResolution);
+		float qStep = (2.f * radius) / static_cast<float>(textureResolution);
 		glm::vec4 centerV{V * glm::vec4{center, 1.f}};
 
 		glm::vec4 centerVQuant = centerV;
@@ -233,7 +234,7 @@ void CSM::calculateMatrices(const ecs::Entity &cameraId, const ecs::Entity &ligh
 		// cout << "centerInvV=" << glm::to_string(invV * glm::vec4{center, 1.f}) << endl;
 		// cout << "centerVInvV=" << glm::to_string(invV * centerV) << endl;
 
-		cascades[i] = -splitFar[i];
+		cascades[i] = splitFar[i];
 		radiuses[i] = radius - qStep;
 		centers[i] = glm::vec3{center};
 
@@ -250,37 +251,40 @@ void CSM::calculateMatrices(const ecs::Entity &cameraId, const ecs::Entity &ligh
 
 		// center = glm::vec3{invV * centerV};
 
+		/**/
 		Ps[i] = glm::ortho(
 			-radius, +radius,
 			-radius, +radius,
 			-radius - zNearCorrection, +radius
 		);
+		/*/
+		float right = radius;
+		float left = -radius;
+		float top = radius;
+		float bottom = -radius;
+		float zFar = radius;
+		float zNear = -radius;
 
-		Vs[i] = glm::lookAt(centerQuant, centerQuant - light.direction, glm::vec3{0.f, 1.f, 0.f});
+		auto &P = Ps[i] = glm::mat4{1.f};
+		P[0][0] = 2.f / (right - left);
+		P[1][1] = 2.f / (top - bottom);
+		P[2][2] = 1.f / (zFar - zNear);
+		P[3][0] = (left + right) / (left - right);
+		P[3][1] = (bottom + top) / (bottom - top);
+		P[3][2] = - zNear / (zFar - zNear);
+		/**/
+
+		Vs[i] = glm::lookAt(centerQuant, centerQuant - lightDirection, glm::vec3{0.f, 1.f, 0.f});
 		// Vs[i] = glm::lookAt(center, center - light.direction, glm::vec3{0.f, 1.f, 0.f});
 
-		if (i == 0)
-		{
-			ostringstream oss;
-			oss << setprecision(4) << fixed;
+		//# cout << "  [" << i << "] splitNear=" << splitNear[i] << endl;
+		//# cout << "  [" << i << "] splitFar=" << splitFar[i] << endl;
+		//# cout << "  [" << i << "] centerQuant=" << glm::to_string(centerQuant) << endl;
+		//# cout << "  [" << i << "] centerQuant - lightDirection=" << glm::to_string(centerQuant - lightDirection) << endl;
 
-			oss << "lightDirection=" << glm::to_string(lightDirection) << "\n";
-			oss << "zero=" << glm::to_string(view.invMatrix * glm::vec4{0.f, 0.f, 0.f, 1.f}) << "\n";
-			oss << "center=" << glm::to_string(center) << "\n";
-			oss << "qStep=" << qStep << "\n";
-			oss << "radius=" << radius << "\n";
-			oss << "centerQuant=" << glm::to_string(centerQuant) << "\n";
-			oss << "Ps[i][0]=" << glm::to_string(Ps[i][0]) << "\n";
-			oss << "Ps[i][1]=" << glm::to_string(Ps[i][1]) << "\n";
-			oss << "Ps[i][2]=" << glm::to_string(Ps[i][2]) << "\n";
-			oss << "Ps[i][3]=" << glm::to_string(Ps[i][3]) << "\n";
-			oss << "Vs[i][0]=" << glm::to_string(Vs[i][0]) << "\n";
-			oss << "Vs[i][1]=" << glm::to_string(Vs[i][1]) << "\n";
-			oss << "Vs[i][2]=" << glm::to_string(Vs[i][2]) << "\n";
-			oss << "Vs[i][3]=" << glm::to_string(Vs[i][3]) << "\n";
-
-			debugLog = oss.str();
-		}
+		VPs[i] = Ps[i] * Vs[i];
+		radiuses2[i] = radiuses[i] * radiuses[i];
+		centersV[i] = glm::vec3{view.matrix  * glm::vec4{centers[i], 1.f}};
 	}
 
 	//
@@ -334,9 +338,11 @@ void CSM::renderCascades()
 {
 	profRender.start();
 
-	RN_SCOPE_DISABLE(GL_BLEND);
-	RN_SCOPE_DISABLE(GL_STENCIL_TEST);
+	// RN_SCOPE_DISABLE(GL_BLEND);
+	// RN_SCOPE_DISABLE(GL_STENCIL_TEST);
 	RN_SCOPE_DISABLE(GL_CULL_FACE);
+
+	RN_CHECK(glDepthFunc(GL_LEQUAL));
 
 	progDepth.use();
 
@@ -348,6 +354,7 @@ void CSM::renderCascades()
 	{
 		const auto &P = Ps[i];
 		const auto &V = Vs[i];
+		const auto VP = P * V;
 		progDepth.uniform("P", P);
 		progDepth.uniform("V", V);
 
@@ -357,7 +364,7 @@ void CSM::renderCascades()
 
 		fbShadow.clear(rn::BUFFER_COLOR | rn::BUFFER_DEPTH);
 
-		const phs::Frustum boundingFrustum{P * V};
+		const phs::Frustum boundingFrustum{VP};
 
 		for (auto &entity : ecs::findWith<Transform, Mesh, Occluder>())
 		{
@@ -373,6 +380,8 @@ void CSM::renderCascades()
 	// RN_CHECK(glCullFace(GL_BACK));
 
 	progDepth.forgo();
+
+	RN_CHECK(glDepthFunc(rn::Default::depthFunc /*GL_GEQUAL*/));
 
 	profRender.stop();
 
@@ -442,17 +451,22 @@ void CSM::buildCorners(const glm::mat4 &VP, glm::vec4 (&output)[8])
 
 glm::vec2 CSM::findSceneZMinMax(glm::vec3 lightDirection)
 {
+	//# cout << "findSceneZMinMax" << endl;
+	//# cout << "  lightDirection=" << glm::to_string(lightDirection) << endl;
+
 	glm::vec2 zMinMax{numeric_limits<float>::max(), -numeric_limits<float>::max()};
 
 	for (auto &entity : ecs::findWith<Transform, Mesh, BoundingObject, Occluder>())
 	{
 		auto &boundingObject = ecs::get<BoundingObject>(entity);
 
-		float dist = glm::dot(lightDirection, boundingObject.sphere.position) + boundingObject.sphere.radius;
+		float dist = glm::dot(lightDirection, boundingObject.sphere.position);
 
-		zMinMax.x = min(zMinMax.x, dist);
-		zMinMax.y = max(zMinMax.y, dist);
+		zMinMax.x = min(zMinMax.x, dist - boundingObject.sphere.radius);
+		zMinMax.y = max(zMinMax.y, dist + boundingObject.sphere.radius);
 	}
+
+	//# cout << "  zMinMax=" << glm::to_string(zMinMax) << endl;
 
 	return zMinMax;
 }

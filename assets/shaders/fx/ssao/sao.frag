@@ -1,4 +1,4 @@
-#version 330 core
+#version 440 core
 #extension GL_ARB_gpu_shader5 : enable
 
 layout(location = 0) out vec4 outColor;

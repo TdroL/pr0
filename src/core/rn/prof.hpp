@@ -17,7 +17,7 @@ public:
 	static void reloadAll();
 	static void swapAll();
 
-	static constexpr size_t maxQueries = 10;
+	static constexpr size_t maxQueries = 12;
 
 	std::string profName = "Unnamed query timer";
 

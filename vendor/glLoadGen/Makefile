@@ -5,7 +5,7 @@ SRCDIR = src
 
 INCLUDES = -Iinclude/GL/
 
-CFLAGS = -Wall -Winline -Wextra -Wfatal-errors -std=c11 -m64 -march=native $(INCLUDES)
+CFLAGS = -O3 -lto -Wall -Winline -Wextra -Wfatal-errors -std=c11 -m64 -march=native $(INCLUDES)
 
 SOURCES = $(shell find $(SRCDIR) -type f -name "*.c")
 OBJECTS = $(patsubst $(SRCDIR)/%.c,$(BUILDDIR)/lib%.a,$(SOURCES))
@@ -20,5 +20,8 @@ $(BUILDDIR)/%.d: $(SRCDIR)/%.c
 
 $(BUILDDIR)/lib%.a: $(BUILDDIR)/%.o
 	@echo " AR $@"; ar cr $@ $<
+
+gen:
+	@lua LoadGen.lua core_4_4 -style=pointer_c -spec=gl -version=4.4 -profile=core -stdext=g l_ubiquitous.txt -stdext=gl_core_post_3_3.txt -stdext=gl_plat_3_3.txt
 
 all: $(OBJECTS)

@@ -310,10 +310,12 @@ namespace
 {
 	const util::InitQAttacher attach(rn::initQ(), []
 	{
+		/*
 		if ( ! rn::ext::ARB_direct_state_access)
 		{
 			throw string{"rn::Mesh initQ - rn::Mesh requires GL_ARB_direct_state_access"};
 		}
+		*/
 
 		auto &&source = src::mem::mesh({
 			-1.0f,  1.0f,  0.0f, 1.0f,

@@ -158,6 +158,49 @@ namespace glm
 		T zFar
 	)
 	{
+		#ifdef GLM_LEFT_HANDED
+			return orthoLH(left, right, bottom, top, zNear, zFar);
+		#else
+			return orthoRH(left, right, bottom, top, zNear, zFar);
+		#endif
+	}
+
+	template <typename T>
+	GLM_FUNC_QUALIFIER tmat4x4<T, defaultp> orthoLH
+	(
+		T left,
+		T right,
+		T bottom,
+		T top,
+		T zNear,
+		T zFar
+	)
+	{
+		// 2/(r-l)      0            0           (l+r)/(l-r)
+		// 0            2/(t-b)      0           (t+b)/(b-t)
+		// 0            0            1/(zn-zf)   zn/(zn-zf)
+		// 0            0            0           1
+		tmat4x4<T, defaultp> Result(1);
+		Result[0][0] = static_cast<T>(2) / (right - left);
+		Result[1][1] = static_cast<T>(2) / (top - bottom);
+		Result[2][2] = static_cast<T>(1) / (zFar - zNear);
+		Result[3][0] = (left + right) / (left - right);
+		Result[3][1] = (bottom + top) / (bottom - top);
+		Result[3][2] = - zNear / (zFar - zNear);
+		return Result;
+	}
+
+	template <typename T>
+	GLM_FUNC_QUALIFIER tmat4x4<T, defaultp> orthoRH
+	(
+		T left,
+		T right,
+		T bottom,
+		T top,
+		T zNear,
+		T zFar
+	)
+	{
 		tmat4x4<T, defaultp> Result(1);
 		Result[0][0] = static_cast<T>(2) / (right - left);
 		Result[1][1] = static_cast<T>(2) / (top - bottom);

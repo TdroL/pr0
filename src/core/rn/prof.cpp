@@ -393,10 +393,12 @@ namespace
 {
 	const util::InitQAttacher attach(rn::initQ(), []
 	{
+		/*
 		if ( ! rn::ext::ARB_direct_state_access)
 		{
 			throw string{"rn::Prof initQ - rn::Prof requires GL_ARB_direct_state_access"};
 		}
+		*/
 	});
 }
 

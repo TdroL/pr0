@@ -1,4 +1,4 @@
-#version 330 core
+#version 440 core
 
 layout(location = 0) out vec2 outNormal;
 layout(location = 1) out vec3 outDebug;

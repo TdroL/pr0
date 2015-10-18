@@ -136,6 +136,24 @@ namespace glm
 		T zNear,
 		T zFar);
 
+	template <typename T>
+	GLM_FUNC_DECL tmat4x4<T, defaultp> orthoLH(
+		T left,
+		T right,
+		T bottom,
+		T top,
+		T zNear,
+		T zFar);
+
+	template <typename T>
+	GLM_FUNC_DECL tmat4x4<T, defaultp> orthoRH(
+		T left,
+		T right,
+		T bottom,
+		T top,
+		T zNear,
+		T zFar);
+
 	/// Creates a matrix for projecting two-dimensional coordinates onto the screen.
 	///
 	/// @param left

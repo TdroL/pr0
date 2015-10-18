@@ -404,6 +404,7 @@ namespace
 {
 	const util::InitQAttacher attach(rn::initQ(), []
 	{
+		/*
 		if ( ! rn::ext::ARB_texture_storage)
 		{
 			throw string{"rn::Font initQ - rn::Font requires GL_ARB_texture_storage"};
@@ -413,6 +414,7 @@ namespace
 		{
 			throw string{"rn::Font initQ - rn::Font requires GL_ARB_direct_state_access"};
 		}
+		*/
 
 		rn::Font::init();
 	});
