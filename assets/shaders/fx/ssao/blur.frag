@@ -1,5 +1,7 @@
 #version 440 core
 
+#pragma rn: include(lib/util.glsl)
+
 layout(location = 0) out vec4 outColor;
 
 in vec2 uv;
@@ -7,7 +9,7 @@ in vec2 uv;
 uniform sampler2D texSource;
 uniform vec2 scale;
 
-float unpack2(vec2 source);
+// float unpack2(vec2 source);
 
 void main()
 {

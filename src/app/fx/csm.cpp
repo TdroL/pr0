@@ -2,7 +2,7 @@
 
 #include "csm.hpp"
 
-#include <app/comp/boundingobject.hpp>
+#include <app/comp/boundingvolume.hpp>
 #include <app/comp/directionallight.hpp>
 #include <app/comp/mesh.hpp>
 #include <app/comp/occluder.hpp>
@@ -51,9 +51,9 @@ using namespace comp;
 
 void CSM::init()
 {
-	cascades.resize(splits);
-	radiuses.resize(splits);
-	centers.resize(splits);
+	// cascades.resize(splits);
+	// radiuses.resize(splits);
+	// centers.resize(splits);
 	fbShadows.resize(splits);
 	Ps.resize(splits);
 	Vs.resize(splits);
@@ -72,12 +72,12 @@ void CSM::init()
 	texDepths->internalFormat = rn::format::D32F.layout;
 	texDepths->reload();
 
-	texColors = make_shared<rn::Tex2DArray>("fx::CSM::texColors");
-	texColors->width = textureResolution;
-	texColors->height = textureResolution;
-	texColors->size = splits;
-	texColors->internalFormat = rn::format::RGBA32F.layout;
-	texColors->reload();
+	// texColors = make_shared<rn::Tex2DArray>("fx::CSM::texColors");
+	// texColors->width = textureResolution;
+	// texColors->height = textureResolution;
+	// texColors->size = splits;
+	// texColors->internalFormat = rn::format::RGBA32F.layout;
+	// texColors->reload();
 
 	for (size_t i = 0; i < fbShadows.size(); i++)
 	{
@@ -85,10 +85,10 @@ void CSM::init()
 
 		fb.fbName = "fx::CSM::fbShadows[" + to_string(i) + "]";
 
-		fb.attachColor(0, texColors, i);
+		// fb.attachColor(0, texColors, i);
 		fb.attachDepth(texDepths, i);
 
-		fb.clearColorValue = glm::vec4{1.f};
+		// fb.clearColorValue = glm::vec4{1.f};
 		fb.clearDepthValue = 1.f;
 		fb.reload();
 	}
@@ -132,7 +132,7 @@ void CSM::init()
 	// }
 
 	profRender.init();
-	profBlur.init();
+	// profBlur.init();
 }
 
 void CSM::calculateMatrices(const ecs::Entity &cameraId, const ecs::Entity &lightId)
@@ -150,8 +150,6 @@ void CSM::calculateMatrices(const ecs::Entity &cameraId, const ecs::Entity &ligh
 
 	const auto lightDirection = glm::normalize(light.direction);
 	glm::vec2 zMinMax = findSceneZMinMax(lightDirection);
-
-	//# cout << "  position=" << glm::to_string(cameraPosition) << endl;
 
 	vector<float> splitFar(splits, zFar);
 	vector<float> splitNear(splits, zNear);
@@ -178,10 +176,12 @@ void CSM::calculateMatrices(const ecs::Entity &cameraId, const ecs::Entity &ligh
 	float radiusBias = 1.f;
 	glm::mat4 V = glm::lookAt(glm::vec3{0.f}, -lightDirection, glm::vec3{0.f, 1.f, 0.f});
 	glm::mat4 invV = glm::inverse(V);
-
-	// cout << "l=" << glm::to_string(light.direction) << endl;
-	// cout << "V * l=" << glm::to_string(V * glm::vec4{light.direction, 1.f}) << endl;
-	// cout << "V' * l=" << glm::to_string(invV * (V * glm::vec4{light.direction, 1.f})) << endl;
+	glm::mat4 xyBias{
+		0.5f, 0.0f, 0.0f, 0.0f,
+		0.0f, 0.5f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		0.5f, 0.5f, 0.0f, 1.0f
+	};
 
 	debugLog = "";
 
@@ -190,148 +190,35 @@ void CSM::calculateMatrices(const ecs::Entity &cameraId, const ecs::Entity &ligh
 		size_t i = j - 1;
 
 		glm::mat4 splitP = glm::perspective(fovy, aspect, splitNear[i], splitFar[i]);
-		// glm::mat4 invProj = glm::inverse(splitP);
 		phs::Sphere splitSphere{splitP};
 
-		// glm::mat4 invProj = invV * glm::inverse(splitP * V);
-
-		//# cout << "  [" << i << "] camPosition=" << glm::to_string(ecs::get<Position>(cameraId).position) << endl;
-		//# cout << "  [" << i << "] splitSphere.position=" << glm::to_string(glm::vec3{splitSphere.position}) << endl;
-		//# cout << "  [" << i << "] splitSphere.radius=" << splitSphere.radius << endl;
 		glm::vec3 center = glm::vec3{view.invMatrix * glm::vec4{splitSphere.position, 1.f}};
-		//# cout << "  [" << i << "] center=" << glm::to_string(center) << endl;
 		float radius = splitSphere.radius * radiusPadding + radiusBias;
 
 		// correct near plane to include objects behind cascade bounding sphere
-		float c_l = glm::dot(lightDirection, center);
-		float c_l_r = c_l + radius;
+		float c_l_r = glm::dot(lightDirection, center) + radius;
 		// float zNearCorrection = max(c_l + radius, zMinMax.y) - zMinMax.y;
 		float zNearCorrection = max(c_l_r, zMinMax.y) - c_l_r;
 
-		//# cout << "  [" << i << "] zNearCorrection=" << zNearCorrection << endl;
-		//# cout << "  [" << i << "] center=" << glm::to_string(center) << endl;
-		//# cout << "  [" << i << "] c_l=" << c_l << endl;
-		//# cout << "  [" << i << "] radius=" << radius << endl;
-
-		// stabilize cascade center
-		float qStep = (2.f * radius) / static_cast<float>(textureResolution);
-		glm::vec4 centerV{V * glm::vec4{center, 1.f}};
-
-		glm::vec4 centerVQuant = centerV;
-		centerVQuant.x = floor(centerVQuant.x / qStep) * qStep;
-		centerVQuant.y = floor(centerVQuant.y / qStep) * qStep;
-		centerVQuant.z = floor(centerVQuant.z / qStep) * qStep;
-
-		glm::vec3 centerQuant = glm::vec3{invV * centerVQuant};
-
-		// cout << "i=" << i << endl;
-		// cout << "manualCenter=" << glm::to_string(manualCenter) << endl;
-		// cout << "manualRadius=" << manualRadius << endl;
-		// cout << "position=" << glm::to_string(splitSphere.position) << endl;
-		// cout << "radius=" << splitSphere.radius << endl;
-		// cout << "center=" << glm::to_string(center) << endl;
-		// cout << "centerV=" << glm::to_string(centerV) << endl;
-		// cout << "centerInvV=" << glm::to_string(invV * glm::vec4{center, 1.f}) << endl;
-		// cout << "centerVInvV=" << glm::to_string(invV * centerV) << endl;
-
-		cascades[i] = splitFar[i];
-		radiuses[i] = radius - qStep;
-		centers[i] = glm::vec3{center};
-
-		// cout << "qStep=" << qStep << endl;
-		// cout << "x mod qStep=" << glm::mod(centerV.x, qStep) << endl;
-		// cout << "y mod qStep=" << glm::mod(centerV.y, qStep) << endl;
-
-		// centerV.x = floor(centerV.x / qStep) * qStep;
-		// centerV.x -= glm::mod(centerV.x, qStep);
-		// centerV.y = floor(centerV.y / qStep) * qStep;
-		// centerV.y -= glm::mod(centerV.y, qStep);
-		// centerV.z = floor(centerV.z / qStep) * qStep;
-		// centerV.z -= glm::mod(centerV.z, qStep);
-
-		// center = glm::vec3{invV * centerV};
-
-		/**/
 		Ps[i] = glm::ortho(
 			-radius, +radius,
 			-radius, +radius,
 			-radius - zNearCorrection, +radius
 		);
-		/*/
-		float right = radius;
-		float left = -radius;
-		float top = radius;
-		float bottom = -radius;
-		float zFar = radius;
-		float zNear = -radius;
 
-		auto &P = Ps[i] = glm::mat4{1.f};
-		P[0][0] = 2.f / (right - left);
-		P[1][1] = 2.f / (top - bottom);
-		P[2][2] = 1.f / (zFar - zNear);
-		P[3][0] = (left + right) / (left - right);
-		P[3][1] = (bottom + top) / (bottom - top);
-		P[3][2] = - zNear / (zFar - zNear);
-		/**/
+		// stabilize cascade center
+		float qStep = (2.f * radius) / static_cast<float>(textureResolution);
 
-		Vs[i] = glm::lookAt(centerQuant, centerQuant - lightDirection, glm::vec3{0.f, 1.f, 0.f});
-		// Vs[i] = glm::lookAt(center, center - light.direction, glm::vec3{0.f, 1.f, 0.f});
+		Vs[i] = glm::lookAt(center, center - lightDirection, glm::vec3{0.f, 1.f, 0.f});
+		Vs[i][3].x -= glm::mod(Vs[i][3].x, qStep);
+		Vs[i][3].y -= glm::mod(Vs[i][3].y, qStep);
+		Vs[i][3].z -= glm::mod(Vs[i][3].z, qStep);
 
-		//# cout << "  [" << i << "] splitNear=" << splitNear[i] << endl;
-		//# cout << "  [" << i << "] splitFar=" << splitFar[i] << endl;
-		//# cout << "  [" << i << "] centerQuant=" << glm::to_string(centerQuant) << endl;
-		//# cout << "  [" << i << "] centerQuant - lightDirection=" << glm::to_string(centerQuant - lightDirection) << endl;
+		VPs[i] = xyBias * Ps[i] * Vs[i] * view.invMatrix;
 
-		VPs[i] = Ps[i] * Vs[i];
-		radiuses2[i] = radiuses[i] * radiuses[i];
-		centersV[i] = glm::vec3{view.matrix  * glm::vec4{centers[i], 1.f}};
+		radiuses2[i] = (radius - qStep) * (radius - qStep); // radiuses[i] * radiuses[i];
+		centersV[i] = glm::vec3{view.matrix  * glm::vec4{center, 1.f}}; //glm::vec4{centers[i], 1.f}};
 	}
-
-	//
-
-	/*
-	glm::vec4 frustumCorners[8];
-	buildCorners(projection.matrix * view.matrix, frustumCorners);
-
-	glm::vec3 cameraPosition = ecs::get<Position>(cameraId).position;
-
-	glm::mat4 V = glm::lookAt(cameraPosition, cameraPosition - light.direction, glm::vec3{0.f, 1.f, 0.f});
-
-	glm::vec4 splitCorners[] = {
-		frustumCorners[RTN],
-		frustumCorners[LTN],
-		frustumCorners[RBN],
-		frustumCorners[LBN],
-		frustumCorners[RTF],
-		frustumCorners[LTF],
-		frustumCorners[RBF],
-		frustumCorners[LBF]
-	};
-
-	float zMax = findSceneZMax(lightId);
-
-	splitCorners[RTF] = splitCorners[RTN];
-	splitCorners[LTF] = splitCorners[LTN];
-	splitCorners[RBF] = splitCorners[RBN];
-	splitCorners[LBF] = splitCorners[LBN];
-
-	for (size_t i = 0; i < splits; i++)
-	{
-		splitCorners[RTN] = splitCorners[RTF];
-		splitCorners[LTN] = splitCorners[LTF];
-		splitCorners[RBN] = splitCorners[RBF];
-		splitCorners[LBN] = splitCorners[LBF];
-		splitCorners[RTF] = glm::lerp(frustumCorners[RTN], frustumCorners[RTF], splits[i]);
-		splitCorners[LTF] = glm::lerp(frustumCorners[LTN], frustumCorners[LTF], splits[i]);
-		splitCorners[RBF] = glm::lerp(frustumCorners[RBN], frustumCorners[RBF], splits[i]);
-		splitCorners[LBF] = glm::lerp(frustumCorners[LBN], frustumCorners[LBF], splits[i]);
-
-		cascades[i] = -glm::lerp(projection.zNear, projection.zFar, splits[i]);
-
-		Ps[i] = buildShadowPMatrix(splitCorners, V, zMax);
-		Vs[i] = stabilizeVMatrix(V, Ps[i]);
-	}
-	*/
 }
 
 void CSM::renderCascades()
@@ -340,7 +227,7 @@ void CSM::renderCascades()
 
 	// RN_SCOPE_DISABLE(GL_BLEND);
 	// RN_SCOPE_DISABLE(GL_STENCIL_TEST);
-	RN_SCOPE_DISABLE(GL_CULL_FACE);
+	// RN_SCOPE_DISABLE(GL_CULL_FACE);
 
 	RN_CHECK(glDepthFunc(GL_LEQUAL));
 
@@ -348,7 +235,7 @@ void CSM::renderCascades()
 
 	progDepth.uniform("writeColor", false);
 
-	// RN_CHECK(glCullFace(GL_FRONT));
+	RN_CHECK(glCullFace(GL_FRONT));
 
 	for (size_t i = 0; i < Ps.size(); i++)
 	{
@@ -368,7 +255,7 @@ void CSM::renderCascades()
 
 		for (auto &entity : ecs::findWith<Transform, Mesh, Occluder>())
 		{
-			if (ecs::has<BoundingObject>(entity) && ! proc::FrustumProcess::isVisible(entity, boundingFrustum))
+			if (ecs::has<BoundingVolume>(entity) && ! proc::FrustumProcess::isVisible(entity, boundingFrustum))
 			{
 				continue;
 			}
@@ -377,7 +264,7 @@ void CSM::renderCascades()
 		}
 	}
 
-	// RN_CHECK(glCullFace(GL_BACK));
+	RN_CHECK(glCullFace(GL_BACK));
 
 	progDepth.forgo();
 
@@ -456,14 +343,14 @@ glm::vec2 CSM::findSceneZMinMax(glm::vec3 lightDirection)
 
 	glm::vec2 zMinMax{numeric_limits<float>::max(), -numeric_limits<float>::max()};
 
-	for (auto &entity : ecs::findWith<Transform, Mesh, BoundingObject, Occluder>())
+	for (auto &entity : ecs::findWith<Transform, Mesh, BoundingVolume, Occluder>())
 	{
-		auto &boundingObject = ecs::get<BoundingObject>(entity);
+		auto &boundingVolume = ecs::get<BoundingVolume>(entity);
 
-		float dist = glm::dot(lightDirection, boundingObject.sphere.position);
+		float dist = glm::dot(lightDirection, boundingVolume.sphere.position);
 
-		zMinMax.x = min(zMinMax.x, dist - boundingObject.sphere.radius);
-		zMinMax.y = max(zMinMax.y, dist + boundingObject.sphere.radius);
+		zMinMax.x = min(zMinMax.x, dist - boundingVolume.sphere.radius);
+		zMinMax.y = max(zMinMax.y, dist + boundingVolume.sphere.radius);
 	}
 
 	//# cout << "  zMinMax=" << glm::to_string(zMinMax) << endl;

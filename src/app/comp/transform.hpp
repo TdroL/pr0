@@ -15,9 +15,6 @@ struct Transform : public ecs::Component<Transform>
 	glm::vec3 translation{0.0};
 	glm::vec3 rotation{0.0};
 	glm::vec3 scale{1.0};
-
-	phs::Sphere sphere{};
-	phs::AABB aabb{};
 };
 
 } // comp

@@ -1,5 +1,7 @@
 #version 440 core
 
+#pragma rn: include(lib/normal.glsl)
+
 layout(location = 0) out vec2 outNormal;
 layout(location = 1) out vec3 outDebug;
 

@@ -23,6 +23,8 @@ bool isInt(const std::string &s);
 
 bool isNumeric(const std::string &s);
 
+std::string prependLineNumbers(const std::string &s);
+
 std::string demangle(const char* name);
 }
 

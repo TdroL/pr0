@@ -26,16 +26,17 @@ public:
 	static void reloadLibs();
 	static void reloadAll();
 
-	static GLuint createShader(GLenum type, const GLchar *source, GLint sourceLength);
+	static std::string resolveIncludes(const GLchar *source, GLint length);
+	static GLuint createShader(GLenum type, const GLchar *source, GLint length);
 	static GLuint createShader(GLenum type, const std::string &source);
 	static GLuint createShader(GLenum type, const std::vector<char> &source);
-	static GLuint createProgram(const std::vector<GLuint> &shaders);
+	static GLuint createProgram(const std::string &programName, const std::vector<GLuint> &shaders);
 
 	GLuint id = 0;
 
 	bool hasCompileErrors = false;
 
-	std::map<std::string, UniformValue> uniforms{};
+	std::map<std::string, UniformMeta> uniforms{};
 	std::unique_ptr<Source> fragmentShader{nullptr};
 	std::unique_ptr<Source> vertexShader{nullptr};
 
@@ -55,7 +56,7 @@ public:
 	void forgo();
 
 	GLint getName(const std::string &name);
-	UniformValue & getValue(const std::string &name);
+	UniformMeta & getMeta(const std::string &name);
 
 	void var(GLint location, GLint value);
 	void var(GLint location, GLuint value);
@@ -96,24 +97,24 @@ public:
 	template<typename T>
 	GLint uniform(const std::string &name, T value)
 	{
-		UniformValue &uniformValue = getValue(name);
+		UniformMeta &uniformMeta = getMeta(name);
 
-		var(uniformValue.id, uniformValue.set(value));
+		var(uniformMeta.id, uniformMeta.set(value));
 
-		return uniformValue.id;
+		return uniformMeta.id;
 	}
 
 	template<typename T>
 	GLint uniform(const std::string &name, std::unique_ptr<T[]> &&value, GLsizei count)
 	{
-		UniformValue &uniformValue = getValue(name);
+		UniformMeta &uniformMeta = getMeta(name);
 
 		if (value)
 		{
-			var(uniformValue.id, uniformValue.set(value.release(), count), count);
+			var(uniformMeta.id, uniformMeta.set(value.release(), count), count);
 		}
 
-		return uniformValue.id;
+		return uniformMeta.id;
 	}
 
 };

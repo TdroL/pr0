@@ -1,5 +1,8 @@
 #version 440 core
 
+#pragma rn: include(lib/normal.glsl)
+#pragma rn: include(lib/position.glsl)
+
 layout(location = 0) out vec4 outColor;
 
 in vec2 uv;
@@ -19,8 +22,8 @@ uniform vec4 lightPosition;
 uniform float lightLinearAttenuation;
 uniform float lightQuadraticAttenuation;
 
-vec3 normalDecode(vec2 enc);
-vec3 positionReconstruct(float z, vec2 uv);
+// vec3 normalDecode(vec2 enc);
+// vec3 positionReconstruct(float z, vec2 uv);
 
 void main()
 {
@@ -32,7 +35,7 @@ void main()
 	float shininess = diffuseShininess.a;
 
 	vec3 normal = normalDecode(encodedNormal);
-	vec3 position = positionReconstruct(depth, uv);
+	vec3 position = positionReconstruct(depth, uv, invP);
 
 	vec3 n = normalize(normal);
 	vec3 l = normalize(lightPosition.xyz - position.xyz);

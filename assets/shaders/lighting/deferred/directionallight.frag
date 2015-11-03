@@ -1,5 +1,9 @@
 #version 440 core
 
+#pragma rn: include(lib/normal.glsl)
+#pragma rn: include(lib/position.glsl)
+#pragma rn: include(lib/vsm.glsl)
+
 layout(location = 0) out vec4 outColor;
 
 in vec2 uv;
@@ -42,10 +46,10 @@ bool useLinearSplits = false;
 bool enableBlending = false;
 bool enableVisualizeCascades = false;
 
-vec3 normalDecode(vec2 enc);
-vec3 positionReconstruct(float z, vec2 uv);
-vec4 positionReconstruct2(sampler2D texDepth, vec2 uv, mat4 invP);
-float vsmVisibility(float dist, vec2 moments);
+// vec3 normalDecode(vec2 enc);
+// vec3 positionReconstruct(float z, vec2 uv);
+// vec4 positionReconstruct2(sampler2D texDepth, vec2 uv, mat4 invP);
+// float vsmVisibility(float dist, vec2 moments);
 
 float pcfVisibility(vec3 shadowCoord, int csmLayer, float kernelSize)
 {

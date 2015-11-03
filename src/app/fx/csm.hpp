@@ -22,18 +22,18 @@ namespace fx
 class CSM
 {
 public:
-	static const size_t textureResolution = 2*1024;
+	static const size_t textureResolution = 2 * 1024;
 
 	unsigned int kernelSize = 7;
 	size_t splits = 5;
 	bool blendCascades = true;
 	float maxShadowDistance = 256.f;
 
-	std::vector<float> cascades{};
-	std::vector<float> radiuses{};
-	std::vector<glm::vec3> centers{};
+	// std::vector<float> cascades{};
+	// std::vector<float> radiuses{};
+	// std::vector<glm::vec3> centers{};
 	std::shared_ptr<rn::Tex2DArray> texDepths{};
-	std::shared_ptr<rn::Tex2DArray> texColors{};
+	// std::shared_ptr<rn::Tex2DArray> texColors{};
 	std::vector<rn::FB> fbShadows{};
 
 	std::vector<glm::mat4> Ps{};
@@ -46,7 +46,7 @@ public:
 	// rn::Program progBlurV{};
 
 	rn::Prof profRender{"fx::CSM::profRender"};
-	rn::Prof profBlur{"fx::CSM::profBlur"};
+	// rn::Prof profBlur{"fx::CSM::profBlur"};
 
 	std::vector<float> radiuses2{};
 	std::vector<glm::mat4> VPs{};

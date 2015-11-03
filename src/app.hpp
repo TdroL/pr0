@@ -47,10 +47,6 @@ public:
 	void renderShadowsForwardPass();
 	void lightingForwardPass();
 
-	void gBufferPass();
-	void directionalLightsPass();
-	void pointLightsPass();
-	void flatLightPass();
 	void ssaoPass();
 };
 

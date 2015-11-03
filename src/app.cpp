@@ -15,7 +15,7 @@
 #include <core/util/timer.hpp>
 #include <core/util/toggle.hpp>
 
-#include <app/comp/boundingobject.hpp>
+#include <app/comp/boundingvolume.hpp>
 #include <app/comp/direction.hpp>
 #include <app/comp/directionallight.hpp>
 #include <app/comp/input.hpp>
@@ -37,7 +37,7 @@
 #include <app/proc/frustumprocess.hpp>
 #include <app/proc/inputprocess.hpp>
 #include <app/proc/meshrenderer.hpp>
-#include <app/proc/rebuildboundingobjectprocess.hpp>
+#include <app/proc/rebuildboundingvolumeprocess.hpp>
 #include <app/proc/transformprocess.hpp>
 
 #include <glm/gtx/compatibility.hpp>
@@ -106,12 +106,12 @@ struct AppVariables
 	rn::Prof profPointLight{"App::profPointLight"};
 	rn::Prof profFlatLight{"App::profFlatLight"};
 	rn::Prof profSSAO{"App::profSSAO"};
+	rn::Prof profCSM{"App::profCSM"};
 
 	app::Scene scene{};
 
 	util::Timer sunTimer{};
 
-	util::Toggle toggleDeferred{"Deferred (-)", 0};
 	util::Toggle toggleSSAO{"SSAO (b)", 0};
 	util::Toggle toggleSSAOBlur{"SSAOBlur (n)", 1};
 	util::Toggle toggleDebugPreview{"DebugPreview (m)", 0};
@@ -202,6 +202,7 @@ void App::init()
 	v->profPointLight.init();
 	v->profFlatLight.init();
 	v->profSSAO.init();
+	v->profCSM.init();
 
 	/* Test: switch to window mode */
 	UTIL_DEBUG
@@ -652,10 +653,12 @@ void App::initScene()
 
 		auto &light = ecs::get<PointLight>(v->lightIds[0]);
 		light.color = glm::vec4{1.f, 1.f, 1.f, 1.f};
+		light.radius = 1.0;
+		light.distanceMax = 3.0;
 		// linear attenuation; distance at which half of the light intensity is lost
-		light.linearAttenuation = 1.0 / pow(3.0, 2); // r_l = 3.0;
+		// light.linearAttenuation = 1.0 / pow(3.0, 2); // r_l = 3.0;
 		// quadriatic attenuation; distance at which three-quarters of the light intensity is lost
-		light.quadraticAttenuation = 1.0 / pow(6.0, 2); // r_q = 6.0;
+		// light.quadraticAttenuation = 1.0 / pow(6.0, 2); // r_q = 6.0;
 
 		auto &position = ecs::get<Position>(v->lightIds[0]).position;
 		position.x = 0.f;
@@ -680,10 +683,12 @@ void App::initScene()
 
 		auto &light = ecs::get<PointLight>(v->lightIds[1]);
 		light.color = glm::vec4{1.f, 1.f, 1.f, 1.f};
+		light.radius = 1.5;
+		light.distanceMax = light.radius * 3.0;
 		// linear attenuation; distance at which half of the light intensity is lost
-		light.linearAttenuation = 1.0 / pow(0.5, 2); // r_l = 3.0;
+		// light.linearAttenuation = 1.0 / pow(0.5, 2); // r_l = 3.0;
 		// quadriatic attenuation; distance at which three-quarters of the light intensity is lost
-		light.quadraticAttenuation = 1.0 / pow(1.0, 2); // r_q = 6.0;
+		// light.quadraticAttenuation = 1.0 / pow(1.0, 2); // r_q = 6.0;
 
 		auto &position = ecs::get<Position>(v->lightIds[1]).position;
 		position.x = 0.f;
@@ -708,10 +713,12 @@ void App::initScene()
 
 		auto &light = ecs::get<PointLight>(v->lightIds[2]);
 		light.color = glm::vec4{1.f, 0.f, 0.f, 1.f};
+		light.radius = 1.5;
+		light.distanceMax = 2.0;
 		// linear attenuation; distance at which half of the light intensity is lost
-		light.linearAttenuation = 1.0 / pow(1.5, 2); // r_l = 3.0;
+		// light.linearAttenuation = 1.0 / pow(1.5, 2); // r_l = 3.0;
 		// quadriatic attenuation; distance at which three-quarters of the light intensity is lost
-		light.quadraticAttenuation = 1.0 / pow(4.0, 2); // r_q = 6.0;
+		// light.quadraticAttenuation = 1.0 / pow(4.0, 2); // r_q = 6.0;
 
 		auto &position = ecs::get<Position>(v->lightIds[2]).position;
 		position.x = 2.f;
@@ -736,10 +743,12 @@ void App::initScene()
 
 		auto &light = ecs::get<PointLight>(v->lightIds[3]);
 		light.color = glm::vec4{0.f, 1.f, 0.f, 1.f};
+		light.radius = 1.5; // r_l = 3.0;
+		light.distanceMax = light.radius * 3.0;
 		// linear attenuation; distance at which half of the light intensity is lost
-		light.linearAttenuation = 1.0 / pow(1.5, 2); // r_l = 3.0;
+		// light.linearAttenuation = 1.0 / pow(1.5, 2); // r_l = 3.0;
 		// quadriatic attenuation; distance at which three-quarters of the light intensity is lost
-		light.quadraticAttenuation = 1.0 / pow(4.0, 2); // r_q = 6.0;
+		// light.quadraticAttenuation = 1.0 / pow(4.0, 2); // r_q = 6.0;
 
 		auto &position = ecs::get<Position>(v->lightIds[3]).position;
 		position.x = -3.f;
@@ -777,7 +786,7 @@ void App::initScene()
 
 	for (auto &entity : ecs::findWith<Name, Transform, Mesh>())
 	{
-		proc::RebuildBoundingObjectProcess::update(entity);
+		proc::RebuildBoundingVolumeProcess::update(entity);
 	}
 
 	{
@@ -917,11 +926,6 @@ void App::update()
 		v->sunTimer.togglePause();
 	}
 
-	if (key::hit('-'))
-	{
-		v->toggleDeferred.change();
-	}
-
 	if (key::hit('b'))
 	{
 		v->toggleSSAO.change();
@@ -967,7 +971,7 @@ void App::update()
 
 		lightPositionDelta.x *= (ngn::key::pressed(KEY_KP_6)   - ngn::key::pressed(KEY_KP_4));
 		lightPositionDelta.y *= (ngn::key::pressed(KEY_KP_ADD) - ngn::key::pressed(KEY_KP_ENTER));
-		lightPositionDelta.z *= (ngn::key::pressed(KEY_KP_5)   - ngn::key::pressed(KEY_KP_8));
+		lightPositionDelta.z *= (ngn::key::pressed(KEY_KP_8)   - ngn::key::pressed(KEY_KP_5));
 
 		auto &position = ecs::get<Position>(v->lightIds[0]).position;
 		position += lightPositionDelta;
@@ -1004,7 +1008,7 @@ void App::update()
 
 	for (auto &entity : ecs::findWith<Transform, Mesh>())
 	{
-		proc::RebuildBoundingObjectProcess::update(entity);
+		proc::RebuildBoundingVolumeProcess::update(entity);
 	}
 }
 
@@ -1014,330 +1018,139 @@ void App::render()
 	RN_CHECK(glClearDepth(0.0));
 	RN_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
-	if ( ! v->toggleDeferred.value)
+	v->profRender.start();
+
+	v->profZPrefill.start();
+	zPrefillForwardPass();
+	v->profZPrefill.stop();
+
+	v->profSSAO.start();
+	ssaoPass();
+	v->profSSAO.stop();
+
+	v->profSetupLights.start();
+	setupLightsForwardPass();
+	v->profSetupLights.stop();
+
+	v->profRenderShadows.start();
+	renderShadowsForwardPass();
+	v->profRenderShadows.stop();
+
+	v->profLighting.start();
+	lightingForwardPass();
+	v->profLighting.stop();
+
 	{
-		v->profRender.start();
+		RN_SCOPE_DISABLE(GL_DEPTH_TEST);
 
-		v->profZPrefill.start();
-		zPrefillForwardPass();
-		v->profZPrefill.stop();
+		v->progFBBlit.use();
+		v->progFBBlit.uniform("texSource", v->fbScreenForward.color(0)->bind(0));
 
-		v->profSSAO.start();
-		ssaoPass();
-		v->profSSAO.stop();
+		rn::Mesh::quad.render();
 
-		v->profSetupLights.start();
-		setupLightsForwardPass();
-		v->profSetupLights.stop();
-
-		v->profRenderShadows.start();
-		renderShadowsForwardPass();
-		v->profRenderShadows.stop();
-
-		v->profLighting.start();
-		lightingForwardPass();
-		v->profLighting.stop();
-
-		{
-			RN_SCOPE_DISABLE(GL_DEPTH_TEST);
-
-			v->progFBBlit.use();
-			v->progFBBlit.uniform("texSource", v->fbScreenForward.color(0)->bind(0));
-
-			rn::Mesh::quad.render();
-
-			v->progFBBlit.forgo();
-		}
-
-		// if (false)
-		{
-			RN_SCOPE_DISABLE(GL_DEPTH_TEST);
-
-			v->progZDebug.use();
-			v->progZDebug.uniform("texNormal", v->fbZPrefill.color(0)->bind(0));
-			v->progZDebug.uniform("texDebug", v->fbZPrefill.color(1)->bind(1));
-			v->progZDebug.uniform("texScreen", v->fbScreenForward.color(0)->bind(2));
-
-			rn::Mesh::quad.render();
-
-			v->progZDebug.forgo();
-		}
-
-		v->profRender.stop();
-
-		{
-			RN_SCOPE_DISABLE(GL_DEPTH_TEST);
-			RN_SCOPE_DISABLE(GL_CULL_FACE);
-			RN_SCOPE_ENABLE(GL_BLEND);
-			// RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-			RN_CHECK(glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE));
-
-			double ft = ngn::time() - ngn::ct;
-
-			v->fbUI.bind();
-			v->fbUI.clear(rn::BUFFER_COLOR);
-
-			ostringstream oss;
-			oss << setprecision(4) << fixed;
-			oss << "dt=" << ngn::dt * 1000.0 << "ms\n";
-			oss << "ft=" << ft * 1000.0 << "ms\n";
-			oss << "fps=" << 1.0 / ngn::dt << "\n";
-			oss << "fps=" << 1.0 / ft << " (frame)\n";
-			oss << "triangles=" << rn::stats.triangles << "\n";
-			oss << "\n";
-			oss << "render=" << v->profRender.ms() << "ms/" << v->profRender.latency() << "f (" << (1000.0 / v->profRender.ms()) << ")\n";
-			oss << "  ZPrefill=" << v->profZPrefill.ms() << "ms/" << v->profZPrefill.latency() << "f\n";
-			oss << "  SSAO=" << v->profSSAO.ms() << "ms/" << v->profSSAO.latency() << "f\n";
-			oss << "    Z=" << v->ssao.profZ.ms() << "ms/" << v->ssao.profZ.latency() << "f\n";
-			oss << "    MipMaps=" << v->ssao.profMipMaps.ms() << "ms/" << v->ssao.profMipMaps.latency() << "f\n";
-			oss << "    AO=" << v->ssao.profAO.ms() << "ms/" << v->ssao.profAO.latency() << "f\n";
-			oss << "    Blur=" << v->ssao.profBlur.ms() << "ms/" << v->ssao.profBlur.latency() << "f\n";
-			oss << "  SetupLights=" << v->profSetupLights.ms() << "ms/" << v->profSetupLights.latency() << "f\n";
-			oss << "  RenderShadows=" << v->profRenderShadows.ms() << "ms/" << v->profRenderShadows.latency() << "f\n";
-			oss << "  Lighting=" << v->profLighting.ms() << "ms/" << v->profLighting.latency() << "f\n";
-			oss << "\n";
-			oss << "F4 - reload scene\n";
-			oss << "F5 - reload shaders\n";
-			oss << "F6 - reload meshes\n";
-			oss << "F7 - reload fonts\n";
-			oss << "F8 - reload FBOs\n";
-			oss << "F9 - reload textures\n";
-			oss << "F10 - change vsync mode (current: " << v->vsyncNames[v->currentVsync] << ")\n";
-			oss << "F11 - change window mode (current: " << v->modeNames[v->currentMode] << ")\n";
-			oss << "\n";
-			oss << "Movement: W, A, S, D, SPACE, CTRL (SHIFT - slower movement)\n";
-			oss << "Camera: arrows (SHIFT - slower rotation)\n";
-			oss << "Point Light: Keypad 8, 4, 5, 6\n\n";
-			oss << "Toggles:\n";
-
-			for (auto &toggle : util::Toggle::collection)
-			{
-				oss << "  " << toggle->toggleName << " = " << toggle->value << "\n";
-			}
-
-			v->font1.render(oss.str());
-
-			oss.str(""s);
-			oss.clear();
-
-			oss << "CSM:\n";
-			oss << "  V[0][0]=" << glm::to_string(v->csm.Vs[0][0]) << "\n";
-			oss << "  V[0][1]=" << glm::to_string(v->csm.Vs[0][1]) << "\n";
-			oss << "  V[0][2]=" << glm::to_string(v->csm.Vs[0][2]) << "\n";
-			oss << "  V[0][3]=" << glm::to_string(v->csm.Vs[0][3]) << "\n";
-			oss << "\n";
-			oss << "  P[0][0]=" << glm::to_string(v->csm.Ps[0][0]) << "\n";
-			oss << "  P[0][1]=" << glm::to_string(v->csm.Ps[0][1]) << "\n";
-			oss << "  P[0][2]=" << glm::to_string(v->csm.Ps[0][2]) << "\n";
-			oss << "  P[0][3]=" << glm::to_string(v->csm.Ps[0][3]) << "\n";
-
-			v->font2.position.x = -0.125f;
-			v->font2.render(oss.str());
-
-			v->fbUI.unbind();
-
-			RN_SCOPE_ENABLE(GL_BLEND);
-			RN_SCOPE_DISABLE(GL_DEPTH_TEST);
-			RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-
-			v->progFBBlit.use();
-			v->progFBBlit.uniform("texSource", v->fbUI.color(0)->bind(0));
-			rn::Mesh::quad.render();
-			v->progFBBlit.forgo();
-
-			RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-		}
+		v->progFBBlit.forgo();
 	}
-	else
+
+	// if (false)
 	{
-		v->profRender.start();
+		RN_SCOPE_DISABLE(GL_DEPTH_TEST);
 
-		v->fbScreen.bind();
-		v->fbScreen.clear(rn::BUFFER_COLOR | rn::BUFFER_DEPTH | rn::BUFFER_STENCIL);
+		v->progZDebug.use();
+		v->progZDebug.uniform("texNormal", v->fbZPrefill.color(0)->bind(0));
+		v->progZDebug.uniform("texDebug", v->fbZPrefill.color(1)->bind(1));
+		v->progZDebug.uniform("texScreen", v->fbScreenForward.color(0)->bind(2));
 
-		v->profGBuffer.start();
-		gBufferPass();
-		v->profGBuffer.stop();
+		rn::Mesh::quad.render();
 
-		// v->fbScreen.clear(rn::BUFFER_COLOR);
-		v->fbGBuffer.blit(v->fbScreen, rn::BUFFER_STENCIL);
-		// v->fbGBuffer.blit(nullptr, rn::BUFFER_STENCIL);
+		v->progZDebug.forgo();
+	}
 
-		if ( ! v->toggleLights.value)
+	v->profRender.stop();
+
+	{
+		RN_SCOPE_DISABLE(GL_DEPTH_TEST);
+		RN_SCOPE_DISABLE(GL_CULL_FACE);
+		RN_SCOPE_ENABLE(GL_BLEND);
+		// RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+		RN_CHECK(glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE));
+
+		double ft = ngn::time() - ngn::ct;
+
+		v->fbUI.bind();
+		v->fbUI.clear(rn::BUFFER_COLOR);
+
+		ostringstream oss;
+		oss << setprecision(4) << fixed;
+		oss << "dt=" << ngn::dt * 1000.0 << "ms\n";
+		oss << "ft=" << ft * 1000.0 << "ms\n";
+		oss << "fps=" << 1.0 / ngn::dt << "\n";
+		oss << "fps=" << 1.0 / ft << " (frame)\n";
+		oss << "triangles=" << rn::stats.triangles << "\n";
+		oss << "\n";
+		oss << "render=" << v->profRender.ms() << "ms/" << v->profRender.latency() << "f (" << (1000.0 / v->profRender.ms()) << ")\n";
+		oss << "  ZPrefill=" << v->profZPrefill.ms() << "ms/" << v->profZPrefill.latency() << "f\n";
+		oss << "  SSAO=" << v->profSSAO.ms() << "ms/" << v->profSSAO.latency() << "f\n";
+		oss << "    Z=" << v->ssao.profZ.ms() << "ms/" << v->ssao.profZ.latency() << "f\n";
+		oss << "    MipMaps=" << v->ssao.profMipMaps.ms() << "ms/" << v->ssao.profMipMaps.latency() << "f\n";
+		oss << "    AO=" << v->ssao.profAO.ms() << "ms/" << v->ssao.profAO.latency() << "f\n";
+		oss << "    Blur=" << v->ssao.profBlur.ms() << "ms/" << v->ssao.profBlur.latency() << "f\n";
+		oss << "  SetupLights=" << v->profSetupLights.ms() << "ms/" << v->profSetupLights.latency() << "f\n";
+		oss << "  RenderShadows=" << v->profRenderShadows.ms() << "ms/" << v->profRenderShadows.latency() << "f\n";
+		oss << "    CSM=" << v->profCSM.ms() << "ms\n";
+		oss << "      Render=" << v->csm.profRender.ms() << "ms\n";
+		// oss << "      Blur=" << v->csm.profBlur.ms() << "ms\n";
+		oss << "  Lighting=" << v->profLighting.ms() << "ms/" << v->profLighting.latency() << "f\n";
+		oss << "\n";
+		oss << "F4 - reload scene\n";
+		oss << "F5 - reload shaders\n";
+		oss << "F6 - reload meshes\n";
+		oss << "F7 - reload fonts\n";
+		oss << "F8 - reload FBOs\n";
+		oss << "F9 - reload textures\n";
+		oss << "F10 - change vsync mode (current: " << v->vsyncNames[v->currentVsync] << ")\n";
+		oss << "F11 - change window mode (current: " << v->modeNames[v->currentMode] << ")\n";
+		oss << "\n";
+		oss << "Movement: W, A, S, D, SPACE, CTRL (SHIFT - slower movement)\n";
+		oss << "Camera: arrows (SHIFT - slower rotation)\n";
+		oss << "Point Light: Keypad 8, 4, 5, 6\n\n";
+		oss << "Toggles:\n";
+
+		for (auto &toggle : util::Toggle::collection)
 		{
-			v->fbGBuffer.blit(v->fbScreen, rn::BUFFER_COLOR);
-			// v->fbGBuffer.blit(nullptr, rn::BUFFER_COLOR);
+			oss << "  " << toggle->toggleName << " = " << toggle->value << "\n";
 		}
 
-		v->profSSAO.start();
-		ssaoPass();
-		v->profSSAO.stop();
+		v->font1.render(oss.str());
 
-		if (v->toggleLights.value)
-		{
-			v->profDirectionalLight.start();
-			directionalLightsPass();
-			v->profDirectionalLight.stop();
+		oss.str(""s);
+		oss.clear();
 
-			// v->profPointLight.start();
-			// pointLightsPass();
-			// v->profPointLight.stop();
+		oss << "CSM:\n";
+		oss << "  V[0][0]=" << glm::to_string(v->csm.Vs[0][0]) << "\n";
+		oss << "  V[0][1]=" << glm::to_string(v->csm.Vs[0][1]) << "\n";
+		oss << "  V[0][2]=" << glm::to_string(v->csm.Vs[0][2]) << "\n";
+		oss << "  V[0][3]=" << glm::to_string(v->csm.Vs[0][3]) << "\n";
+		oss << "\n";
+		oss << "  P[0][0]=" << glm::to_string(v->csm.Ps[0][0]) << "\n";
+		oss << "  P[0][1]=" << glm::to_string(v->csm.Ps[0][1]) << "\n";
+		oss << "  P[0][2]=" << glm::to_string(v->csm.Ps[0][2]) << "\n";
+		oss << "  P[0][3]=" << glm::to_string(v->csm.Ps[0][3]) << "\n";
 
-			v->profFlatLight.start();
-			flatLightPass();
-			v->profFlatLight.stop();
+		v->font2.position.x = -0.125f;
+		v->font2.render(oss.str());
 
-			// v->fbScreen.blit(nullptr, rn::BUFFER_COLOR/*, rn::MAG_LINEAR*/);
-		}
+		v->fbUI.unbind();
 
-		if (v->toggleDebugPreview.value)
-		{
-			RN_SCOPE_DISABLE(GL_BLEND);
-			RN_SCOPE_ENABLE(GL_STENCIL_TEST);
-			RN_CHECK(glStencilFunc(GL_EQUAL, Stencil::MASK_SHADED, Stencil::MASK_ALL));
-			RN_CHECK(glStencilMask(0x0));
+		RN_SCOPE_ENABLE(GL_BLEND);
+		RN_SCOPE_DISABLE(GL_DEPTH_TEST);
+		RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
-			v->progSSAOBlit.use();
+		v->progFBBlit.use();
+		v->progFBBlit.uniform("texSource", v->fbUI.color(0)->bind(0));
+		rn::Mesh::quad.render();
+		v->progFBBlit.forgo();
 
-			v->progSSAOBlit.var("texSource", v->ssao.fbAO.color(0)->bind(0));
-			v->progSSAOBlit.var("texColor", v->fbGBuffer.color(0)->bind(1));
-			v->progSSAOBlit.var("texNormal", v->fbGBuffer.color(1)->bind(2));
-			v->progSSAOBlit.var("texDepth", v->fbGBuffer.depth()->bind(3));
-			v->progSSAOBlit.var("texZ", v->ssao.fbZ.color(0)->bind(4));
-
-			rn::Mesh::quad.render();
-
-			v->progSSAOBlit.forgo();
-		}
-
-		if (v->toggleZPreview.value)
-		{
-			RN_SCOPE_DISABLE(GL_BLEND);
-			RN_SCOPE_DISABLE(GL_DEPTH_TEST);
-			RN_SCOPE_DISABLE(GL_STENCIL_TEST);
-
-			v->progTexPreview.use();
-			v->progTexPreview.var("texSource", v->ssao.fbZ.color(0)->bind(0));
-
-			rn::Mesh::quad.render();
-
-			v->progTexPreview.forgo();
-		}
-
-		{
-			RN_SCOPE_DISABLE(GL_BLEND);
-			RN_SCOPE_DISABLE(GL_DEPTH_TEST);
-			RN_SCOPE_DISABLE(GL_STENCIL_TEST);
-
-			v->progShadowMapPreview.use();
-			// v->progShadowMapPreview.var("texSource", v->fbShadowMap.color(0)->bind(0));
-			// v->progShadowMapPreview.var("texSource", v->csm.fbShadows[0].color(0)->bind(0));
-
-			RN_CHECK(glTextureParameteri(v->csm.texDepths->id, GL_TEXTURE_COMPARE_MODE, GL_NONE));
-
-			v->progShadowMapPreview.var("texSource", v->csm.texDepths->bind(0));
-			v->progShadowMapPreview.var("layer", v->toggleCascade.value);
-
-			rn::Mesh::quad.render();
-
-			v->progShadowMapPreview.forgo();
-
-			RN_CHECK(glTextureParameteri(v->csm.texDepths->id, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE));
-			RN_CHECK_PARAM(glTextureParameteri(v->csm.texDepths->id, GL_TEXTURE_COMPARE_FUNC, v->csm.texDepths->compareFunc), rn::getEnumName(v->csm.texDepths->compareFunc));
-		}
-
-		v->fbScreen.unbind();
-		v->fbScreen.blit(nullptr, rn::BUFFER_COLOR);
-
-		v->profRender.stop();
-
-		{
-			RN_SCOPE_DISABLE(GL_DEPTH_TEST);
-			RN_SCOPE_DISABLE(GL_CULL_FACE);
-			RN_SCOPE_ENABLE(GL_BLEND);
-			// RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-			RN_CHECK(glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE));
-
-			double ft = ngn::time() - ngn::ct;
-
-			v->fbUI.bind();
-			v->fbUI.clear(rn::BUFFER_COLOR);
-
-			ostringstream oss;
-			oss << setprecision(4) << fixed;
-			oss << "dt=" << ngn::dt * 1000.0 << "ms\n";
-			oss << "ft=" << ft * 1000.0 << "ms\n";
-			oss << "fps=" << 1.0 / ngn::dt << "\n";
-			oss << "fps=" << 1.0 / ft << " (frame)\n";
-			oss << "triangles=" << rn::stats.triangles << "\n";
-			oss << "\n";
-
-			oss << "render=" << v->profRender.ms() << "ms (" << 1000.0 / v->profRender.ms() << ")\n";
-			oss << "  GBuffer=" << v->profGBuffer.ms() << "ms\n";
-			oss << "  DirectionalLight=" << v->profDirectionalLight.ms() << "ms\n";
-			oss << "  PointLight=" << v->profPointLight.ms() << "ms\n";
-			oss << "  FlatLight=" << v->profFlatLight.ms() << "ms\n";
-			oss << "  SSAO=" << v->profSSAO.ms() << "ms\n";
-			oss << "    Z=" << v->ssao.profZ.ms() << "ms\n";
-			oss << "    MipMaps=" << v->ssao.profMipMaps.ms() << "ms\n";
-			oss << "    AO=" << v->ssao.profAO.ms() << "ms\n";
-			oss << "    Blur=" << v->ssao.profBlur.ms() << "ms\n";
-			oss << "  CSM=???ms\n";
-			oss << "    Render=" << v->csm.profRender.ms() << "ms\n";
-			oss << "    Blur=" << v->csm.profBlur.ms() << "ms\n";
-
-			oss << "\n";
-			oss << "F4 - reload scene\n";
-			oss << "F5 - reload shaders\n";
-			oss << "F6 - reload meshes\n";
-			oss << "F7 - reload fonts\n";
-			oss << "F8 - reload FBOs\n";
-			oss << "F9 - reload textures\n";
-			oss << "F10 - change vsync mode (current: " << v->vsyncNames[v->currentVsync] << ")\n";
-			oss << "F11 - change window mode (current: " << v->modeNames[v->currentMode] << ")\n";
-			oss << "\n";
-			oss << "Movement: W, A, S, D\n";
-			oss << "Camera: arrows\n";
-			oss << "Point Light: Keypad 8, 4, 5, 6\n\n";
-			oss << "Toggles:\n";
-
-			for (auto &toggle : util::Toggle::collection)
-			{
-				oss << "  " << toggle->toggleName << " = " << toggle->value << "\n";
-			}
-
-			v->font1.render(oss.str());
-
-			oss.str(""s);
-			oss.clear();
-
-			oss << "CSM:\n";
-			oss << "  V[0][0]=" << glm::to_string(v->csm.Vs[0][0]) << "\n";
-			oss << "  V[0][1]=" << glm::to_string(v->csm.Vs[0][1]) << "\n";
-			oss << "  V[0][2]=" << glm::to_string(v->csm.Vs[0][2]) << "\n";
-			oss << "  V[0][3]=" << glm::to_string(v->csm.Vs[0][3]) << "\n";
-			oss << "\n";
-			oss << "  P[0][0]=" << glm::to_string(v->csm.Ps[0][0]) << "\n";
-			oss << "  P[0][1]=" << glm::to_string(v->csm.Ps[0][1]) << "\n";
-			oss << "  P[0][2]=" << glm::to_string(v->csm.Ps[0][2]) << "\n";
-			oss << "  P[0][3]=" << glm::to_string(v->csm.Ps[0][3]) << "\n";
-
-			v->font2.position.x = -0.125f;
-			v->font2.render(oss.str());
-
-			v->fbUI.unbind();
-
-			RN_SCOPE_ENABLE(GL_BLEND);
-			RN_SCOPE_DISABLE(GL_DEPTH_TEST);
-			RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-
-			v->progFBBlit.use();
-			v->progFBBlit.uniform("texSource", v->fbUI.color(0)->bind(0));
-			rn::Mesh::quad.render();
-			v->progFBBlit.forgo();
-
-			RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-		}
+		RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 	}
 }
 
@@ -1365,7 +1178,7 @@ void App::zPrefillForwardPass()
 
 	for (auto &entity : ecs::findWith<Transform, Mesh, Material>())
 	{
-		if (ecs::has<BoundingObject>(entity) && ! proc::FrustumProcess::isVisible(entity, frustum))
+		if (ecs::has<BoundingVolume>(entity) && ! proc::FrustumProcess::isVisible(entity, frustum))
 		{
 			continue;
 		}
@@ -1388,9 +1201,15 @@ void App::setupLightsForwardPass()
 	for (auto &entity : ecs::findWith<PointLight, Position>())
 	{
 		const auto &light = ecs::get<PointLight>(entity);
-		glm::vec3 position{V * glm::vec4{ecs::get<Position>(entity).position, 1.0f}};
+		glm::vec4 position{V * glm::vec4{ecs::get<Position>(entity).position, 1.0f}};
+		glm::vec4 intensityRadius{
+			light.intensity,
+			light.radius,
+			light.distanceMax,
+			0.f
+		};
 
-		v->pointLightData.appendData(light.color, light.linearAttenuation, light.quadraticAttenuation, position);
+		v->pointLightData.appendData(light.color, intensityRadius, position);
 		v->pointLightCount++;
 	}
 	v->pointLightData.upload();
@@ -1416,7 +1235,9 @@ void App::setupLightsForwardPass()
 
 void App::renderShadowsForwardPass()
 {
+	v->profCSM.start();
 	v->csm.renderCascades();
+	v->profCSM.stop();
 }
 
 void App::lightingForwardPass()
@@ -1450,27 +1271,25 @@ void App::lightingForwardPass()
 	v->progLightingForward.uniform("lightDCount", v->directionalLightCount);
 	v->progLightingForward.uniform("lightPCount", v->pointLightCount);
 
-	GLint csmKernelSizeLocation = v->progLightingForward.getValue("csmKernelSize").id;
-	GLint csmBlendCascadesLocation = v->progLightingForward.getValue("csmBlendCascades").id;
-	GLint csmSplitsLocation = v->progLightingForward.getValue("csmSplits").id;
-	GLint csmCascadesLocation = v->progLightingForward.getValue("csmCascades").id;
-	GLint csmRadiuses2Location = v->progLightingForward.getValue("csmRadiuses2").id;
-	GLint csmCentersLocation = v->progLightingForward.getValue("csmCenters").id;
-	GLint csmMVPLocation = v->progLightingForward.getValue("csmMVP").id;
-	GLint csmTexDepthsLocation = v->progLightingForward.getValue("csmTexDepths").id;
+	GLint csmBlendCascadesLocation = v->progLightingForward.getMeta("csm.blendCascades").id;
+	GLint csmCentersLocation = v->progLightingForward.getMeta("csm.centers").id;
+	GLint csmKernelSizeLocation = v->progLightingForward.getMeta("csm.kernelSize").id;
+	GLint csmMVPLocation = v->progLightingForward.getMeta("csm.MVP").id;
+	GLint csmRadiuses2Location = v->progLightingForward.getMeta("csm.radiuses2").id;
+	GLint csmSplitsLocation = v->progLightingForward.getMeta("csm.splits").id;
+	GLint csmTexDepthsLocation = v->progLightingForward.getMeta("csmTexDepths").id;
 
-	v->progLightingForward.var(csmKernelSizeLocation, static_cast<GLint>(v->csm.kernelSize));
 	v->progLightingForward.var(csmBlendCascadesLocation, static_cast<GLuint>(v->csm.blendCascades));
-	v->progLightingForward.var(csmSplitsLocation, static_cast<GLint>(v->csm.splits));
-	v->progLightingForward.var(csmCascadesLocation, v->csm.cascades.data(), v->csm.cascades.size());
-	v->progLightingForward.var(csmRadiuses2Location, v->csm.radiuses2.data(), v->csm.radiuses2.size());
 	v->progLightingForward.var(csmCentersLocation, v->csm.centersV.data(), v->csm.centersV.size());
+	v->progLightingForward.var(csmKernelSizeLocation, static_cast<GLuint>(v->csm.kernelSize));
 	v->progLightingForward.var(csmMVPLocation, v->csm.VPs.data(), v->csm.VPs.size());
+	v->progLightingForward.var(csmRadiuses2Location, v->csm.radiuses2.data(), v->csm.radiuses2.size());
+	v->progLightingForward.var(csmSplitsLocation, static_cast<GLuint>(v->csm.splits));
 	v->progLightingForward.var(csmTexDepthsLocation, v->csm.texDepths->bind(unit++));
 
 	for (auto &entity : ecs::findWith<Transform, Mesh, Material>())
 	{
-		if (ecs::has<BoundingObject>(entity) && ! proc::FrustumProcess::isVisible(entity, frustum))
+		if (ecs::has<BoundingVolume>(entity) && ! proc::FrustumProcess::isVisible(entity, frustum))
 		{
 			continue;
 		}
@@ -1488,248 +1307,6 @@ void App::lightingForwardPass()
 	RN_CHECK(glDepthMask(GL_TRUE));
 }
 
-void App::gBufferPass()
-{
-	RN_SCOPE_DISABLE(GL_BLEND);
-	RN_SCOPE_ENABLE(GL_STENCIL_TEST);
-
-	RN_CHECK(glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE));
-	RN_CHECK(glStencilMask(0xF));
-
-	RN_FB_BIND(v->fbGBuffer);
-	v->fbGBuffer.clear(rn::BUFFER_COLOR | rn::BUFFER_DEPTH | rn::BUFFER_STENCIL);
-
-	const auto &V = ecs::get<View>(v->cameraId).matrix;
-	const auto &P = ecs::get<Projection>(v->cameraId).matrix;
-
-	const phs::Frustum frustum{P * V};
-
-	v->progGBuffer.use();
-	v->progGBuffer.var("V", V);
-
-	for (auto &entity : ecs::findWith<Transform, Mesh, Material>())
-	{
-		if (ecs::has<BoundingObject>(entity) && ! proc::FrustumProcess::isVisible(entity, frustum))
-		{
-			continue;
-		}
-
-		GLint ref = ecs::has<Stencil>(entity) ? ecs::get<Stencil>(entity).ref : 0;
-
-		RN_CHECK(glStencilFunc(GL_ALWAYS, ref, 0xF));
-
-		proc::MeshRenderer::render(entity, v->progGBuffer);
-	}
-
-	// draw light meshes
-	RN_CHECK(glStencilFunc(GL_ALWAYS, Stencil::MASK_FLAT, 0xF));
-
-	v->progGBuffer.var("matShininess", 0.f);
-
-	for (auto &entity : ecs::findWith<Transform, Mesh, PointLight>())
-	{
-		if (ecs::has<BoundingObject>(entity) && ! proc::FrustumProcess::isVisible(entity, frustum))
-		{
-			continue;
-		}
-
-		v->progGBuffer.var("matDiffuse", ecs::get<PointLight>(entity).color);
-		proc::MeshRenderer::render(entity, v->progGBuffer);
-	}
-
-	for (auto &entity : ecs::findWith<Transform, Mesh, DirectionalLight>())
-	{
-		if (ecs::has<BoundingObject>(entity) && ! proc::FrustumProcess::isVisible(entity, frustum))
-		{
-			continue;
-		}
-
-		v->progGBuffer.var("matDiffuse", ecs::get<DirectionalLight>(entity).color);
-		proc::MeshRenderer::render(entity, v->progGBuffer);
-	}
-
-	v->progGBuffer.forgo();
-}
-
-void App::directionalLightsPass()
-{
-	const auto &projection = ecs::get<Projection>(v->cameraId);
-	const auto &P = projection.matrix;
-	const auto &view = ecs::get<View>(v->cameraId);
-	const auto &V = view.matrix;
-	const auto &invV = view.invMatrix;
-
-	const phs::Frustum frustum{P * V};
-
-	v->progDirectionalLight.var("invV", invV);
-	v->progDirectionalLight.var("zNear", projection.zNear);
-	v->progDirectionalLight.var("zFar", projection.zFar);
-
-	for (auto &entity : ecs::findWith<DirectionalLight>())
-	{
-		// glm::mat4 shadowMapMVP = makeShadowMap(entity, frustum);
-		if (v->toggleCalculateMatrices.value) {
-			v->csm.calculateMatrices(v->cameraId, entity);
-		}
-
-		v->csm.renderCascades();
-
-		const auto &light = ecs::get<DirectionalLight>(entity);
-
-		{
-			// RN_FB_BIND(v->fbScreen);
-			// RN_SCOPE_DISABLE(GL_DEPTH_TEST);
-
-			RN_CHECK(glBlendFunc(GL_ONE, GL_ONE));
-			RN_SCOPE_ENABLE(GL_STENCIL_TEST);
-			RN_CHECK(glStencilFunc(GL_EQUAL, Stencil::MASK_SHADED, Stencil::MASK_ALL));
-			RN_CHECK(glStencilMask(0x0));
-
-			v->progDirectionalLight.use();
-
-			v->progDirectionalLight.var("useColor", v->toggleColor.value);
-
-			v->progDirectionalLight.var("lightAmbient", light.ambient);
-			v->progDirectionalLight.var("lightColor", light.color);
-			v->progDirectionalLight.var("lightDirection", glm::mat3{V} * light.direction);
-			v->progDirectionalLight.var("lightIntensity", light.intensity);
-			// v->progDirectionalLight.var("shadowmapMVP", shadowMapMVP);
-			// v->progDirectionalLight.var("csmMVP", v->csm.Ps[0] * v->csm.V);
-			/*
-			std::vector<float> csmRadiuses2{};
-			csmRadiuses2.resize(v->csm.radiuses.size());
-
-			for (size_t i = 0; i < csmRadiuses2.size(); i++)
-			{
-				csmRadiuses2[i] = v->csm.radiuses[i] * v->csm.radiuses[i];
-			}
-
-			std::vector<glm::vec3> csmCenters{};
-			csmCenters.resize(v->csm.centers.size());
-
-			for (size_t i = 0; i < csmCenters.size(); i++)
-			{
-				csmCenters[i] = glm::vec3{V  * glm::vec4{v->csm.centers[i], 1.f}};
-			}
-
-			std::vector<glm::mat4> csmMVP{};
-			csmMVP.resize(v->csm.Ps.size());
-
-			for (size_t i = 0; i < csmMVP.size(); i++)
-			{
-				csmMVP[i] = v->csm.Ps[i] * v->csm.Vs[i];
-			}
-			*/
-			GLsizei unit = 0;
-			v->progDirectionalLight.var("texColor", v->fbGBuffer.color(0)->bind(unit++));
-			v->progDirectionalLight.var("texNormal", v->fbGBuffer.color(1)->bind(unit++));
-			v->progDirectionalLight.var("texZ", v->fbGBuffer.color(2)->bind(unit++));
-			v->progDirectionalLight.var("texDepth", v->fbGBuffer.depth()->bind(unit++));
-			v->progDirectionalLight.var("texAO", v->ssao.fbAO.color(0)->bind(unit++));
-
-			// v->progDirectionalLight.var("texShadowMoments", v->fbShadowMap.color(0)->bind(unit++));
-			// v->progDirectionalLight.var("texShadowDepth", v->fbShadowMap.depth()->bind(unit++));
-			// v->progDirectionalLight.var("texCSM", v->csm.fbShadows[0].color(0)->bind(unit++));
-
-			v->progDirectionalLight.var("csmSplits", static_cast<GLint>(v->csm.splits));
-			v->progDirectionalLight.var("csmCascades", v->csm.cascades.data(), v->csm.cascades.size());
-			// v->progDirectionalLight.var("csmRadiuses2", v->csmRadiuses2.data(), v->csmRadiuses2.size());
-			v->progDirectionalLight.var("csmRadiuses2", v->csm.radiuses2.data(), v->csm.radiuses2.size());
-			// v->progDirectionalLight.var("csmCenters", v->csmCenters.data(), v->csmCenters.size());
-			v->progDirectionalLight.var("csmCenters", v->csm.centersV.data(), v->csm.centersV.size());
-			// v->progDirectionalLight.var("csmMVP", v->csmMVP.data(), v->csmMVP.size());
-			v->progDirectionalLight.var("csmMVP", v->csm.VPs.data(), v->csm.VPs.size());
-			// v->progDirectionalLight.var("csmTexCascades", v->csm.texCascades->bind(unit++));
-			v->progDirectionalLight.var("csmTexDepths", v->csm.texDepths->bind(unit++));
-
-			rn::Mesh::quad.render();
-
-			v->progDirectionalLight.forgo();
-
-			RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-		}
-	}
-}
-
-void App::pointLightsPass()
-{
-	glm::mat4 &V = ecs::get<View>(v->cameraId).matrix;
-
-	for (auto &entity : ecs::findWith<Transform, Mesh, PointLight>())
-	{
-		const auto &light = ecs::get<PointLight>(entity);
-		const auto &lightTransform = ecs::get<Transform>(entity);
-
-		const auto lightPosition = V * glm::vec4{lightTransform.translation, 1.f};
-
-		// @TODO: shadows
-		// {
-		// 	RN_FB_BIND(shadowmap);
-
-		// 	shadowmap.clear();
-
-		// 	v->progShadowMap.use();
-		// 	v->progShadowMap.var("V", V);
-
-		// 	for (auto &entity : ecs::findWith<Transform, Mesh, Occluder>())
-		// 	{
-		// 		proc::MeshRenderer::render(entity, v->progShadowMap);
-		// 	}
-
-		// 	v->progShadowMap.forgo();
-		// }
-
-		{
-			// RN_FB_BIND(v->fbScreen);
-
-			RN_SCOPE_ENABLE(GL_STENCIL_TEST);
-			RN_CHECK(glStencilFunc(GL_EQUAL, Stencil::MASK_SHADED, Stencil::MASK_ALL));
-			RN_CHECK(glStencilMask(0x0));
-
-			RN_CHECK(glBlendFunc(GL_ONE, GL_ONE));
-
-			v->progPointLight.use();
-			v->progPointLight.var("lightPosition", lightPosition);
-			v->progPointLight.var("lightColor", light.color);
-			v->progPointLight.var("lightIntensity", light.intensity);
-			v->progPointLight.var("lightLinearAttenuation", light.linearAttenuation);
-			v->progPointLight.var("lightQuadraticAttenuation", light.quadraticAttenuation);
-
-			v->progPointLight.var("texColor", v->fbGBuffer.color(0)->bind(0));
-			v->progPointLight.var("texNormal", v->fbGBuffer.color(1)->bind(1));
-			v->progPointLight.var("texZ", v->fbGBuffer.color(2)->bind(2));
-			v->progPointLight.var("texDepth", v->fbGBuffer.depth()->bind(3));
-
-			// shadowMapBuffer.colors[0].bind(3);
-			// shadowMapBuffer.depth.tex.bind(4);
-
-			// v->progPointLight.var("shadowMoments", 3);
-			// v->progPointLight.var("shadowDepth", 4);
-
-			rn::Mesh::quad.render();
-
-			v->progPointLight.forgo();
-
-			RN_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-		}
-	}
-}
-
-void App::flatLightPass()
-{
-	RN_SCOPE_ENABLE(GL_STENCIL_TEST);
-	RN_CHECK(glStencilFunc(GL_EQUAL, Stencil::MASK_FLAT, Stencil::MASK_ALL));
-	RN_CHECK(glStencilMask(0x0));
-
-	v->progFlatLight.use();
-
-	v->progFlatLight.var("texColor", v->fbGBuffer.color(0)->bind(0));
-
-	rn::Mesh::quad.render();
-
-	v->progFlatLight.forgo();
-}
-
 void App::ssaoPass()
 {
 	v->ssao.clear();
@@ -1739,22 +1316,8 @@ void App::ssaoPass()
 		return;
 	}
 
-	rn::Tex *texDepth;
-	rn::Tex *texNormal;
-
-	if ( ! v->toggleDeferred.value)
-	{
-		texDepth = v->fbZPrefill.depth();
-		texNormal = v->fbZPrefill.color(0);
-	}
-	else
-	{
-		texDepth = v->fbGBuffer.depth();
-		texNormal = v->fbGBuffer.color(1);
-	}
-
-	v->ssao.genMipMaps(texDepth);
-	v->ssao.computeAO(texNormal);
+	v->ssao.genMipMaps(v->fbGBuffer.depth());
+	v->ssao.computeAO(v->fbGBuffer.color(1));
 
 	if (v->toggleSSAOBlur.value) {
 		v->ssao.blur();

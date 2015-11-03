@@ -9,63 +9,63 @@ const GLuint LayoutLocation::pos = 0;
 const GLuint LayoutLocation::tex = 1;
 const GLuint LayoutLocation::norm = 2;
 
-GLint & UniformValue::set(GLint i)
+GLint & UniformMeta::set(GLint i)
 {
 	type = Type::uniform_int;
 	this->i = i;
 	return this->i;
 }
 
-GLuint & UniformValue::set(GLuint ui)
+GLuint & UniformMeta::set(GLuint ui)
 {
 	type = Type::uniform_uint;
 	this->ui = ui;
 	return this->ui;
 }
 
-GLfloat & UniformValue::set(GLfloat f)
+GLfloat & UniformMeta::set(GLfloat f)
 {
 	type = Type::uniform_float;
 	this->f = f;
 	return this->f;
 }
 
-glm::vec2 & UniformValue::set(glm::vec2 v2)
+glm::vec2 & UniformMeta::set(glm::vec2 v2)
 {
 	type = Type::uniform_vec2;
 	this->v2 = v2;
 	return this->v2;
 }
 
-glm::vec3 & UniformValue::set(glm::vec3 v3)
+glm::vec3 & UniformMeta::set(glm::vec3 v3)
 {
 	type = Type::uniform_vec3;
 	this->v3 = v3;
 	return this->v3;
 }
 
-glm::vec4 & UniformValue::set(glm::vec4 v4)
+glm::vec4 & UniformMeta::set(glm::vec4 v4)
 {
 	type = Type::uniform_vec4;
 	this->v4 = v4;
 	return this->v4;
 }
 
-glm::mat3 & UniformValue::set(glm::mat3 m3)
+glm::mat3 & UniformMeta::set(glm::mat3 m3)
 {
 	type = Type::uniform_mat3;
 	this->m3 = m3;
 	return this->m3;
 }
 
-glm::mat4 & UniformValue::set(glm::mat4 m4)
+glm::mat4 & UniformMeta::set(glm::mat4 m4)
 {
 	type = Type::uniform_mat4;
 	this->m4 = m4;
 	return this->m4;
 }
 
-GLint * UniformValue::set(GLint *vi, GLsizei count)
+GLint * UniformMeta::set(GLint *vi, GLsizei count)
 {
 	reset();
 	type = Type::uniform_v_int;
@@ -75,7 +75,7 @@ GLint * UniformValue::set(GLint *vi, GLsizei count)
 	return this->vi.first;
 }
 
-GLuint * UniformValue::set(GLuint *vui, GLsizei count)
+GLuint * UniformMeta::set(GLuint *vui, GLsizei count)
 {
 	reset();
 	type = Type::uniform_v_uint;
@@ -85,7 +85,7 @@ GLuint * UniformValue::set(GLuint *vui, GLsizei count)
 	return this->vui.first;
 }
 
-GLfloat * UniformValue::set(GLfloat *vf, GLsizei count)
+GLfloat * UniformMeta::set(GLfloat *vf, GLsizei count)
 {
 	reset();
 	type = Type::uniform_v_float;
@@ -95,7 +95,7 @@ GLfloat * UniformValue::set(GLfloat *vf, GLsizei count)
 	return this->vf.first;
 }
 
-glm::vec2 * UniformValue::set(glm::vec2 *vv2, GLsizei count)
+glm::vec2 * UniformMeta::set(glm::vec2 *vv2, GLsizei count)
 {
 	reset();
 	type = Type::uniform_v_vec2;
@@ -105,7 +105,7 @@ glm::vec2 * UniformValue::set(glm::vec2 *vv2, GLsizei count)
 	return this->vv2.first;
 }
 
-glm::vec3 * UniformValue::set(glm::vec3 *vv3, GLsizei count)
+glm::vec3 * UniformMeta::set(glm::vec3 *vv3, GLsizei count)
 {
 	reset();
 	type = Type::uniform_v_vec3;
@@ -115,7 +115,7 @@ glm::vec3 * UniformValue::set(glm::vec3 *vv3, GLsizei count)
 	return this->vv3.first;
 }
 
-glm::vec4 * UniformValue::set(glm::vec4 *vv4, GLsizei count)
+glm::vec4 * UniformMeta::set(glm::vec4 *vv4, GLsizei count)
 {
 	reset();
 	type = Type::uniform_v_vec4;
@@ -125,7 +125,7 @@ glm::vec4 * UniformValue::set(glm::vec4 *vv4, GLsizei count)
 	return this->vv4.first;
 }
 
-glm::mat3 * UniformValue::set(glm::mat3 *vm3, GLsizei count)
+glm::mat3 * UniformMeta::set(glm::mat3 *vm3, GLsizei count)
 {
 	reset();
 	type = Type::uniform_v_mat3;
@@ -135,7 +135,7 @@ glm::mat3 * UniformValue::set(glm::mat3 *vm3, GLsizei count)
 	return this->vm3.first;
 }
 
-glm::mat4 * UniformValue::set(glm::mat4 *vm4, GLsizei count)
+glm::mat4 * UniformMeta::set(glm::mat4 *vm4, GLsizei count)
 {
 	reset();
 	type = Type::uniform_v_mat4;
@@ -145,7 +145,7 @@ glm::mat4 * UniformValue::set(glm::mat4 *vm4, GLsizei count)
 	return this->vm4.first;
 }
 
-void UniformValue::reset()
+void UniformMeta::reset()
 {
 	switch (type)
 	{

@@ -1,5 +1,8 @@
 #version 440 core
+
 #extension GL_ARB_gpu_shader5 : enable
+#pragma rn: include(lib/normal.glsl)
+#pragma rn: include(lib/util.glsl)
 
 layout(location = 0) out vec4 outColor;
 
@@ -25,8 +28,8 @@ float epsilon = 0.01;
 float bias = 0.012;
 float maxZFar = 256.0;
 
-vec2 pack2(float source);
-vec3 normalDecode(vec2 enc);
+// vec2 pack2(float source);
+// vec3 normalDecode(vec2 enc);
 
 // *-----------------------* //
 

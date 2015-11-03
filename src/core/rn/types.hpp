@@ -110,7 +110,7 @@ struct DrawArray
 	DrawArray & operator=(DrawArray &&) & = default;
 };
 
-struct UniformValue
+struct UniformMeta
 {
 	enum Type
 	{
@@ -133,7 +133,7 @@ struct UniformValue
 		uniform_v_mat4,
 	};
 
-	UniformValue::Type type;
+	UniformMeta::Type type;
 	GLint id;
 
 	union
@@ -156,7 +156,7 @@ struct UniformValue
 		std::pair<glm::mat4 *, GLsizei> vm4;
 	};
 
-	UniformValue() : type{uniform_none}, id{0}, m4{0} {}
+	UniformMeta() : type{uniform_none}, id{0}, m4{0} {}
 
 	GLint & set(GLint i);
 	GLuint & set(GLuint ui);
@@ -177,7 +177,7 @@ struct UniformValue
 
 	void reset();
 
-	~UniformValue()
+	~UniformMeta()
 	{
 		reset();
 	}

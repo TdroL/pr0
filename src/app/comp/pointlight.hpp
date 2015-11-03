@@ -14,10 +14,9 @@ struct PointLight : public ecs::Component<PointLight>
 	// glm::vec3 spotDirection{0.f, 0.f, -1.f};
 	// GLfloat spotExponent = 0.f;
 	// GLfloat spotCutoff = 180.f;
-	// GLfloat constantAttenuation = 1.f;
 	float intensity = 1.f;
-	float linearAttenuation = 0.f;
-	float quadraticAttenuation = 0.f;
+	float radius = 1.f;
+	float distanceMax = 3.f;
 	bool shadowCaster = false;
 };
 

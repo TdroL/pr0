@@ -120,14 +120,14 @@ void InputProcess::commandMoveForward(const ecs::Entity &entity)
 {
 	auto &temporalTransform = ecs::getOrCreate<TemporalTransform>(entity);
 
-	temporalTransform.translation.z -= 1.f;
+	temporalTransform.translation.z += 1.f;
 }
 
 void InputProcess::commandMoveBackward(const ecs::Entity &entity)
 {
 	auto &temporalTransform = ecs::getOrCreate<TemporalTransform>(entity);
 
-	temporalTransform.translation.z += 1.f;
+	temporalTransform.translation.z -= 1.f;
 }
 
 void InputProcess::commandStrafeLeft(const ecs::Entity &entity)

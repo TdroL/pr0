@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cctype>
+#include <cmath>
+#include <sstream>
 #include <memory>
 
 #ifdef __GNUG__
@@ -34,7 +36,7 @@ void ltrim(string &s)
 
 void rtrim(string &s)
 {
-	s.erase(find_if(s.rbegin(), s.rend(), not1(ptr_fun<int, int>(isspace))).base(), end(s));
+	s.erase(find_if(rbegin(s), rend(s), not1(ptr_fun<int, int>(isspace))).base(), end(s));
 }
 
 void trim(string &s)
@@ -57,16 +59,33 @@ bool isNumeric(const string &s)
 		{
 			dots++;
 
-			if (dots > 1)
-			{
-				return true;
-			}
-
-			return false;
+			return (dots > 1);
 		}
 
 		return ! isdigit(c);
 	});
+}
+
+string prependLineNumbers(const std::string &s)
+{
+	istringstream in{s};
+	string line{};
+	string out{};
+	string zeroes{};
+
+	size_t newlineCount = count(begin(s), end(s), '\n');
+	size_t zeroesCount = ceil(log10(newlineCount));
+	zeroes.append('0', zeroesCount);
+	out.reserve(s.length() + newlineCount * (zeroesCount + 2 + 1));
+
+	for (size_t i = 1; getline(in, line); i++)
+	{
+		string lineNumber{zeroes + to_string(i)};
+
+		out += lineNumber.substr(lineNumber.size() - zeroesCount) + ": " + line + "\n";
+	}
+
+	return out;
 }
 
 #ifdef __GNUG__

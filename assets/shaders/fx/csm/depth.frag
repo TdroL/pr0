@@ -1,12 +1,14 @@
 #version 440 core
 
+#pragma rn: include(lib/vsm.glsl)
+
 layout(location = 0) out vec4 outColor;
 
 in vec4 position;
 
 uniform bool writeColor;
 
-vec2 vsmMoments(float depth);
+// vec2 vsmMoments(float depth);
 
 void main()
 {

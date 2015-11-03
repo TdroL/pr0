@@ -1,5 +1,7 @@
 #version 440 core
 
+#pragma rn: include(lib/normal.glsl)
+
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec2 outNormal;
 // layout(location = 2) out float outZ;
@@ -12,7 +14,7 @@ uniform float matShininess;
 uniform vec4 matDiffuse;
 uniform vec3 color;
 
-vec2 normalEncode(vec3 n);
+// vec2 normalEncode(vec3 n);
 
 void main()
 {

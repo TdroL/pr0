@@ -4,11 +4,15 @@
 
 #include "../rn.hpp"
 #include "../rn/ext.hpp"
+#include "../ngn/fs.hpp"
 #include "../src/file.hpp"
 #include "../util/initq.hpp"
+#include "../util/str.hpp"
 
 #include <iostream>
 #include <algorithm>
+#include <regex>
+#include <set>
 
 namespace rn
 {
@@ -41,13 +45,14 @@ vector<Lib> fragLibs{};
 
 void Program::init()
 {
-	fragLibs.emplace_back(src::file::stream("lib/normal.frag"));
-	fragLibs.emplace_back(src::file::stream("lib/position.frag"));
-	fragLibs.emplace_back(src::file::stream("lib/depth.frag"));
-	fragLibs.emplace_back(src::file::stream("lib/blur.frag"));
-	fragLibs.emplace_back(src::file::stream("lib/vsm.frag"));
-	fragLibs.emplace_back(src::file::stream("lib/esm.frag"));
-	fragLibs.emplace_back(src::file::stream("lib/util.frag"));
+	// fragLibs.emplace_back(src::file::stream("lib/csm.frag"));
+	// fragLibs.emplace_back(src::file::stream("lib/normal.frag"));
+	// fragLibs.emplace_back(src::file::stream("lib/position.frag"));
+	// fragLibs.emplace_back(src::file::stream("lib/depth.frag"));
+	// fragLibs.emplace_back(src::file::stream("lib/blur.frag"));
+	// fragLibs.emplace_back(src::file::stream("lib/vsm.frag"));
+	// fragLibs.emplace_back(src::file::stream("lib/esm.frag"));
+	// fragLibs.emplace_back(src::file::stream("lib/util.frag"));
 
 	reloadLibs();
 }
@@ -106,10 +111,49 @@ void Program::reloadAll()
 	}
 }
 
+string Program::resolveIncludes(const GLchar *sourceCstr, GLint sourceLength)
+{
+	set<string> includedFiles{};
+
+	regex rnIncludePattern{"[\f\r\t\v]*#pragma\\s+rn:\\s*include\\((.*)\\)[\f\r\t\v]*(\\n|$)"};
+	regex versionPattern{"^(\\s*)(#version\\s+)"};
+	smatch rnIncludeMatch;
+	smatch versionMatch;
+
+	string sourceResolved(sourceCstr, sourceLength);
+
+	while (regex_search(sourceResolved, rnIncludeMatch, rnIncludePattern))
+	{
+		string fileName = ngn::fs::find(rnIncludeMatch[1].str());
+		string fileContents{rnIncludeMatch[2].str()};
+
+		if ( ! includedFiles.count(fileName))
+		{
+			fileContents = ngn::fs::contents(fileName) + rnIncludeMatch[2].str();
+
+			if (regex_search(fileContents, versionMatch, versionPattern))
+			{
+				fileContents.replace(versionMatch.position(), versionMatch.length(), versionMatch[1].str() + "// "s + versionMatch[2].str());
+			}
+
+			includedFiles.insert(fileName);
+		}
+
+		sourceResolved.replace(rnIncludeMatch.position(), rnIncludeMatch.length(), fileContents);
+	}
+
+	return sourceResolved;
+}
+
 GLuint Program::createShader(GLenum type, const GLchar *sourceCstr, GLint sourceLength)
 {
 	GLuint shader = glCreateShader(type);
 	RN_VALIDATE_PARAM(glCreateShader(type), rn::getEnumName(type));
+
+	string sourceResolved = resolveIncludes(sourceCstr, sourceLength);
+
+	sourceCstr = sourceResolved.data();
+	sourceLength = sourceResolved.length();
 	RN_CHECK(glShaderSource(shader, 1, &sourceCstr, &sourceLength));
 	RN_CHECK(glCompileShader(shader));
 
@@ -139,7 +183,7 @@ GLuint Program::createShader(GLenum type, const GLchar *sourceCstr, GLint source
 			break;
 		}
 
-		throw string{"rn::Program::createShader() - compile failure in "} + typeVerbose + " shader:\n" + string{sourceCstr, static_cast<size_t>(sourceLength)} + "\n" + logCstr.get();
+		throw string{"rn::Program::createShader() - compile failure in "} + typeVerbose + " shader:\n" + util::str::prependLineNumbers(string{sourceCstr, static_cast<size_t>(sourceLength)}) + "\n" + logCstr.get();
 	}
 
 	return shader;
@@ -160,7 +204,7 @@ GLuint Program::createShader(GLenum type, const std::vector<char> &source)
 	return Program::createShader(type, sourceCstr, sourceLength);
 }
 
-GLuint Program::createProgram(const vector<GLuint> &shaders)
+GLuint Program::createProgram(const string &programName, const vector<GLuint> &shaders)
 {
 	GLuint id = glCreateProgram();
 	RN_VALIDATE(glCreateProgram());
@@ -200,7 +244,7 @@ GLuint Program::createProgram(const vector<GLuint> &shaders)
 		logCstr[logLength] = '\0';
 		RN_CHECK(glGetProgramInfoLog(id, logLength, nullptr, logCstr.get()));
 
-		throw string{"rn::Program::createProgram() - linker failure: "} + logCstr.get();
+		throw string{"rn::Program::createProgram(" + programName + ") - linker failure: "} + logCstr.get();
 	}
 
 	for (auto shader : shaders)
@@ -295,7 +339,7 @@ void Program::reload()
 			Program::createShader(GL_VERTEX_SHADER, vertexShader->contents)
 		};
 
-		id = Program::createProgram(shaders);
+		id = Program::createProgram(programName, shaders);
 	}
 	catch (...)
 	{
@@ -465,7 +509,7 @@ GLint Program::getName(const string &name)
 	return 0;
 }
 
-UniformValue & Program::getValue(const string &name)
+UniformMeta & Program::getMeta(const string &name)
 {
 	const auto &it = uniforms.find(name);
 
@@ -476,10 +520,10 @@ UniformValue & Program::getValue(const string &name)
 
 	GLint location = getName(name);
 
-	auto &uniformValue = uniforms[name];
-	uniformValue.id = location;
+	auto &uniformMeta = uniforms[name];
+	uniformMeta.id = location;
 
-	return uniformValue;
+	return uniformMeta;
 }
 
 void Program::var(GLint location, GLint value)
