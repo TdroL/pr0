@@ -1,9 +1,6 @@
-#ifndef APP_COMP_DIRECTIONALLIGHT_HPP
-#define APP_COMP_DIRECTIONALLIGHT_HPP
+#pragma once
 
-// #include <pch.hpp>
 #include <core/ecs/component.hpp>
-// #include <core/rn.hpp>
 #include <glm/glm.hpp>
 
 namespace comp
@@ -19,5 +16,3 @@ struct DirectionalLight : public ecs::Component<DirectionalLight>
 };
 
 } // comp
-
-#endif

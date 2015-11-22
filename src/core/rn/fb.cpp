@@ -18,6 +18,21 @@ using namespace std;
 vector<FB *> FB::collection{};
 vector<FB *> FB::activeStack{};
 
+void FB::resetAll()
+{
+	for (FB *fb : FB::collection)
+	{
+		try
+		{
+			fb->reset();
+		}
+		catch (const string &e)
+		{
+			clog << endl << e << endl;
+		}
+	}
+}
+
 void FB::reloadAll()
 {
 	for (FB *fb : FB::collection)
@@ -64,6 +79,7 @@ FB::FB(string &&name, size_t colorsSize)
 FB::~FB()
 {
 	// FB::collection.remove(this);
+	reset();
 
 	FB::collection.erase(remove(begin(FB::collection), end(FB::collection), this), end(FB::collection));
 	FB::activeStack.erase(remove(begin(FB::activeStack), end(FB::activeStack), this), end(FB::activeStack));
@@ -438,6 +454,15 @@ void FB::reloadSoft()
 		clog << fixed;
 		clog << "  [FB \"" << fbName << "\" {" << enabledColors << "/" << colorContainers.size() << ", " << (depthContainer.tex ? string{"texture "} + (depthContainer.tex->isDepthStencil() ? "depth, stencil" : "depth") : "none") << "}:" << (ngn::time() - timer) << "s]" << endl;
 		clog.unsetf(ios::floatfield);
+	}
+}
+
+void FB::reset()
+{
+	if (id)
+	{
+		RN_CHECK(glDeleteFramebuffers(1, &id));
+		id = 0;
 	}
 }
 

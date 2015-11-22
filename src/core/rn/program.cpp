@@ -4,6 +4,7 @@
 
 #include "../rn.hpp"
 #include "../rn/ext.hpp"
+#include "../ngn.hpp"
 #include "../ngn/fs.hpp"
 #include "../src/file.hpp"
 #include "../util/initq.hpp"
@@ -315,6 +316,8 @@ void Program::load(unique_ptr<Source> &&fragmentShader, unique_ptr<Source> &&ver
 
 void Program::reload()
 {
+	double timer = ngn::time();
+
 	reset();
 
 	if ( ! fragmentShader)
@@ -354,8 +357,7 @@ void Program::reload()
 
 	for (auto &item : uniforms)
 	{
-		item.second.id = glGetUniformLocation(id, item.first.c_str());
-		RN_VALIDATE(glGetUniformLocation(id, item.first.c_str()));
+		item.second.location = getUniformLocation(item.first);
 
 		typedef decltype(item.second.type) Type;
 
@@ -368,82 +370,82 @@ void Program::reload()
 			}
 			case Type::uniform_int:
 			{
-				var(item.second.id, item.second.i);
+				var(item.second.location, item.second.i);
 				break;
 			}
 			case Type::uniform_uint:
 			{
-				var(item.second.id, item.second.ui);
+				var(item.second.location, item.second.ui);
 				break;
 			}
 			case Type::uniform_float:
 			{
-				var(item.second.id, item.second.f);
+				var(item.second.location, item.second.f);
 				break;
 			}
 			case Type::uniform_vec2:
 			{
-				var(item.second.id, item.second.v2);
+				var(item.second.location, item.second.v2);
 				break;
 			}
 			case Type::uniform_vec3:
 			{
-				var(item.second.id, item.second.v3);
+				var(item.second.location, item.second.v3);
 				break;
 			}
 			case Type::uniform_vec4:
 			{
-				var(item.second.id, item.second.v4);
+				var(item.second.location, item.second.v4);
 				break;
 			}
 			case Type::uniform_mat3:
 			{
-				var(item.second.id, item.second.m3);
+				var(item.second.location, item.second.m3);
 				break;
 			}
 			case Type::uniform_mat4:
 			{
-				var(item.second.id, item.second.m4);
+				var(item.second.location, item.second.m4);
 				break;
 			}
 			case Type::uniform_v_int:
 			{
-				var(item.second.id, item.second.vi.first, item.second.vi.second);
+				var(item.second.location, item.second.vi.first, item.second.vi.second);
 				break;
 			}
 			case Type::uniform_v_uint:
 			{
-				var(item.second.id, item.second.vui.first, item.second.vui.second);
+				var(item.second.location, item.second.vui.first, item.second.vui.second);
 				break;
 			}
 			case Type::uniform_v_float:
 			{
-				var(item.second.id, item.second.vf.first, item.second.vf.second);
+				var(item.second.location, item.second.vf.first, item.second.vf.second);
 				break;
 			}
 			case Type::uniform_v_vec2:
 			{
-				var(item.second.id, item.second.vv2.first, item.second.vv2.second);
+				var(item.second.location, item.second.vv2.first, item.second.vv2.second);
 				break;
 			}
 			case Type::uniform_v_vec3:
 			{
-				var(item.second.id, item.second.vv3.first, item.second.vv3.second);
+				var(item.second.location, item.second.vv3.first, item.second.vv3.second);
 				break;
 			}
 			case Type::uniform_v_vec4:
 			{
-				var(item.second.id, item.second.vv4.first, item.second.vv4.second);
+				var(item.second.location, item.second.vv4.first, item.second.vv4.second);
 				break;
 			}
 			case Type::uniform_v_mat3:
 			{
-				var(item.second.id, item.second.vm3.first, item.second.vm3.second);
+				var(item.second.location, item.second.vm3.first, item.second.vm3.second);
 				break;
 			}
 			case Type::uniform_v_mat4:
 			{
-				var(item.second.id, item.second.vm4.first, item.second.vm4.second);
+				var(item.second.location, item.second.vm4.first, item.second.vm4.second);
 				break;
 			}
 			default:
@@ -451,6 +453,13 @@ void Program::reload()
 				clog << "[warning] rn::Program{" << programName << "}::reload() - unknown uniform type " << item.second.type << " \"" << item.first << "\"" << endl;
 			}
 		}
+	}
+
+	UTIL_DEBUG
+	{
+		clog << fixed;
+		clog << "  [Program \"" << programName << "\" {frag:" << (fragmentShader ? "\"" + fragmentShader->name() + "\"" : "no source") << "; vert:" << (vertexShader ? "\"" + vertexShader->name() + "\"" : "no source") << "}:" << (ngn::time() - timer) << "s]" << endl;
+		clog.unsetf(ios::floatfield);
 	}
 }
 
@@ -473,6 +482,7 @@ void Program::use()
 		clog << "[notice] rn::Program{" << programName << "}::use() - invalid program id \"" << id << "\" (" << (fragmentShader ? fragmentShader->name() : string{"Unknown fragment shader"}) << ", " << (vertexShader ? vertexShader->name() : string{"Unknown vertex shader"}) << ")" << endl;
 	}
 #endif
+
 	RN_CHECK(glUseProgram(id));
 }
 
@@ -481,18 +491,18 @@ void Program::forgo()
 	RN_CHECK(glUseProgram(0));
 }
 
-GLint Program::getName(const string &name)
+GLint Program::getUniformLocation(const string &name)
 {
 #if defined(DEBUG)
 	if ( ! hasCompileErrors && id && ! glIsProgram(id))
 	{
-		clog << "[notice] rn::Program{" << programName << "}::getName(\"" << name << "\") - invalid program id \"" << id << "\" ("
+		clog << "[notice] rn::Program{" << programName << "}::getUniformLocation(\"" << name << "\") - invalid program id \"" << id << "\" ("
 		     << (fragmentShader ? fragmentShader->name() : string{"Unknown fragment shader"}) << ", "
 		     << (vertexShader ? vertexShader->name() : string{"Unknown vertex shader"}) << ")" << endl;
 	}
 	else if ( ! hasCompileErrors && ! id)
 	{
-		clog << "[notice] rn::Program{" << programName << "}::getName(\"" << name << "\") - program id is 0 ("
+		clog << "[notice] rn::Program{" << programName << "}::getUniformLocation(\"" << name << "\") - program id is 0 ("
 		     << (fragmentShader ? fragmentShader->name() : string{"Unknown fragment shader"}) << ", "
 		     << (vertexShader ? vertexShader->name() : string{"Unknown vertex shader"}) << ")" << endl;
 	}
@@ -501,7 +511,7 @@ GLint Program::getName(const string &name)
 	if (id)
 	{
 		GLint location = glGetUniformLocation(id, name.c_str());
-		RN_VALIDATE(glGetUniformLocation(id, name.c_str()));
+		RN_VALIDATE_PARAM(glGetUniformLocation(id, name.c_str()), name);
 
 		return location;
 	}
@@ -509,7 +519,7 @@ GLint Program::getName(const string &name)
 	return 0;
 }
 
-UniformMeta & Program::getMeta(const string &name)
+UniformMeta & Program::getUniformMeta(const string &name)
 {
 	const auto &it = uniforms.find(name);
 
@@ -518,10 +528,10 @@ UniformMeta & Program::getMeta(const string &name)
 		return it->second;
 	}
 
-	GLint location = getName(name);
+	GLint location = getUniformLocation(name);
 
 	auto &uniformMeta = uniforms[name];
-	uniformMeta.id = location;
+	uniformMeta.location = location;
 
 	return uniformMeta;
 }
@@ -769,112 +779,112 @@ void Program::var(GLint location, const glm::mat4 *value, GLsizei count)
 
 GLint Program::var(const std::string &name, GLint value)
 {
-	GLint location = getName(name);
+	GLint location = getUniformLocation(name);
 	var(location, value);
 	return location;
 }
 
 GLint Program::var(const std::string &name, GLuint value)
 {
-	GLint location = getName(name);
+	GLint location = getUniformLocation(name);
 	var(location, value);
 	return location;
 }
 
 GLint Program::var(const std::string &name, GLfloat value)
 {
-	GLint location = getName(name);
+	GLint location = getUniformLocation(name);
 	var(location, value);
 	return location;
 }
 
 GLint Program::var(const std::string &name, const glm::vec2 &value)
 {
-	GLint location = getName(name);
+	GLint location = getUniformLocation(name);
 	var(location, value);
 	return location;
 }
 
 GLint Program::var(const std::string &name, const glm::vec3 &value)
 {
-	GLint location = getName(name);
+	GLint location = getUniformLocation(name);
 	var(location, value);
 	return location;
 }
 
 GLint Program::var(const std::string &name, const glm::vec4 &value)
 {
-	GLint location = getName(name);
+	GLint location = getUniformLocation(name);
 	var(location, value);
 	return location;
 }
 
 GLint Program::var(const std::string &name, const glm::mat3 &value)
 {
-	GLint location = getName(name);
+	GLint location = getUniformLocation(name);
 	var(location, value);
 	return location;
 }
 
 GLint Program::var(const std::string &name, const glm::mat4 &value)
 {
-	GLint location = getName(name);
+	GLint location = getUniformLocation(name);
 	var(location, value);
 	return location;
 }
 
 GLint Program::var(const std::string &name, const GLint *value, GLsizei count)
 {
-	GLint location = getName(name);
+	GLint location = getUniformLocation(name);
 	var(location, value, count);
 	return location;
 }
 
 GLint Program::var(const std::string &name, const GLuint *value, GLsizei count)
 {
-	GLint location = getName(name);
+	GLint location = getUniformLocation(name);
 	var(location, value, count);
 	return location;
 }
 
 GLint Program::var(const std::string &name, const GLfloat *value, GLsizei count)
 {
-	GLint location = getName(name);
+	GLint location = getUniformLocation(name);
 	var(location, value, count);
 	return location;
 }
 
 GLint Program::var(const std::string &name, const glm::vec2 *value, GLsizei count)
 {
-	GLint location = getName(name);
+	GLint location = getUniformLocation(name);
 	var(location, value, count);
 	return location;
 }
 
 GLint Program::var(const std::string &name, const glm::vec3 *value, GLsizei count)
 {
-	GLint location = getName(name);
+	GLint location = getUniformLocation(name);
 	var(location, value, count);
 	return location;
 }
 
 GLint Program::var(const std::string &name, const glm::vec4 *value, GLsizei count)
 {
-	GLint location = getName(name);
+	GLint location = getUniformLocation(name);
 	var(location, value, count);
 	return location;
 }
 
 GLint Program::var(const std::string &name, const glm::mat3 *value, GLsizei count)
 {
-	GLint location = getName(name);
+	GLint location = getUniformLocation(name);
 	var(location, value, count);
 	return location;
 }
 
 GLint Program::var(const std::string &name, const glm::mat4 *value, GLsizei count)
 {
-	GLint location = getName(name);
+	GLint location = getUniformLocation(name);
 	var(location, value, count);
 	return location;
 }

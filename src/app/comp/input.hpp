@@ -1,5 +1,4 @@
-#ifndef APP_COMP_INPUT_HPP
-#define APP_COMP_INPUT_HPP
+#pragma once
 
 #include <core/ecs/component.hpp>
 #include <vector>
@@ -43,5 +42,3 @@ struct Input : public ecs::Component<Input>
 };
 
 } // comp
-
-#endif

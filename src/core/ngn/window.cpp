@@ -2,6 +2,8 @@
 
 #include "window.hpp"
 
+#include <GLFW/glfw3.h>
+
 #include <cassert>
 #include <iostream>
 
@@ -248,6 +250,11 @@ void setTitle(string &&title)
 	assert(handler != nullptr);
 	window::title = move(title);
 	glfwSetWindowTitle(handler, title.c_str());
+}
+
+GLFWwindow * getHandler()
+{
+	return handler;
 }
 
 bool shouldClose()

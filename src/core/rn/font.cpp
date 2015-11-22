@@ -25,10 +25,11 @@ using namespace std;
 namespace
 {
 	FT_Library ft;
-	rn::Program prog{};
+	rn::Program prog{"rn::Font::prog"};
 }
 
 vector<Font *> Font::collection{};
+event::Listener<win::WindowResizeEvent> Font::listenerWindowResize{};
 
 void Font::reloadAll()
 {
@@ -72,7 +73,7 @@ void Font::init()
 		prog.load("rn/font.frag", "rn/font.vert");
 	}
 
-	event::subscribe<win::WindowResizeEvent>([] (const win::WindowResizeEvent &)
+	listenerWindowResize.attach([] (const win::WindowResizeEvent &)
 	{
 		for (Font *font : Font::collection)
 		{
@@ -387,12 +388,11 @@ void Font::render(const string &text)
 		coords[n++] = glm::vec4{x2 + w, -y2 - h, fc.tx + fc.bw / aw, fc.ty + fc.bh / ah};
 	}
 
+	RN_CHECK(glInvalidateBufferData(vbo));
 	RN_CHECK(glNamedBufferData(vbo, sizeof(glm::vec4) * text.size() * 6, coords.get(), GL_DYNAMIC_DRAW));
 
 	RN_CHECK(glBindVertexArray(vao));
-
 	RN_CHECK(glDrawArrays(GL_TRIANGLES, 0, n));
-
 	RN_CHECK(glBindVertexArray(0));
 
 	rn::stats.triangles += n;

@@ -1,15 +1,11 @@
 #version 440 core
 
-#extension GL_ARB_gpu_shader5 : enable
 #pragma rn: include(lib/normal.glsl)
 #pragma rn: include(lib/util.glsl)
 
 layout(location = 0) out vec4 outColor;
 
 in vec2 uv;
-
-uniform mat4 P;
-uniform mat4 invP;
 
 uniform sampler2D texZ;
 uniform sampler2D texNormal;
@@ -20,23 +16,13 @@ uniform float intensity;
 uniform float radius;
 uniform int zMipLevels;
 
-// float intensity = 2.0;
-// float radius = 1.0 / 6.0;
+int logMaxOffset = 3;
+bool useNormalTexture = true;
 int samplesCount = 9;
 float spins = 7;
 float epsilon = 0.01;
 float bias = 0.012;
 float maxZFar = 256.0;
-
-// vec2 pack2(float source);
-// vec3 normalDecode(vec2 enc);
-
-// *-----------------------* //
-
-// float linearizeDepth(float depth)
-// {
-// 	return P[3][2] / (depth - 1.0);
-// }
 
 vec3 reconstructCSPosition(vec2 coord, float z)
 {
@@ -50,17 +36,8 @@ vec3 getPosition(ivec2 offsetCoord)
 
 vec3 getOffsetPosition(ivec2 coord, vec2 offsetVector, float offsetRadius)
 {
-
-	#define LOG_MAX_OFFSET 3
-
-	#ifdef GL_ARB_gpu_shader5
-		int mipLevel = clamp(findMSB(int(offsetRadius)) - LOG_MAX_OFFSET, 0, zMipLevels);
-	#else
-		int mipLevel = clamp(int(floor(log2(offsetRadius))) - LOG_MAX_OFFSET, 0, zMipLevels);
-	#endif
-
+	int mipLevel = clamp(findMSB(int(offsetRadius)) - logMaxOffset, 0, zMipLevels);
 	ivec2 offsetCoord = ivec2(offsetRadius * offsetVector) + coord;
-
 	ivec2 mipCoord = clamp(offsetCoord >> mipLevel, ivec2(0), textureSize(texZ, mipLevel) - ivec2(1));
 
 	return reconstructCSPosition(vec2(offsetCoord) + vec2(0.5), texelFetch(texZ, mipCoord, mipLevel).r);
@@ -79,11 +56,15 @@ void main()
 
 	float randomRotation = (30 * coord.x ^ coord.y + coord.x * coord.y) * 10;
 
-	/** /
-	vec3 normal = reconstructCSFaceNormal(position);
-	/*/
-	vec3 normal = normalDecode(texture(texNormal, uv).xy);
-	/**/
+	vec3 normal;
+	if (useNormalTexture)
+	{
+		normal = normalDecode(texture(texNormal, uv).xy);
+	}
+	else
+	{
+		normal = reconstructCSFaceNormal(position);
+	}
 
 	float diskRadius = pixelScale * radius / position.z;
 

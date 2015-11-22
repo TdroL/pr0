@@ -1,9 +1,6 @@
-#ifndef APP_COMP_MATERIAL_HPP
-#define APP_COMP_MATERIAL_HPP
+#pragma once
 
-// #include <pch.hpp>
 #include <core/ecs/component.hpp>
-// #include <core/rn.hpp>
 #include <glm/glm.hpp>
 
 namespace comp
@@ -16,5 +13,3 @@ struct Material : public ecs::Component<Material>
 };
 
 } // comp
-
-#endif

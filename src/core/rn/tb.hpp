@@ -50,10 +50,10 @@ public:
 	}
 
 	template<typename U, typename... V>
-	size_t appendData(U a, V... params)
+	size_t appendData(U head, V... rest)
 	{
-		size_t ptr = appendData(a);
-		appendData(params...);
+		size_t ptr = appendData(head);
+		appendData(rest...);
 		return ptr;
 	}
 

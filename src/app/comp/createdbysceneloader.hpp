@@ -1,5 +1,4 @@
-#ifndef APP_COMP_CREATEDBYSCENELOADER_HPP
-#define APP_COMP_CREATEDBYSCENELOADER_HPP
+#pragma once
 
 #include <core/ecs/component.hpp>
 
@@ -11,5 +10,3 @@ struct CreatedBySceneLoader : public ecs::Component<CreatedBySceneLoader>
 };
 
 } // comp
-
-#endif

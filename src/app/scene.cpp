@@ -1,3 +1,5 @@
+#include <pch.hpp>
+
 #include "scene.hpp"
 
 #include <core/ngn.hpp>
@@ -18,7 +20,6 @@
 #include <app/comp/position.hpp>
 #include <app/comp/projection.hpp>
 #include <app/comp/rotation.hpp>
-#include <app/comp/stencil.hpp>
 #include <app/comp/temporaltransform.hpp>
 #include <app/comp/transform.hpp>
 #include <app/comp/view.hpp>
@@ -30,12 +31,11 @@
 #include <app/parser/meshparser.hpp>
 #include <app/parser/nameparser.hpp>
 #include <app/parser/occluderparser.hpp>
-// #include <app/parser/pointlightparser.hpp>
+#include <app/parser/pointlightparser.hpp>
 // #include <app/parser/positionparser.hpp>
 // #include <app/parser/projectionparser.hpp>
 // #include <app/parser/rotationparser.hpp>
 #include <app/parser/shadingparser.hpp>
-#include <app/parser/stencilparser.hpp>
 // #include <app/parser/temporaltransformparser.hpp>
 #include <app/parser/transformparser.hpp>
 // #include <app/parser/viewparser.hpp>

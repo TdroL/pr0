@@ -1,5 +1,4 @@
-#ifndef APP_COMP_NAME_HPP
-#define APP_COMP_NAME_HPP
+#pragma once
 
 #include <core/ecs/component.hpp>
 #include <string>
@@ -13,5 +12,3 @@ struct Name : public ecs::Component<Name>
 };
 
 } // comp
-
-#endif

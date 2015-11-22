@@ -1,13 +1,16 @@
 #ifndef RN_FONT_HPP
 #define RN_FONT_HPP
 
+#include "../rn.hpp"
+#include "../src.hpp"
+#include "../event.hpp"
+#include "../ngn/window.hpp"
+
 #include <string>
 #include <memory>
 #include <vector>
 #include <ft2build.h>
 #include FT_FREETYPE_H
-#include "../rn.hpp"
-#include "../src.hpp"
 
 namespace rn
 {
@@ -34,6 +37,7 @@ public:
 	static void reloadAll();
 	static void reloadSoftAll();
 	static void init();
+	static event::Listener<ngn::window::WindowResizeEvent> listenerWindowResize;
 
 	typedef src::Stream Source;
 

@@ -1,5 +1,4 @@
-#ifndef APP_COMP_DIRECTION_HPP
-#define APP_COMP_DIRECTION_HPP
+#pragma once
 
 #include <core/ecs/component.hpp>
 
@@ -14,5 +13,3 @@ struct Direction : public ecs::Component<Direction>
 };
 
 } // comp
-
-#endif

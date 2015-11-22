@@ -1,5 +1,4 @@
-#ifndef ECS_ENTITY_HPP
-#define ECS_ENTITY_HPP
+#pragma once
 
 #include "../ecs.hpp"
 #include "component.hpp"
@@ -171,6 +170,4 @@ C & getOrCreate(const Entity &entity)
 
 /* /Core */
 
-}; // ecs
-
-#endif
+} // ecs

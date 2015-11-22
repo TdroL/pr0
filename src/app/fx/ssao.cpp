@@ -2,9 +2,10 @@
 
 #include "ssao.hpp"
 
+#include <app/events.hpp>
+
 #include <core/rn/mesh.hpp>
 #include <core/rn/format.hpp>
-#include <core/ngn/window.hpp>
 
 #include <string>
 #include <cmath>
@@ -21,8 +22,6 @@ namespace win = ngn::window;
 
 void SSAO::init(const comp::Projection &projectionIn)
 {
-	projection = projectionIn;
-
 	auto texZ = make_shared<rn::Tex2D>("fx::SSAO::fbZ.color[0]");
 	texZ->width = win::internalWidth;
 	texZ->height = win::internalHeight;
@@ -65,6 +64,59 @@ void SSAO::init(const comp::Projection &projectionIn)
 	fbBlur.attachColor(0, texBlur);
 	fbBlur.reload();
 
+	listenerWindowResize.attach([&] (const win::WindowResizeEvent &e)
+	{
+		clog << "WindowResizeEvent{" << e.width << ", " << e.height << "}" << endl;
+
+		{
+			auto texZ = dynamic_cast<rn::Tex2D *>(fbZ.color(0));
+			texZ->width = win::internalWidth;
+			texZ->height = win::internalHeight;
+			texZ->reload();
+		}
+
+		fbZ.width = win::internalWidth;
+		fbZ.height = win::internalHeight;
+		fbZ.reload();
+
+		for (GLsizei i = 0; i < zMipLevels; i++)
+		{
+			fbZMipMaps[i].width = win::internalWidth;
+			fbZMipMaps[i].height = win::internalHeight;
+			fbZMipMaps[i].reload();
+		}
+
+		{
+			auto texAO = dynamic_cast<rn::Tex2D *>(fbAO.color(0));
+			texAO->width = win::internalWidth;
+			texAO->height = win::internalHeight;
+			texAO->reload();
+		}
+
+		fbAO.width = win::internalWidth;
+		fbAO.height = win::internalHeight;
+		fbAO.reload();
+
+		{
+			auto texBlur = dynamic_cast<rn::Tex2D *>(fbBlur.color(0));
+			texBlur->width = win::internalWidth;
+			texBlur->height = win::internalHeight;
+			texBlur->reload();
+		}
+
+		fbBlur.width = win::internalWidth;
+		fbBlur.height = win::internalHeight;
+		fbBlur.reload();
+	});
+
+	projection = projectionIn;
+
+	listenerProjectionChanged.attach([&] (const ProjectionChangedEvent &e)
+	{
+		clog << "ProjectionChangedEvent" << endl;
+		projection = e.projection;
+	});
+
 	try
 	{
 		progReconstructZ.load("fx/ssao/reconstructZ.frag", "rn/fbo.vert");
@@ -101,79 +153,83 @@ void SSAO::init(const comp::Projection &projectionIn)
 		cerr << "Warning: " << e << endl;
 	}
 
-	glm::vec3 clipInfo;
+	// glm::vec3 clipInfo;
 
-	if (isinf(projection.zFar))
-	{
-		clipInfo = glm::vec3{projection.zNear, -1.f, 1.f};
-	}
-	else
-	{
-		clipInfo = glm::vec3{projection.zNear * projection.zFar, projection.zNear - projection.zFar, projection.zFar};
-	}
+	// if (isinf(projection.zFar))
+	// {
+	// 	clipInfo = glm::vec3{projection.zNear, -1.f, 1.f};
+	// }
+	// else
+	// {
+	// 	clipInfo = glm::vec3{projection.zNear * projection.zFar, projection.zNear - projection.zFar, projection.zFar};
+	// }
 
-	progReconstructZ.uniform("clipInfo", clipInfo);
+	// progReconstructZ.uniform("clipInfo", clipInfo);
 
-	const auto &P = projection.matrix;
+	// const auto &P = projection.matrix;
 
-	glm::vec4 a = P * glm::vec4{0.5, 0.0, -1.0, 1.0};
-	a /= a.w;
+	// glm::vec4 a = P * glm::vec4{0.5, 0.0, -1.0, 1.0};
+	// a /= a.w;
 
-	GLfloat pixelScale = fbZ.width * a.x;
+	// GLfloat pixelScale = fbZ.width * a.x;
 
-	glm::vec4 projectionInfo{
-		-2.0 / (fbZ.width  * P[0][0]),
-		-2.0 / (fbZ.height * P[1][1]),
-		(1.0 - P[2][0]) / P[0][0],
-		(1.0 - P[2][1]) / P[1][1]
-	};
+	// glm::vec4 projectionInfo{
+	// 	-2.0 / (fbZ.width  * P[0][0]),
+	// 	-2.0 / (fbZ.height * P[1][1]),
+	// 	(1.0 - P[2][0]) / P[0][0],
+	// 	(1.0 - P[2][1]) / P[1][1]
+	// };
 
-	progSAO.uniform("P", projection.matrix);
-	progSAO.uniform("invP", projection.invMatrix);
-	progSAO.uniform("projectionInfo", projectionInfo);
-	progSAO.uniform("pixelScale", pixelScale);
-	progSAO.uniform("intensity", intensity);
-	progSAO.uniform("radius", radius);
-	// progSAO.uniform("zMipLevels", static_cast<GLint>(zMipLevels));
-	progSAO.uniform<GLint>("zMipLevels", zMipLevels);
+	// progSAO.uniform("P", projection.matrix);
+	// progSAO.uniform("invP", projection.invMatrix);
+	// progSAO.uniform("projectionInfo", projectionInfo);
+	// progSAO.uniform("pixelScale", pixelScale);
+	// progSAO.uniform("intensity", intensity);
+	// progSAO.uniform("radius", radius);
+	// progSAO.uniform<GLint>("zMipLevels", zMipLevels);
 
 	profZ.init();
 	profMipMaps.init();
 	profAO.init();
 	profBlur.init();
+
+	dirty = true;
 }
 
 void SSAO::clear()
 {
+	if ( ! dirty)
 	{
-		RN_FB_BIND(fbZ);
-		fbZ.clear(GL_COLOR_BUFFER_BIT);
+		return;
 	}
+
+	fbZ.clear(GL_COLOR_BUFFER_BIT);
+
 
 	for (GLsizei i = 0; i < zMipLevels; i++)
 	{
 		auto &fb = fbZMipMaps[i];
-		RN_FB_BIND(fb);
-
 		fb.clear(GL_COLOR_BUFFER_BIT);
 	}
 
-	{
-		RN_FB_BIND(fbAO);
-		fbAO.clear(GL_COLOR_BUFFER_BIT);
-	}
+	fbAO.clear(GL_COLOR_BUFFER_BIT);
 
-	{
-		RN_FB_BIND(fbBlur);
-		fbBlur.clear(GL_COLOR_BUFFER_BIT);
-	}
+	fbBlur.clear(GL_COLOR_BUFFER_BIT);
+
+	dirty = false;
 }
 
-void SSAO::genMipMaps(const rn::Tex *texDepth)
+void SSAO::genMipMaps(const rn::Tex &texDepth)
 {
 	RN_SCOPE_DISABLE(GL_BLEND);
 	RN_SCOPE_DISABLE(GL_DEPTH_TEST);
 	RN_SCOPE_DISABLE(GL_STENCIL_TEST);
+
+	glm::vec3 clipInfo{projection.zNear, -1.f, 1.f};
+	if ( ! isinf(projection.zFar))
+	{
+		clipInfo = glm::vec3{projection.zNear * projection.zFar, projection.zNear - projection.zFar, projection.zFar};
+	}
 
 	profZ.start();
 
@@ -183,7 +239,8 @@ void SSAO::genMipMaps(const rn::Tex *texDepth)
 
 		progReconstructZ.use();
 
-		progReconstructZ.var("texDepth", texDepth->bind(0));
+		progReconstructZ.uniform("clipInfo", clipInfo);
+		progReconstructZ.var("texDepth", texDepth.bind(0));
 
 		rn::Mesh::quad.render();
 
@@ -193,7 +250,6 @@ void SSAO::genMipMaps(const rn::Tex *texDepth)
 	profZ.stop();
 
 	auto texZ = fbZ.color(0);
-
 	assert(texZ != nullptr);
 
 	profMipMaps.start();
@@ -215,9 +271,11 @@ void SSAO::genMipMaps(const rn::Tex *texDepth)
 	}
 
 	profMipMaps.stop();
+
+	dirty = true;
 }
 
-void SSAO::computeAO(const rn::Tex *texNormal)
+void SSAO::computeAO(const rn::Tex &texNormal)
 {
 	profAO.start();
 
@@ -227,17 +285,38 @@ void SSAO::computeAO(const rn::Tex *texNormal)
 	RN_FB_BIND(fbAO);
 	fbAO.clear(rn::BUFFER_COLOR);
 
+	const auto &P = projection.matrix;
+
+	glm::vec4 a = P * glm::vec4{0.5, 0.0, -1.0, 1.0};
+	a /= a.w;
+
+	GLfloat pixelScale = fbZ.width * a.x;
+
+	glm::vec4 projectionInfo{
+		-2.0 / (fbZ.width  * P[0][0]),
+		-2.0 / (fbZ.height * P[1][1]),
+		(1.0 - P[2][0]) / P[0][0],
+		(1.0 - P[2][1]) / P[1][1]
+	};
+
 	progSAO.use();
+	progSAO.uniform("projectionInfo", projectionInfo);
+	progSAO.uniform("pixelScale", pixelScale);
+	progSAO.uniform("intensity", intensity);
+	progSAO.uniform("radius", radius);
+	progSAO.uniform<GLint>("zMipLevels", zMipLevels);
 
 	size_t unit = 0;
 	progSAO.var("texZ", fbZ.color(0)->bind(unit++));
-	progSAO.var("texNormal", texNormal->bind(unit++));
+	progSAO.var("texNormal", texNormal.bind(unit++));
 
 	rn::Mesh::quad.render();
 
 	progSAO.forgo();
 
 	profAO.stop();
+
+	dirty = true;
 }
 
 void SSAO::blur()
@@ -271,6 +350,8 @@ void SSAO::blur()
 	progBlur.forgo();
 
 	profBlur.stop();
+
+	dirty = true;
 }
 
 } // fx

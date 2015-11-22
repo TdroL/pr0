@@ -24,9 +24,9 @@ Minball::Minball(int capacity)
 {}
 
 Minball::Minball(Minball &&rhs)
-	: pimpl{rhs.pimpl}
+	: pimpl{std::move(rhs.pimpl)}
 {
-	rhs.pimpl = nullptr;
+	rhs.pimpl.reset();
 }
 
 Minball::~Minball()
@@ -36,10 +36,8 @@ Minball::~Minball()
 
 Minball & Minball::operator=(Minball &&rhs)
 {
-	reset();
-
-	pimpl = rhs.pimpl;
-	rhs.pimpl = nullptr;
+	pimpl = std::move(rhs.pimpl);
+	rhs.pimpl.reset();
 }
 
 void Minball::setPoints(const std::vector<Minball::DataType> &points)
@@ -64,10 +62,7 @@ std::array<Minball::DataType, Minball::dimensions> Minball::center()
 
 void Minball::reset()
 {
-	if (pimpl)
-	{
-		delete pimpl;
-	}
+	pimpl.reset();
 }
 
 // MinballImpl

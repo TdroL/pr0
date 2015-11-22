@@ -28,6 +28,24 @@ Frustum::Frustum(const glm::mat4 &WVP)
 	planes[5] = row[3] + row[2];
 }
 
+Frustum::Frustum(const glm::mat4 &P, const glm::mat4 &V)
+{
+	glm::mat4 WVP = P * V;
+	glm::vec4 row[4] = {
+		glm::row(WVP, 0),
+		glm::row(WVP, 1),
+		glm::row(WVP, 2),
+		glm::row(WVP, 3)
+	};
+
+	planes[0] = row[3] - row[0];
+	planes[1] = row[3] + row[0];
+	planes[2] = row[3] - row[1];
+	planes[3] = row[3] + row[1];
+	planes[4] = row[3] - row[2];
+	planes[5] = row[3] + row[2];
+}
+
 bool Frustum::test(const Sphere &sphere) const
 {
 	for (const auto &plane : planes)

@@ -1,7 +1,5 @@
-#ifndef APP_COMP_POINTLIGHT_HPP
-#define APP_COMP_POINTLIGHT_HPP
+#pragma once
 
-// #include <pch.hpp>
 #include <core/ecs/component.hpp>
 #include <glm/glm.hpp>
 
@@ -16,10 +14,8 @@ struct PointLight : public ecs::Component<PointLight>
 	// GLfloat spotCutoff = 180.f;
 	float intensity = 1.f;
 	float radius = 1.f;
-	float distanceMax = 3.f;
+	float cutoff = 3.f;
 	bool shadowCaster = false;
 };
 
 } // comp
-
-#endif

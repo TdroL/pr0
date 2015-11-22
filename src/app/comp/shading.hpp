@@ -1,7 +1,6 @@
 #pragma once
 
 #include <core/ecs/component.hpp>
-// #include <core/rn.hpp>
 
 namespace comp
 {

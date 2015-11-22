@@ -126,6 +126,11 @@ void reload()
 	RN_CHECK(glDebugMessageCallback(debugHandler, nullptr));
 }
 
+void resetAllContextRelated()
+{
+	rn::FB::resetAll();
+}
+
 void reloadAll()
 {
 	reload();

@@ -9,23 +9,27 @@ ARNAME = libcore
 PROGRAM = main
 CXXFLAGS = -Wall -Winline -Wextra -Wfatal-errors -std=c++14 -m64 -march=native
 CXXFLAGS_DEBUG = -g -Og -Weffc++ -Winvalid-pch
-CXXFLAGS_RELEASE = -O3 -s -funroll-loops -msse -msse2 -msse3 -mfpmath=sse
-LFLAGS =
+CXXFLAGS_RELEASE = -O3 -flto -funroll-loops -msse -msse2 -msse3 -mfpmath=sse
+LFLAGS = -static
+LFLAGS_DEBUG =
+LFLAGS_RELEASE = -flto -s
 LDIR =
-LIBS = -static -lgcc -lglfw3 -lgl_core_4_4 -lopengl32 -lstb_image -lfreetype -lminball
+LIBS = -lgcc -lglfw3 -lgl_core_4_4 -lopengl32 -lstb_image -lfreetype -lminball
 
 DEFINES = \
 	-DNGN_USE_GLLOADGEN
 
 ifeq ($(MAKECMDGOALS),release)
-	CXXFLAGS += $(CXXFLAGS_RELEASE) \
+	CXXFLAGS += $(CXXFLAGS_RELEASE)
 
+	LFLAGS += $(LFLAGS_RELEASE)
 else
 	CXXFLAGS += $(CXXFLAGS_DEBUG)
 	DEFINES += \
 		-DDEBUG \
 		-D_DEBUG
 
+	LFLAGS += $(LFLAGS_DEBUG)
 endif
 
 VENDORS := $(shell find $(VNDDIR) -maxdepth 3 -type d -name include)
@@ -48,9 +52,7 @@ endif
 $(PROGRAM): $(OBJECTS)
 	@echo " Linking..."; $(CC) $(LFLAGS) $^ $(LIBS) -o $(PROGRAM)
 
-$(SRCDIR)/pch.hpp: $(BUILDDIR)/pch.d $(SRCDIR)/pch.hpp.gch
-
-$(SRCDIR)/pch.hpp.gch:
+$(SRCDIR)/pch.hpp.gch: $(SRCDIR)/pch.hpp
 	@mkdir -p $(shell dirname $@)
 	@echo " PCH $<"; $(CC) $(CXXFLAGS) -x c++-header -c $< -o $@
 

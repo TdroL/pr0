@@ -1,5 +1,4 @@
-#ifndef APP_COMP_VOLUME_HPP
-#define APP_COMP_VOLUME_HPP
+#pragma once
 
 #include <core/ecs/component.hpp>
 #include <core/phs/sphere.hpp>
@@ -16,5 +15,3 @@ struct BoundingVolume : public ecs::Component<BoundingVolume>
 };
 
 } // comp
-
-#endif

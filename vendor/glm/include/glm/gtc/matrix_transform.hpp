@@ -302,6 +302,11 @@ namespace glm
 	GLM_FUNC_DECL tmat4x4<T, defaultp> infiniteReversePerspective(
 		T fovy, T aspect, T near);
 
+	/// ...
+	template <typename T>
+	GLM_FUNC_DECL tmat4x4<T, defaultp> inverseInfiniteReversePerspective(
+		T fovy, T aspect, T near);
+
 	/// Creates a matrix for a symmetric perspective-view frustum with far plane at infinite for graphics hardware that doesn't support depth clamping.
 	///
 	/// @param fovy Specifies the field of view angle, in degrees, in the y direction. Expressed in radians.

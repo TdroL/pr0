@@ -3,7 +3,9 @@
 
 // #include <pch.hpp>
 
+#include <app/comp/directionallight.hpp>
 #include <app/comp/projection.hpp>
+#include <app/comp/view.hpp>
 
 #include <core/rn/fb.hpp>
 #include <core/rn/prof.hpp>
@@ -29,41 +31,21 @@ public:
 	bool blendCascades = true;
 	float maxShadowDistance = 256.f;
 
-	// std::vector<float> cascades{};
-	// std::vector<float> radiuses{};
-	// std::vector<glm::vec3> centers{};
 	std::shared_ptr<rn::Tex2DArray> texDepths{};
-	// std::shared_ptr<rn::Tex2DArray> texColors{};
 	std::vector<rn::FB> fbShadows{};
 
-	std::vector<glm::mat4> Ps{};
-	std::vector<glm::mat4> Vs{};
-
-	rn::Program progDepth{};
-
-	// rn::FB fbBlurBuffer{};
-	// rn::Program progBlurH{};
-	// rn::Program progBlurV{};
-
-	rn::Prof profRender{"fx::CSM::profRender"};
-	// rn::Prof profBlur{"fx::CSM::profBlur"};
+	rn::Program progDepth{"fx::CSM::progDepth"};
+	// rn::Prof profRender{"fx::CSM::profRender"};
 
 	std::vector<float> radiuses2{};
-	std::vector<glm::mat4> VPs{};
-	std::vector<glm::vec3> centersV{};
-
-	std::string debugLog{};
+	std::vector<glm::mat4> Ps{};
+	std::vector<glm::mat4> Vs{};
+	std::vector<glm::mat4> shadowBiasedVPs{};
+	std::vector<glm::vec3> centers{};
 
 	void init();
 
-	void calculateMatrices(const ecs::Entity &cameraId, const ecs::Entity &lightId);
-	void renderCascades();
-
-	glm::vec2 findSceneZMinMax(glm::vec3 lightDirection);
-	// void buildCorners(const glm::mat4 &VP, glm::vec4 (&output)[8]);
-	// glm::mat4 buildShadowPMatrix(const glm::vec4 (&corners)[8], const glm::mat4 &V, float zMax);
-	// glm::mat4 stabilizeVMatrix(const glm::mat4 &V, const glm::mat4 &P);
-	// std::pair<glm::vec3, glm::vec3> computeBox(const glm::mat4 &splitProjection);
+	void calculateMatrices(const comp::DirectionalLight &light, const comp::Projection &projection, const comp::View &view, float zMax);
 };
 
 } // fx

@@ -1,120 +1,144 @@
 #version 440 core
 
-// #define CSM_USE_IDENTITY_KERNEL
-#define CSM_FORCE_KERNEL_SIZE 1
+/**
+ * CSM_USE_IDENTITY_KERNEL
+ * CSM_ENABLE_KERNEL_SIZE_1
+ * CSM_ENABLE_KERNEL_SIZE_3
+ * CSM_ENABLE_KERNEL_SIZE_5
+ * CSM_ENABLE_KERNEL_SIZE_7
+ * CSM_ENABLE_KERNEL_SIZE_9
+ * CSM_FORCE_KERNEL_SIZE x
+ * CSM_FORCE_MAX_CASCADES x
+ * CSM_FORCE_CASCADES_BLENDING x
+ */
 
-#if (defined(CSM_KERNEL_SIZE_1) && ! defined(CSM_FORCE_KERNEL_SIZE)) || CSM_FORCE_KERNEL_SIZE == 1
-	#define CSM_KERNEL_SIZE_1
-	#undef CSM_KERNEL_SIZE_3
-	#undef CSM_KERNEL_SIZE_5
-	#undef CSM_KERNEL_SIZE_7
-	#undef CSM_KERNEL_SIZE_9
-#elif (defined(CSM_KERNEL_SIZE_3) && ! defined(CSM_FORCE_KERNEL_SIZE)) || CSM_FORCE_KERNEL_SIZE == 3
-	#define CSM_KERNEL_SIZE_3
-	#undef CSM_KERNEL_SIZE_1
-	#undef CSM_KERNEL_SIZE_5
-	#undef CSM_KERNEL_SIZE_7
-	#undef CSM_KERNEL_SIZE_9
-#elif (defined(CSM_KERNEL_SIZE_5) && ! defined(CSM_FORCE_KERNEL_SIZE)) || CSM_FORCE_KERNEL_SIZE == 5
-	#define CSM_KERNEL_SIZE_5
-	#undef CSM_KERNEL_SIZE_1
-	#undef CSM_KERNEL_SIZE_3
-	#undef CSM_KERNEL_SIZE_7
-	#undef CSM_KERNEL_SIZE_9
-#elif (defined(CSM_KERNEL_SIZE_7) && ! defined(CSM_FORCE_KERNEL_SIZE)) || CSM_FORCE_KERNEL_SIZE == 7
-	#define CSM_KERNEL_SIZE_7
-	#undef CSM_KERNEL_SIZE_1
-	#undef CSM_KERNEL_SIZE_3
-	#undef CSM_KERNEL_SIZE_5
-	#undef CSM_KERNEL_SIZE_9
-#elif (defined(CSM_KERNEL_SIZE_9) && ! defined(CSM_FORCE_KERNEL_SIZE)) || CSM_FORCE_KERNEL_SIZE == 9
-	#define CSM_KERNEL_SIZE_9
-	#undef CSM_KERNEL_SIZE_1
-	#undef CSM_KERNEL_SIZE_3
-	#undef CSM_KERNEL_SIZE_5
-	#undef CSM_KERNEL_SIZE_7
-#else
-	#define CSM_KERNEL_SIZE_1
-	#define CSM_KERNEL_SIZE_3
-	#define CSM_KERNEL_SIZE_5
-	#define CSM_KERNEL_SIZE_7
-	#define CSM_KERNEL_SIZE_9
+#define CSM_FORCE_KERNEL_SIZE 3
+
+#if defined(CSM_FORCE_KERNEL_SIZE)
+	#undef CSM_ENABLE_KERNEL_SIZE_1
+	#undef CSM_ENABLE_KERNEL_SIZE_3
+	#undef CSM_ENABLE_KERNEL_SIZE_5
+	#undef CSM_ENABLE_KERNEL_SIZE_7
+	#undef CSM_ENABLE_KERNEL_SIZE_9
+
+	#if CSM_FORCE_KERNEL_SIZE == 1
+		#define CSM_ENABLE_KERNEL_SIZE_1
+	#elif CSM_FORCE_KERNEL_SIZE == 3
+		#define CSM_ENABLE_KERNEL_SIZE_3
+	#elif CSM_FORCE_KERNEL_SIZE == 5
+		#define CSM_ENABLE_KERNEL_SIZE_5
+	#elif CSM_FORCE_KERNEL_SIZE == 7
+		#define CSM_ENABLE_KERNEL_SIZE_7
+	#elif CSM_FORCE_KERNEL_SIZE == 9
+		#define CSM_ENABLE_KERNEL_SIZE_9
+	#else
+		#define CSM_ENABLE_KERNEL_SIZE_1
+		#define CSM_FORCE_KERNEL_SIZE 1
+	#endif
 #endif
 
-const int maxCascades = 5;
+#if ! (defined(CSM_ENABLE_KERNEL_SIZE_1) || defined(CSM_ENABLE_KERNEL_SIZE_3) || defined(CSM_ENABLE_KERNEL_SIZE_5) || defined(CSM_ENABLE_KERNEL_SIZE_7) || defined(CSM_ENABLE_KERNEL_SIZE_9))
+	#define CSM_ENABLE_KERNEL_SIZE_1
+	#define CSM_ENABLE_KERNEL_SIZE_3
+	#define CSM_ENABLE_KERNEL_SIZE_5
+	#define CSM_ENABLE_KERNEL_SIZE_7
+	#define CSM_ENABLE_KERNEL_SIZE_9
+#endif
+
+#if defined(CSM_FORCE_MAX_CASCADES)
+const uint csmMaxCascades = CSM_FORCE_MAX_CASCADES;
+#else
+const uint csmMaxCascades = 5;
+#endif
 
 struct CSM
 {
-	mat4 MVP[maxCascades];
-	vec3 centers[maxCascades];
-	float radiuses2[maxCascades];
+	mat4 MVP[csmMaxCascades];
+	vec3 centers[csmMaxCascades];
+	float radiuses2[csmMaxCascades];
 	uint kernelSize;
 	uint splits;
 	bool blendCascades;
 };
 
-float bilerp(vec4 values, vec2 uv) // bilinear interpolation
+float csmBilerp(vec4 values, vec2 uv)
 {
+	// bilinear interpolation
 	vec2 mix1 = mix(values.wx, values.zy, uv.xx);
-	float mix2 = mix(mix1[0], mix1[1], uv.y);
-
-	return mix2;
+	return mix(mix1[0], mix1[1], uv.y);
 }
 
-#ifdef CSM_KERNEL_SIZE_1
+#define CSM_CONCAT2_IMPL(x, y) x ## y
+#define CSM_CONCAT2(x, y) CSM_CONCAT2_IMPL(x, y)
+
+#define csmReadDepthComponents_IMPL(uvl, texDepths, comp) \
+{ \
+	for (int i = 0; i < HALF_SIZE; i++) \
+	{ \
+		for (int j = 0; j < HALF_SIZE; j++) \
+		{ \
+			int idx = i * HALF_SIZE + j; \
+			ivec2 offset = ivec2(j, i) * 2 - HALF_SIZE; \
+			comp[idx] = textureGatherOffset(texDepths, uvl, offset, 0); \
+		} \
+	} \
+}
+
+#define csmExtractComp_IMPL(comp, x, y) \
+{ \
+	if ((x % 2) == 0 && (y % 2) == 0) \
+	{ \
+		int idx = x / 2 + y / 2 * HALF_SIZE; \
+		return comp[idx].xyzw; \
+	} \
+	else if ((x % 2) == 0 && (y % 2) == 1) \
+	{ \
+		int idx = x / 2 + (y - 1) / 2 * HALF_SIZE; \
+		return vec4(comp[idx + HALF_SIZE].wz, comp[idx].yx); \
+	} \
+	else if ((x % 2) == 1 && (y % 2) == 0) \
+	{ \
+		int idx = (x - 1) / 2 + y / 2 * HALF_SIZE; \
+		return vec4(comp[idx].y, comp[idx + 1].xw, comp[idx].z); \
+	} \
+	else \
+	{ \
+		int idx = (x - 1) / 2 + (y - 1) / 2 * HALF_SIZE; \
+		return vec4(comp[idx + HALF_SIZE].z, comp[idx + HALF_SIZE + 1].w, comp[idx + 1].x, comp[idx].y); \
+	} \
+}
+
+#define csmBuildDepthArray_IMPL(comp, uv, sz, depths) \
+{ \
+	for (int y = 0; y < SAMPLE_SIZE; y++) \
+	{ \
+		for (int x = 0; x < SAMPLE_SIZE; x++) \
+		{ \
+			int idx = x + y * SAMPLE_SIZE; \
+			depths[idx] = csmBilerp(step(vec4(sz), CSM_CONCAT2(csmExtractComp, SAMPLE_SIZE)(comp, x, y)), uv); \
+		} \
+	} \
+}
+
+#ifdef CSM_ENABLE_KERNEL_SIZE_1
 	#define SAMPLE_SIZE 1
 	#define HALF_SIZE ((SAMPLE_SIZE + 1) / 2)
 	#define KERNEL_SIZE (SAMPLE_SIZE * SAMPLE_SIZE)
 	#define COMP_SIZE (HALF_SIZE * HALF_SIZE)
 
-	void csmReadDepthComponents1(vec3 uvl, out vec4 comp[COMP_SIZE], sampler2DArray texDepths)
+	void csmReadDepthComponents1(vec3 uvl, sampler2DArray texDepths, out vec4 comp[COMP_SIZE])
 	{
-		for (int i = 0; i < HALF_SIZE; i++)
-		{
-			for (int j = 0; j < HALF_SIZE; j++)
-			{
-				int idx = i * HALF_SIZE + j;
-				ivec2 offset = ivec2(j, i) * 2 - HALF_SIZE;
-
-				comp[idx] = textureGatherOffset(texDepths, uvl, offset, 0);
-			}
-		}
+		csmReadDepthComponents_IMPL(uvl, texDepths, comp);
 	}
 
 	vec4 csmExtractComp1(vec4 comp[COMP_SIZE], int x, int y)
 	{
-		if ((x % 2) == 0 && (y % 2) == 0)
-		{
-			int idx = x / 2 + y / 2 * HALF_SIZE;
-			return comp[idx].xyzw;
-		}
-
-		if ((x % 2) == 0 && (y % 2) == 1)
-		{
-			int idx = x / 2 + (y - 1) / 2 * HALF_SIZE;
-			return vec4(comp[idx + HALF_SIZE].wz, comp[idx].yx);
-		}
-
-		if ((x % 2) == 1 && (y % 2) == 0)
-		{
-			int idx = (x - 1) / 2 + y / 2 * HALF_SIZE;
-			return vec4(comp[idx].y, comp[idx + 1].xw, comp[idx].z);
-		}
-
-		int idx = (x - 1) / 2 + (y - 1) / 2 * HALF_SIZE;
-		return vec4(comp[idx + HALF_SIZE].z, comp[idx + HALF_SIZE + 1].w, comp[idx + 1].x, comp[idx].y);
+		csmExtractComp_IMPL(comp, x, y);
 	}
 
 	void csmBuildDepthArray1(vec4 comp[COMP_SIZE], vec2 uv, float sz, out float depths[KERNEL_SIZE])
 	{
-		for (int y = 0; y < SAMPLE_SIZE; y++)
-		{
-			for (int x = 0; x < SAMPLE_SIZE; x++)
-			{
-				int idx = x + y * SAMPLE_SIZE;
-				depths[idx] = bilerp(step(vec4(sz), csmExtractComp1(comp, x, y)), uv);
-			}
-		}
+		csmBuildDepthArray_IMPL(comp, uv, sz, depths);
 	}
 
 	float csmVisibilityPCF1(vec4 shadowCoord, struct CSM csm, sampler2DArray texDepths)
@@ -133,7 +157,7 @@ float bilerp(vec4 values, vec2 uv) // bilinear interpolation
 		);
 		#endif
 
-		csmReadDepthComponents1(roundedShadowCoord, comp, texDepths);
+		csmReadDepthComponents1(roundedShadowCoord, texDepths, comp);
 		csmBuildDepthArray1(comp, fractShadowCoord, shadowCoord.z, depths);
 
 		float acc = 0.0;
@@ -158,60 +182,27 @@ float bilerp(vec4 values, vec2 uv) // bilinear interpolation
 	}
 #endif
 
-#ifdef CSM_KERNEL_SIZE_3
+#ifdef CSM_ENABLE_KERNEL_SIZE_3
 	#define SAMPLE_SIZE 3
 	#define HALF_SIZE ((SAMPLE_SIZE + 1) / 2)
 	#define KERNEL_SIZE (SAMPLE_SIZE * SAMPLE_SIZE)
 	#define COMP_SIZE (HALF_SIZE * HALF_SIZE)
 
-	void csmReadDepthComponents3(vec3 uvl, out vec4 comp[COMP_SIZE], sampler2DArray texDepths)
+	void csmReadDepthComponents3(vec3 uvl, sampler2DArray texDepths, out vec4 comp[COMP_SIZE])
 	{
-		for (int i = 0; i < HALF_SIZE; i++)
-		{
-			for (int j = 0; j < HALF_SIZE; j++)
-			{
-				int idx = i * HALF_SIZE + j;
-				ivec2 offset = ivec2(j, i) * 2 - HALF_SIZE;
-
-				comp[idx] = textureGatherOffset(texDepths, uvl, offset, 0);
-			}
-		}
+		csmReadDepthComponents_IMPL(uvl, texDepths, comp);
 	}
 
 	vec4 csmExtractComp3(vec4 comp[COMP_SIZE], int x, int y)
 	{
-		if ((x % 2) == 0 && (y % 2) == 0)
-		{
-			int idx = x / 2 + y / 2 * HALF_SIZE;
-			return comp[idx].xyzw;
-		}
-
-		if ((x % 2) == 0 && (y % 2) == 1)
-		{
-			int idx = x / 2 + (y - 1) / 2 * HALF_SIZE;
-			return vec4(comp[idx + HALF_SIZE].wz, comp[idx].yx);
-		}
-
-		if ((x % 2) == 1 && (y % 2) == 0)
-		{
-			int idx = (x - 1) / 2 + y / 2 * HALF_SIZE;
-			return vec4(comp[idx].y, comp[idx + 1].xw, comp[idx].z);
-		}
-
-		int idx = (x - 1) / 2 + (y - 1) / 2 * HALF_SIZE;
-		return vec4(comp[idx + HALF_SIZE].z, comp[idx + HALF_SIZE + 1].w, comp[idx + 1].x, comp[idx].y);
+		vec4 result;
+		csmExtractComp_IMPL(comp, x, y);
+		return result;
 	}
 
 	void csmBuildDepthArray3(vec4 comp[COMP_SIZE], vec2 uv, float sz, out float depths[KERNEL_SIZE])
 	{
-		for (int y = 0; y < SAMPLE_SIZE; y++)
-		{
-			for (int x = 0; x < SAMPLE_SIZE; x++)
-			{
-				int idx = x + y * SAMPLE_SIZE;
-				depths[idx] = bilerp(step(vec4(sz), csmExtractComp3(comp, x, y)), uv);
-			}
-		}
+		csmBuildDepthArray_IMPL(comp, uv, sz, depths);
 	}
 
 	float csmVisibilityPCF3(vec4 shadowCoord, struct CSM csm, sampler2DArray texDepths)
@@ -232,7 +223,7 @@ float bilerp(vec4 values, vec2 uv) // bilinear interpolation
 		);
 		#endif
 
-		csmReadDepthComponents3(roundedShadowCoord, comp, texDepths);
+		csmReadDepthComponents3(roundedShadowCoord, texDepths, comp);
 		csmBuildDepthArray3(comp, fractShadowCoord, shadowCoord.z, depths);
 
 		float acc = 0.0;
@@ -257,60 +248,25 @@ float bilerp(vec4 values, vec2 uv) // bilinear interpolation
 	}
 #endif
 
-#ifdef CSM_KERNEL_SIZE_5
+#ifdef CSM_ENABLE_KERNEL_SIZE_5
 	#define SAMPLE_SIZE 5
 	#define HALF_SIZE ((SAMPLE_SIZE + 1) / 2)
 	#define KERNEL_SIZE (SAMPLE_SIZE * SAMPLE_SIZE)
 	#define COMP_SIZE (HALF_SIZE * HALF_SIZE)
 
-	void csmReadDepthComponents5(vec3 uvl, out vec4 comp[COMP_SIZE], sampler2DArray texDepths)
+	void csmReadDepthComponents5(vec3 uvl, sampler2DArray texDepths, out vec4 comp[COMP_SIZE])
 	{
-		for (int i = 0; i < HALF_SIZE; i++)
-		{
-			for (int j = 0; j < HALF_SIZE; j++)
-			{
-				int idx = i * HALF_SIZE + j;
-				ivec2 offset = ivec2(j, i) * 2 - HALF_SIZE;
-
-				comp[idx] = textureGatherOffset(texDepths, uvl, offset, 0);
-			}
-		}
+		csmReadDepthComponents_IMPL(uvl, texDepths, comp);
 	}
 
 	vec4 csmExtractComp5(vec4 comp[COMP_SIZE], int x, int y)
 	{
-		if ((x % 2) == 0 && (y % 2) == 0)
-		{
-			int idx = x / 2 + y / 2 * HALF_SIZE;
-			return comp[idx].xyzw;
-		}
-
-		if ((x % 2) == 0 && (y % 2) == 1)
-		{
-			int idx = x / 2 + (y - 1) / 2 * HALF_SIZE;
-			return vec4(comp[idx + HALF_SIZE].wz, comp[idx].yx);
-		}
-
-		if ((x % 2) == 1 && (y % 2) == 0)
-		{
-			int idx = (x - 1) / 2 + y / 2 * HALF_SIZE;
-			return vec4(comp[idx].y, comp[idx + 1].xw, comp[idx].z);
-		}
-
-		int idx = (x - 1) / 2 + (y - 1) / 2 * HALF_SIZE;
-		return vec4(comp[idx + HALF_SIZE].z, comp[idx + HALF_SIZE + 1].w, comp[idx + 1].x, comp[idx].y);
+		csmExtractComp_IMPL(comp, x, y);
 	}
 
 	void csmBuildDepthArray5(vec4 comp[COMP_SIZE], vec2 uv, float sz, out float depths[KERNEL_SIZE])
 	{
-		for (int y = 0; y < SAMPLE_SIZE; y++)
-		{
-			for (int x = 0; x < SAMPLE_SIZE; x++)
-			{
-				int idx = x + y * SAMPLE_SIZE;
-				depths[idx] = bilerp(step(vec4(sz), csmExtractComp5(comp, x, y)), uv);
-			}
-		}
+		csmBuildDepthArray_IMPL(comp, uv, sz, depths);
 	}
 
 	float csmVisibilityPCF5(vec4 shadowCoord, struct CSM csm, sampler2DArray texDepths)
@@ -341,7 +297,7 @@ float bilerp(vec4 values, vec2 uv) // bilinear interpolation
 		);
 		#endif
 
-		csmReadDepthComponents5(roundedShadowCoord, comp, texDepths);
+		csmReadDepthComponents5(roundedShadowCoord, texDepths, comp);
 		csmBuildDepthArray5(comp, fractShadowCoord, shadowCoord.z, depths);
 
 		float acc = 0.0;
@@ -366,60 +322,25 @@ float bilerp(vec4 values, vec2 uv) // bilinear interpolation
 	}
 #endif
 
-#ifdef CSM_KERNEL_SIZE_7
+#ifdef CSM_ENABLE_KERNEL_SIZE_7
 	#define SAMPLE_SIZE 7
 	#define HALF_SIZE ((SAMPLE_SIZE + 1) / 2)
 	#define KERNEL_SIZE (SAMPLE_SIZE * SAMPLE_SIZE)
 	#define COMP_SIZE (HALF_SIZE * HALF_SIZE)
 
-	void csmReadDepthComponents7(vec3 uvl, out vec4 comp[COMP_SIZE], sampler2DArray texDepths)
+	void csmReadDepthComponents7(vec3 uvl, sampler2DArray texDepths, out vec4 comp[COMP_SIZE])
 	{
-		for (int i = 0; i < HALF_SIZE; i++)
-		{
-			for (int j = 0; j < HALF_SIZE; j++)
-			{
-				int idx = i * HALF_SIZE + j;
-				ivec2 offset = ivec2(j, i) * 2 - HALF_SIZE;
-
-				comp[idx] = textureGatherOffset(texDepths, uvl, offset, 0);
-			}
-		}
+		csmReadDepthComponents_IMPL(uvl, texDepths, comp);
 	}
 
 	vec4 csmExtractComp7(vec4 comp[COMP_SIZE], int x, int y)
 	{
-		if ((x % 2) == 0 && (y % 2) == 0)
-		{
-			int idx = x / 2 + y / 2 * HALF_SIZE;
-			return comp[idx].xyzw;
-		}
-
-		if ((x % 2) == 0 && (y % 2) == 1)
-		{
-			int idx = x / 2 + (y - 1) / 2 * HALF_SIZE;
-			return vec4(comp[idx + HALF_SIZE].wz, comp[idx].yx);
-		}
-
-		if ((x % 2) == 1 && (y % 2) == 0)
-		{
-			int idx = (x - 1) / 2 + y / 2 * HALF_SIZE;
-			return vec4(comp[idx].y, comp[idx + 1].xw, comp[idx].z);
-		}
-
-		int idx = (x - 1) / 2 + (y - 1) / 2 * HALF_SIZE;
-		return vec4(comp[idx + HALF_SIZE].z, comp[idx + HALF_SIZE + 1].w, comp[idx + 1].x, comp[idx].y);
+		csmExtractComp_IMPL(comp, x, y);
 	}
 
 	void csmBuildDepthArray7(vec4 comp[COMP_SIZE], vec2 uv, float sz, out float depths[KERNEL_SIZE])
 	{
-		for (int y = 0; y < SAMPLE_SIZE; y++)
-		{
-			for (int x = 0; x < SAMPLE_SIZE; x++)
-			{
-				int idx = x + y * SAMPLE_SIZE;
-				depths[idx] = bilerp(step(vec4(sz), csmExtractComp7(comp, x, y)), uv);
-			}
-		}
+		csmBuildDepthArray_IMPL(comp, uv, sz, depths);
 	}
 
 	float csmVisibilityPCF7(vec4 shadowCoord, struct CSM csm, sampler2DArray texDepths)
@@ -454,7 +375,7 @@ float bilerp(vec4 values, vec2 uv) // bilinear interpolation
 		);
 		#endif
 
-		csmReadDepthComponents7(roundedShadowCoord, comp, texDepths);
+		csmReadDepthComponents7(roundedShadowCoord, texDepths, comp);
 		csmBuildDepthArray7(comp, fractShadowCoord, shadowCoord.z, depths);
 
 		float acc = 0.0;
@@ -479,60 +400,25 @@ float bilerp(vec4 values, vec2 uv) // bilinear interpolation
 	}
 #endif
 
-#ifdef CSM_KERNEL_SIZE_9
+#ifdef CSM_ENABLE_KERNEL_SIZE_9
 	#define SAMPLE_SIZE 9
 	#define HALF_SIZE ((SAMPLE_SIZE + 1) / 2)
 	#define KERNEL_SIZE (SAMPLE_SIZE * SAMPLE_SIZE)
 	#define COMP_SIZE (HALF_SIZE * HALF_SIZE)
 
-	void csmReadDepthComponents9(vec3 uvl, out vec4 comp[COMP_SIZE], sampler2DArray texDepths)
+	void csmReadDepthComponents9(vec3 uvl, sampler2DArray texDepths, out vec4 comp[COMP_SIZE])
 	{
-		for (int i = 0; i < HALF_SIZE; i++)
-		{
-			for (int j = 0; j < HALF_SIZE; j++)
-			{
-				int idx = i * HALF_SIZE + j;
-				ivec2 offset = ivec2(j, i) * 2 - HALF_SIZE;
-
-				comp[idx] = textureGatherOffset(texDepths, uvl, offset, 0);
-			}
-		}
+		csmReadDepthComponents_IMPL(uvl, texDepths, comp);
 	}
 
 	vec4 csmExtractComp9(vec4 comp[COMP_SIZE], int x, int y)
 	{
-		if ((x % 2) == 0 && (y % 2) == 0)
-		{
-			int idx = x / 2 + y / 2 * HALF_SIZE;
-			return comp[idx].xyzw;
-		}
-
-		if ((x % 2) == 0 && (y % 2) == 1)
-		{
-			int idx = x / 2 + (y - 1) / 2 * HALF_SIZE;
-			return vec4(comp[idx + HALF_SIZE].wz, comp[idx].yx);
-		}
-
-		if ((x % 2) == 1 && (y % 2) == 0)
-		{
-			int idx = (x - 1) / 2 + y / 2 * HALF_SIZE;
-			return vec4(comp[idx].y, comp[idx + 1].xw, comp[idx].z);
-		}
-
-		int idx = (x - 1) / 2 + (y - 1) / 2 * HALF_SIZE;
-		return vec4(comp[idx + HALF_SIZE].z, comp[idx + HALF_SIZE + 1].w, comp[idx + 1].x, comp[idx].y);
+		csmExtractComp_IMPL(comp, x, y);
 	}
 
 	void csmBuildDepthArray9(vec4 comp[COMP_SIZE], vec2 uv, float sz, out float depths[KERNEL_SIZE])
 	{
-		for (int y = 0; y < SAMPLE_SIZE; y++)
-		{
-			for (int x = 0; x < SAMPLE_SIZE; x++)
-			{
-				int idx = x + y * SAMPLE_SIZE;
-				depths[idx] = bilerp(step(vec4(sz), csmExtractComp9(comp, x, y)), uv);
-			}
-		}
+		csmBuildDepthArray_IMPL(comp, uv, sz, depths);
 	}
 
 	float csmVisibilityPCF9(vec4 shadowCoord, struct CSM csm, sampler2DArray texDepths)
@@ -571,7 +457,7 @@ float bilerp(vec4 values, vec2 uv) // bilinear interpolation
 		);
 		#endif
 
-		csmReadDepthComponents9(roundedShadowCoord, comp, texDepths);
+		csmReadDepthComponents9(roundedShadowCoord, texDepths, comp);
 		csmBuildDepthArray9(comp, fractShadowCoord, shadowCoord.z, depths);
 
 		float acc = 0.0;
@@ -606,23 +492,23 @@ float csmVisibilityPCF(vec4 shadowCoord, struct CSM csm, sampler2DArray texDepth
 
 	switch (kernelSize)
 	{
-		#ifdef CSM_KERNEL_SIZE_9
+		#ifdef CSM_ENABLE_KERNEL_SIZE_9
 		case 9:
 			return csmVisibilityPCF9(shadowCoord, csm, texDepths);
 		#endif
-		#ifdef CSM_KERNEL_SIZE_7
+		#ifdef CSM_ENABLE_KERNEL_SIZE_7
 		case 7:
 			return csmVisibilityPCF7(shadowCoord, csm, texDepths);
 		#endif
-		#ifdef CSM_KERNEL_SIZE_5
+		#ifdef CSM_ENABLE_KERNEL_SIZE_5
 		case 5:
 			return csmVisibilityPCF5(shadowCoord, csm, texDepths);
 		#endif
-		#ifdef CSM_KERNEL_SIZE_3
+		#ifdef CSM_ENABLE_KERNEL_SIZE_3
 		case 3:
 			return csmVisibilityPCF3(shadowCoord, csm, texDepths);
 		#endif
-		#ifdef CSM_KERNEL_SIZE_1
+		#ifdef CSM_ENABLE_KERNEL_SIZE_1
 		case 1:
 			return csmVisibilityPCF1(shadowCoord, csm, texDepths);
 		#endif
@@ -635,14 +521,22 @@ float csmVisibility(vec4 position, float cosTheta, struct CSM csm, sampler2DArra
 {
 	float visibility = 1.0;
 
-	float zBias = -clamp(0.001 * tan(acos(cosTheta)), 0.0, 0.01);
+	float zBias = 0.0; // -clamp(0.0001 * tan(acos(cosTheta)), 0.0, 0.01);
 
-	if (csm.blendCascades)
+	uint splits = min(csmMaxCascades, csm.splits);
+	#if defined(CSM_FORCE_CASCADES_BLENDING)
+	bool blendCascades = CSM_FORCE_CASCADES_BLENDING;
+	#else
+	bool blendCascades = csm.blendCascades;
+	#endif
+
+	if (blendCascades)
 	{
 		float radiusPadding = 0.9;
 		float radiusPadding2 = radiusPadding * radiusPadding;
 
-		for (int i = 0; i < csm.splits; i++)
+
+		for (uint i = 0; i < splits; i++)
 		{
 			vec4 shadowCoord = csm.MVP[i] * position;
 			shadowCoord.z -= zBias;
@@ -659,7 +553,7 @@ float csmVisibility(vec4 position, float cosTheta, struct CSM csm, sampler2DArra
 				{
 					float visibility2 = 1.0;
 
-					if (i + 1 < csm.splits)
+					if (i + 1 < splits)
 					{
 						vec4 shadowCoord2 = csm.MVP[i + 1] * position;
 						shadowCoord2.z -= zBias;
@@ -679,7 +573,7 @@ float csmVisibility(vec4 position, float cosTheta, struct CSM csm, sampler2DArra
 	}
 	else
 	{
-		for (int i = 0; i < csm.splits; i++)
+		for (uint i = 0; i < splits; i++)
 		{
 			vec4 shadowCoord = csm.MVP[i] * position;
 			shadowCoord.z -= zBias;
@@ -696,7 +590,7 @@ float csmVisibility(vec4 position, float cosTheta, struct CSM csm, sampler2DArra
 		}
 	}
 
-	return pow(visibility, 2.2);
-	// return visibility * visibility;
+	// return pow(visibility, 2.2);
+	return visibility * visibility;
 	// return visibility;
 }

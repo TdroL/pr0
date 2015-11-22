@@ -37,6 +37,9 @@ public:
 	bool hasCompileErrors = false;
 
 	std::map<std::string, UniformMeta> uniforms{};
+	std::map<std::string, BufferMeta> uniformBuffers{};
+	std::map<std::string, BufferMeta> shaderStorageBuffers{};
+
 	std::unique_ptr<Source> fragmentShader{nullptr};
 	std::unique_ptr<Source> vertexShader{nullptr};
 
@@ -55,8 +58,8 @@ public:
 	void use();
 	void forgo();
 
-	GLint getName(const std::string &name);
-	UniformMeta & getMeta(const std::string &name);
+	GLint getUniformLocation(const std::string &name);
+	UniformMeta & getUniformMeta(const std::string &name);
 
 	void var(GLint location, GLint value);
 	void var(GLint location, GLuint value);
@@ -97,24 +100,24 @@ public:
 	template<typename T>
 	GLint uniform(const std::string &name, T value)
 	{
-		UniformMeta &uniformMeta = getMeta(name);
+		UniformMeta &uniformMeta = getUniformMeta(name);
 
-		var(uniformMeta.id, uniformMeta.set(value));
+		var(uniformMeta.location, uniformMeta.set(value));
 
-		return uniformMeta.id;
+		return uniformMeta.location;
 	}
 
 	template<typename T>
 	GLint uniform(const std::string &name, std::unique_ptr<T[]> &&value, GLsizei count)
 	{
-		UniformMeta &uniformMeta = getMeta(name);
+		UniformMeta &uniformMeta = getUniformMeta(name);
 
 		if (value)
 		{
-			var(uniformMeta.id, uniformMeta.set(value.release(), count), count);
+			var(uniformMeta.location, uniformMeta.set(value.release(), count), count);
 		}
 
-		return uniformMeta.id;
+		return uniformMeta.location;
 	}
 
 };

@@ -134,7 +134,7 @@ struct UniformMeta
 	};
 
 	UniformMeta::Type type;
-	GLint id;
+	GLint location;
 
 	union
 	{
@@ -156,7 +156,7 @@ struct UniformMeta
 		std::pair<glm::mat4 *, GLsizei> vm4;
 	};
 
-	UniformMeta() : type{uniform_none}, id{0}, m4{0} {}
+	UniformMeta() : type{uniform_none}, location{-1}, m4{0} {}
 
 	GLint & set(GLint i);
 	GLuint & set(GLuint ui);
@@ -181,6 +181,14 @@ struct UniformMeta
 	{
 		reset();
 	}
+};
+
+struct BufferMeta
+{
+	GLuint index;
+	GLuint bufferId;
+
+	BufferMeta() : index{TypeLimit<GLuint>::max}, bufferId{TypeLimit<GLuint>::max} {}
 };
 
 struct TexParams

@@ -1,9 +1,10 @@
-#ifndef NGN_WINDOW_HPP
-#define NGN_WINDOW_HPP
+#pragma once
 
 #include "../event.hpp"
-#include <GLFW/glfw3.h>
+
 #include <string>
+
+struct GLFWwindow;
 
 namespace ngn
 {
@@ -30,8 +31,6 @@ enum Mode
 };
 
 extern std::string title;
-extern GLFWwindow *handler;
-extern GLFWwindow *initial;
 extern int width;
 extern int height;
 extern bool linkInternalResolution;
@@ -52,6 +51,8 @@ void switchMode(Mode mode, int vsync);
 void setTitle(const std::string &title);
 void setTitle(std::string &&title);
 
+GLFWwindow * getHandler();
+
 bool shouldClose();
 void close();
 
@@ -60,5 +61,3 @@ void swapBuffers();
 } // window
 
 } // ngn
-
-#endif

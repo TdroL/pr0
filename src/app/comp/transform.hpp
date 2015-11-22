@@ -1,7 +1,5 @@
-#ifndef APP_COMP_TRANSFORM_HPP
-#define APP_COMP_TRANSFORM_HPP
+#pragma once
 
-// #include <pch.hpp>
 #include <core/ecs/component.hpp>
 #include <core/phs/sphere.hpp>
 #include <core/phs/aabb.hpp>
@@ -18,5 +16,3 @@ struct Transform : public ecs::Component<Transform>
 };
 
 } // comp
-
-#endif

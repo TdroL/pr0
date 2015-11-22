@@ -16,6 +16,7 @@ public:
 	Plane planes[6];
 
 	explicit Frustum(const glm::mat4 &WVP);
+	Frustum(const glm::mat4 &P, const glm::mat4 &V);
 
 	bool test(const Sphere &sphere) const;
 	bool test(const AABB &aabb) const;

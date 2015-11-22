@@ -1,7 +1,5 @@
-#ifndef APP_COMP_VIEW_HPP
-#define APP_COMP_VIEW_HPP
+#pragma once
 
-// #include <pch.hpp>
 #include <core/ecs/component.hpp>
 #include <glm/glm.hpp>
 
@@ -15,5 +13,3 @@ struct View : public ecs::Component<View>
 };
 
 } // comp
-
-#endif

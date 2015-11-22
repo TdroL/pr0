@@ -3,6 +3,7 @@
 
 #include <array>
 #include <vector>
+#include <memory>
 
 class MinballImpl;
 
@@ -27,7 +28,7 @@ public:
 	DataType radius();
 	std::array<DataType, dimensions> center();
 private:
-	MinballImpl *pimpl = nullptr;
+	std::unique_ptr<MinballImpl> pimpl;
 
 	void reset();
 };

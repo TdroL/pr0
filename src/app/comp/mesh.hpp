@@ -1,5 +1,4 @@
-#ifndef APP_COMP_MESH_HPP
-#define APP_COMP_MESH_HPP
+#pragma once
 
 #include <core/ecs/component.hpp>
 
@@ -12,5 +11,3 @@ struct Mesh : public ecs::Component<Mesh>
 };
 
 } // comp
-
-#endif

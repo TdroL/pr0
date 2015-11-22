@@ -21,6 +21,7 @@ public:
 	static std::vector<FB *> collection;
 	static std::vector<FB *> activeStack;
 
+	static void resetAll();
 	static void reloadAll();
 	static void reloadSoftAll();
 
@@ -72,6 +73,8 @@ public:
 
 	void reload();
 	void reloadSoft();
+
+	void reset();
 
 	void bind();
 	void unbind();

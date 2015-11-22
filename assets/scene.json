@@ -19,7 +19,8 @@
 			"rotationSpeed": [90.0]
 		},
 		"transform": {
-			"translation": [0.0, 0.0, 1.0]
+			"translation": [0.0, 0.0, 1.0],
+			"scale": 0.5
 		},
 		"mesh": {
 			"id": "sphere.sbm"
@@ -29,10 +30,14 @@
 			"shininess": 0.0
 		},
 		"shading": {
-			"group": "flat"
+			"group": "shaded"
 		},
-		"stencil": {
-			"ref": "flat"
+		"occluder": {},
+		"pointLight": {
+			"color": [1.0, 1.0, 1.0, 1.0],
+			"intensity": 2.0,
+			"radius": 1.0,
+			"cutoff": 20.0
 		}
 	},
 	{
@@ -48,9 +53,6 @@
 		},
 		"shading": {
 			"group": "shaded"
-		},
-		"stencil": {
-			"ref": "shaded"
 		},
 		"mesh": {
 			"id": "cube.sbm"
@@ -71,9 +73,6 @@
 		"shading": {
 			"group": "shaded"
 		},
-		"stencil": {
-			"ref": "shaded"
-		},
 		"mesh": {
 			"id": "suzanne.sbm"
 		},
@@ -92,9 +91,6 @@
 		},
 		"shading": {
 			"group": "shaded"
-		},
-		"stencil": {
-			"ref": "shaded"
 		},
 		"mesh": {
 			"id": "venus.sbm"
@@ -116,9 +112,6 @@
 		"shading": {
 			"group": "shaded"
 		},
-		"stencil": {
-			"ref": "shaded"
-		},
 		"mesh": {
 			"id": "dragon.sbm"
 		},
@@ -138,9 +131,6 @@
 		},
 		"shading": {
 			"group": "shaded"
-		},
-		"stencil": {
-			"ref": "shaded"
 		},
 		"mesh": {
 			"id": "bunny.sbm"
@@ -163,9 +153,6 @@
 		"shading": {
 			"group": "shaded"
 		},
-		"stencil": {
-			"ref": "shaded"
-		},
 		"mesh": {
 			"id": "torus.sbm"
 		},
@@ -187,9 +174,6 @@
 		"shading": {
 			"group": "shaded"
 		},
-		"stencil": {
-			"ref": "shaded"
-		},
 		"mesh": {
 			"id": "torus.sbm"
 		},
@@ -205,13 +189,10 @@
 		},
 		"material": {
 			"diffuse": [0.04, 0.16, 0.04, 1.0],
-			"shininess": 0.0675
+			"shininess": 0.675
 		},
 		"shading": {
 			"group": "shaded"
-		},
-		"stencil": {
-			"ref": "shaded"
 		},
 		"mesh": {
 			"id": "plane.sbm"
@@ -230,9 +211,6 @@
 		},
 		"shading": {
 			"group": "shaded"
-		},
-		"stencil": {
-			"ref": "shaded"
 		},
 		"mesh": {
 			"id": "cornell-box-cycles.sbm"
@@ -258,9 +236,6 @@
 		"shading": {
 			"group": "shaded"
 		},
-		"stencil": {
-			"ref": "shaded"
-		},
 		"occluder": {}
 	},
 	{
@@ -279,9 +254,6 @@
 		},
 		"shading": {
 			"group": "shaded"
-		},
-		"stencil": {
-			"ref": "shaded"
 		},
 		"occluder": {}
 	},
@@ -302,9 +274,6 @@
 		"shading": {
 			"group": "shaded"
 		},
-		"stencil": {
-			"ref": "shaded"
-		},
 		"occluder": {}
 	},
 	{
@@ -323,9 +292,6 @@
 		},
 		"shading": {
 			"group": "shaded"
-		},
-		"stencil": {
-			"ref": "shaded"
 		},
 		"occluder": {}
 	},
@@ -346,9 +312,6 @@
 		"shading": {
 			"group": "shaded"
 		},
-		"stencil": {
-			"ref": "shaded"
-		},
 		"occluder": {}
 	},
 	{
@@ -367,9 +330,6 @@
 		},
 		"shading": {
 			"group": "shaded"
-		},
-		"stencil": {
-			"ref": "shaded"
 		},
 		"occluder": {}
 	},
@@ -390,9 +350,6 @@
 		"shading": {
 			"group": "shaded"
 		},
-		"stencil": {
-			"ref": "shaded"
-		},
 		"occluder": {}
 	},
 	{
@@ -411,9 +368,6 @@
 		},
 		"shading": {
 			"group": "shaded"
-		},
-		"stencil": {
-			"ref": "shaded"
 		},
 		"occluder": {}
 	},
@@ -434,9 +388,6 @@
 		"shading": {
 			"group": "shaded"
 		},
-		"stencil": {
-			"ref": "shaded"
-		},
 		"occluder": {}
 	},
 	{
@@ -455,9 +406,6 @@
 		},
 		"shading": {
 			"group": "shaded"
-		},
-		"stencil": {
-			"ref": "shaded"
 		},
 		"occluder": {}
 	},
@@ -478,9 +426,6 @@
 		"shading": {
 			"group": "shaded"
 		},
-		"stencil": {
-			"ref": "shaded"
-		},
 		"occluder": {}
 	},
 	{
@@ -499,9 +444,6 @@
 		},
 		"shading": {
 			"group": "shaded"
-		},
-		"stencil": {
-			"ref": "shaded"
 		},
 		"occluder": {}
 	},
@@ -522,9 +464,6 @@
 		"shading": {
 			"group": "shaded"
 		},
-		"stencil": {
-			"ref": "shaded"
-		},
 		"occluder": {}
 	},
 	{
@@ -543,9 +482,6 @@
 		},
 		"shading": {
 			"group": "shaded"
-		},
-		"stencil": {
-			"ref": "shaded"
 		},
 		"occluder": {}
 	},
@@ -566,9 +502,6 @@
 		"shading": {
 			"group": "shaded"
 		},
-		"stencil": {
-			"ref": "shaded"
-		},
 		"occluder": {}
 	},
 	{
@@ -587,9 +520,6 @@
 		},
 		"shading": {
 			"group": "shaded"
-		},
-		"stencil": {
-			"ref": "shaded"
 		},
 		"occluder": {}
 	},
@@ -610,9 +540,6 @@
 		"shading": {
 			"group": "shaded"
 		},
-		"stencil": {
-			"ref": "shaded"
-		},
 		"occluder": {}
 	},
 	{
@@ -631,9 +558,6 @@
 		},
 		"shading": {
 			"group": "shaded"
-		},
-		"stencil": {
-			"ref": "shaded"
 		},
 		"occluder": {}
 	},
@@ -654,9 +578,6 @@
 		"shading": {
 			"group": "shaded"
 		},
-		"stencil": {
-			"ref": "shaded"
-		},
 		"occluder": {}
 	},
 	{
@@ -675,9 +596,6 @@
 		},
 		"shading": {
 			"group": "shaded"
-		},
-		"stencil": {
-			"ref": "shaded"
 		},
 		"occluder": {}
 	},
@@ -698,9 +616,6 @@
 		"shading": {
 			"group": "shaded"
 		},
-		"stencil": {
-			"ref": "shaded"
-		},
 		"occluder": {}
 	},
 	{
@@ -719,9 +634,6 @@
 		},
 		"shading": {
 			"group": "shaded"
-		},
-		"stencil": {
-			"ref": "shaded"
 		},
 		"occluder": {}
 	},
@@ -742,9 +654,6 @@
 		"shading": {
 			"group": "shaded"
 		},
-		"stencil": {
-			"ref": "shaded"
-		},
 		"occluder": {}
 	},
 	{
@@ -764,9 +673,6 @@
 		"shading": {
 			"group": "shaded"
 		},
-		"stencil": {
-			"ref": "shaded"
-		},
 		"occluder": {}
 	},
 	{
@@ -785,9 +691,6 @@
 		},
 		"shading": {
 			"group": "shaded"
-		},
-		"stencil": {
-			"ref": "shaded"
 		},
 		"occluder": {}
 	}

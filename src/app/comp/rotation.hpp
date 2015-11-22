@@ -1,7 +1,5 @@
-#ifndef APP_COMP_ROTATION_HPP
-#define APP_COMP_ROTATION_HPP
+#pragma once
 
-// #include <pch.hpp>
 #include <core/ecs/component.hpp>
 #include <glm/glm.hpp>
 
@@ -14,5 +12,3 @@ struct Rotation : public ecs::Component<Rotation>
 };
 
 } // comp
-
-#endif
