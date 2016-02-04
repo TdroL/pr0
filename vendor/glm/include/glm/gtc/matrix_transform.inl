@@ -8,14 +8,14 @@
 /// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 /// copies of the Software, and to permit persons to whom the Software is
 /// furnished to do so, subject to the following conditions:
-///
+/// 
 /// The above copyright notice and this permission notice shall be included in
 /// all copies or substantial portions of the Software.
-///
+/// 
 /// Restrictions:
 ///		By making use of the Software for military purposes, you choose to make
 ///		a Bunny unhappy.
-///
+/// 
 /// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 /// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 /// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -47,7 +47,7 @@ namespace glm
 		Result[3] = m[0] * v[0] + m[1] * v[1] + m[2] * v[2] + m[3];
 		return Result;
 	}
-
+	
 	template <typename T, precision P>
 	GLM_FUNC_QUALIFIER tmat4x4<T, P> rotate
 	(
@@ -83,12 +83,12 @@ namespace glm
 		Result[3] = m[3];
 		return Result;
 	}
-
+		
 	template <typename T, precision P>
 	GLM_FUNC_QUALIFIER tmat4x4<T, P> rotate_slow
 	(
 		tmat4x4<T, P> const & m,
-		T angle,
+		T angle, 
 		tvec3<T, P> const & v
 	)
 	{
@@ -149,49 +149,6 @@ namespace glm
 
 	template <typename T>
 	GLM_FUNC_QUALIFIER tmat4x4<T, defaultp> ortho
-	(
-		T left,
-		T right,
-		T bottom,
-		T top,
-		T zNear,
-		T zFar
-	)
-	{
-		#ifdef GLM_LEFT_HANDED
-			return orthoLH(left, right, bottom, top, zNear, zFar);
-		#else
-			return orthoRH(left, right, bottom, top, zNear, zFar);
-		#endif
-	}
-
-	template <typename T>
-	GLM_FUNC_QUALIFIER tmat4x4<T, defaultp> orthoLH
-	(
-		T left,
-		T right,
-		T bottom,
-		T top,
-		T zNear,
-		T zFar
-	)
-	{
-		// 2/(r-l)      0            0           (l+r)/(l-r)
-		// 0            2/(t-b)      0           (t+b)/(b-t)
-		// 0            0            1/(zn-zf)   zn/(zn-zf)
-		// 0            0            0           1
-		tmat4x4<T, defaultp> Result(1);
-		Result[0][0] = static_cast<T>(2) / (right - left);
-		Result[1][1] = static_cast<T>(2) / (top - bottom);
-		Result[2][2] = static_cast<T>(1) / (zFar - zNear);
-		Result[3][0] = (left + right) / (left - right);
-		Result[3][1] = (bottom + top) / (bottom - top);
-		Result[3][2] = - zNear / (zFar - zNear);
-		return Result;
-	}
-
-	template <typename T>
-	GLM_FUNC_QUALIFIER tmat4x4<T, defaultp> orthoRH
 	(
 		T left,
 		T right,
@@ -288,7 +245,7 @@ namespace glm
 		Result[3][2] = - (static_cast<T>(2) * zFar * zNear) / (zFar - zNear);
 		return Result;
 	}
-
+	
 	template <typename T>
 	GLM_FUNC_QUALIFIER tmat4x4<T, defaultp> perspectiveLH
 		(
@@ -301,7 +258,7 @@ namespace glm
 		assert(abs(aspect - std::numeric_limits<T>::epsilon()) > static_cast<T>(0));
 
 		T const tanHalfFovy = tan(fovy / static_cast<T>(2));
-
+		
 		tmat4x4<T, defaultp> Result(static_cast<T>(0));
 		Result[0][0] = static_cast<T>(1) / (aspect * tanHalfFovy);
 		Result[1][1] = static_cast<T>(1) / (tanHalfFovy);
@@ -341,7 +298,7 @@ namespace glm
 		assert(width > static_cast<T>(0));
 		assert(height > static_cast<T>(0));
 		assert(fov > static_cast<T>(0));
-
+	
 		T const rad = fov;
 		T const h = glm::cos(static_cast<T>(0.5) * rad) / glm::sin(static_cast<T>(0.5) * rad);
 		T const w = h * height / width; ///todo max(width , Height) / min(width , Height)?
@@ -368,7 +325,7 @@ namespace glm
 		assert(width > static_cast<T>(0));
 		assert(height > static_cast<T>(0));
 		assert(fov > static_cast<T>(0));
-
+	
 		T const rad = fov;
 		T const h = glm::cos(static_cast<T>(0.5) * rad) / glm::sin(static_cast<T>(0.5) * rad);
 		T const w = h * height / width; ///todo max(width , Height) / min(width , Height)?
@@ -390,68 +347,18 @@ namespace glm
 		T zNear
 	)
 	{
+		T const range = tan(fovy / T(2)) * zNear;
+		T const left = -range * aspect;
+		T const right = range * aspect;
+		T const bottom = -range;
+		T const top = range;
+
 		tmat4x4<T, defaultp> Result(T(0));
-
-		#ifdef GLM_LEFT_HANDED
-			T const tanHalfFovy = tan(fovy / T(2));
-
-			Result[0][0] = T(1) / (aspect * tanHalfFovy);
-			Result[1][1] = T(1) / (tanHalfFovy);
-			Result[2][2] = T(1);
-			Result[2][3] = T(1);
-			Result[3][2] = -zNear;
-		#else
-			T const range = tan(fovy / T(2)) * zNear;
-			T const left = -range * aspect;
-			T const right = range * aspect;
-			T const bottom = -range;
-			T const top = range;
-
-			Result[0][0] = (T(2) * zNear) / (right - left);
-			Result[1][1] = (T(2) * zNear) / (top - bottom);
-			Result[2][2] = - T(1);
-			Result[2][3] = - T(1);
-			Result[3][2] = - T(2) * zNear;
-		#endif
-		return Result;
-	}
-
-	template <typename T>
-	GLM_FUNC_DECL tmat4x4<T, defaultp> infiniteReversePerspective
-	(
-		T fovy,
-		T aspect,
-		T zNear
-	)
-	{
-		tmat4x4<T, defaultp> Result(T(0));
-
-		T const tanHalfFovy = tan(fovy / T(2));
-
-		Result[0][0] = T(1) / (aspect * tanHalfFovy);
-		Result[1][1] = T(1) / (tanHalfFovy);
-		Result[2][3] = T(1);
-		Result[3][2] = zNear;
-
-		return Result;
-	}
-
-	template <typename T>
-	GLM_FUNC_DECL tmat4x4<T, defaultp> inverseInfiniteReversePerspective(
-		T fovy,
-		T aspect,
-		T zNear
-	)
-	{
-		tmat4x4<T, defaultp> Result(T(0));
-
-		T const tanHalfFovy = tan(fovy / T(2));
-
-		Result[0][0] = aspect * tanHalfFovy;
-		Result[1][1] = tanHalfFovy;
-		Result[2][3] = T(1) / zNear;
-		Result[3][2] = 1;
-
+		Result[0][0] = (T(2) * zNear) / (right - left);
+		Result[1][1] = (T(2) * zNear) / (top - bottom);
+		Result[2][2] = - T(1);
+		Result[2][3] = - T(1);
+		Result[3][2] = - T(2) * zNear;
 		return Result;
 	}
 
@@ -465,7 +372,7 @@ namespace glm
 		T ep
 	)
 	{
-		T const range = tan(fovy / T(2)) * zNear;
+		T const range = tan(fovy / T(2)) * zNear;	
 		T const left = -range * aspect;
 		T const right = range * aspect;
 		T const bottom = -range;

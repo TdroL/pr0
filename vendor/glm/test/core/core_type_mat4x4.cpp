@@ -29,6 +29,7 @@
 /// @author Christophe Riccio
 ///////////////////////////////////////////////////////////////////////////////////
 
+#define GLM_SIMD
 #include <glm/gtc/epsilon.hpp>
 #include <glm/matrix.hpp>
 #include <glm/mat2x2.hpp>
@@ -317,9 +318,19 @@ namespace cast
 	}
 }//namespace cast
 
+struct repro
+{
+	repro(){ this->matrix = new glm::mat4(); }
+	~repro(){delete this->matrix;}
+
+	glm::mat4* matrix;
+};
+
 int main()
 {
 	int Error = 0;
+
+	repro Repro;
 
 #ifdef GLM_META_PROG_HELPERS
 		assert(glm::mat4::rows == glm::mat4::row_type::components);
