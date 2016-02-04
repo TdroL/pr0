@@ -1,8 +1,8 @@
-#ifndef PHS_AABB_HPP
-#define PHS_AABB_HPP
+#pragma once
+
+#include "../rn.hpp"
 
 #include <limits>
-#include <glm/glm.hpp>
 
 namespace phs
 {
@@ -24,5 +24,3 @@ public:
 };
 
 } // phs
-
-#endif

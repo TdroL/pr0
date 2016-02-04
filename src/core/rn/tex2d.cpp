@@ -245,7 +245,8 @@ void Tex2D::reload()
 			break;
 		}
 
-		if (isDepth() && compareFunc != COMPARE_NONE) {
+		if (isDepth() && compareFunc != COMPARE_NONE)
+		{
 			// RN_CHECK(glTextureParameteri(id, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE));
 			// RN_CHECK_PARAM(glTextureParameteri(id, GL_TEXTURE_COMPARE_FUNC, compareFunc), rn::getEnumName(compareFunc));
 			setParam(GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
@@ -302,7 +303,8 @@ void Tex2D::reload()
 				type = GL_UNSIGNED_BYTE;
 		}
 
-		if (isDepth() && compareFunc != COMPARE_NONE) {
+		if (isDepth() && compareFunc != COMPARE_NONE)
+		{
 			// RN_CHECK(glTextureParameteri(id, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE));
 			// RN_CHECK_PARAM(glTextureParameteri(id, GL_TEXTURE_COMPARE_FUNC, compareFunc), rn::getEnumName(compareFunc));
 			setParam(GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);

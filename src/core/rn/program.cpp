@@ -294,6 +294,16 @@ void Program::load(const string &fragmentShader, const string &vertexShader)
 {
 	this->fragmentShader = src::file::stream(fragmentShader);
 	this->vertexShader = src::file::stream(vertexShader);
+	this->geometryShader.reset();
+
+	reload();
+}
+
+void Program::load(const string &fragmentShader, const string &vertexShader, const string &geometryShader)
+{
+	this->fragmentShader = src::file::stream(fragmentShader);
+	this->vertexShader = src::file::stream(vertexShader);
+	this->geometryShader = src::file::stream(geometryShader);
 
 	reload();
 }
@@ -302,6 +312,16 @@ void Program::load(Source *fragmentShader, Source *vertexShader)
 {
 	this->fragmentShader.reset(fragmentShader);
 	this->vertexShader.reset(vertexShader);
+	this->geometryShader.reset();
+
+	reload();
+}
+
+void Program::load(Source *fragmentShader, Source *vertexShader, Source *geometryShader)
+{
+	this->fragmentShader.reset(fragmentShader);
+	this->vertexShader.reset(vertexShader);
+	this->geometryShader.reset(geometryShader);
 
 	reload();
 }
@@ -310,6 +330,16 @@ void Program::load(unique_ptr<Source> &&fragmentShader, unique_ptr<Source> &&ver
 {
 	this->fragmentShader = move(fragmentShader);
 	this->vertexShader = move(vertexShader);
+	this->geometryShader.reset();
+
+	reload();
+}
+
+void Program::load(unique_ptr<Source> &&fragmentShader, unique_ptr<Source> &&vertexShader, unique_ptr<Source> &&geometryShader)
+{
+	this->fragmentShader = move(fragmentShader);
+	this->vertexShader = move(vertexShader);
+	this->geometryShader = move(geometryShader);
 
 	reload();
 }
@@ -330,17 +360,24 @@ void Program::reload()
 		throw string{"rn::Program{" + programName + "}::reload() - missing vertex shader source"};
 	}
 
-	SRC_STREAM_OPEN(fragmentShader);
-	SRC_STREAM_OPEN(vertexShader);
-
 	hasCompileErrors = false;
 
 	try
 	{
-		vector<GLuint> shaders{
-			Program::createShader(GL_FRAGMENT_SHADER, fragmentShader->contents),
-			Program::createShader(GL_VERTEX_SHADER, vertexShader->contents)
-		};
+		vector<GLuint> shaders{};
+		shaders.reserve(3);
+
+		SRC_STREAM_OPEN(fragmentShader);
+		shaders.push_back(Program::createShader(GL_FRAGMENT_SHADER, fragmentShader->contents));
+
+		SRC_STREAM_OPEN(vertexShader);
+		shaders.push_back(Program::createShader(GL_VERTEX_SHADER, vertexShader->contents));
+
+		if (geometryShader)
+		{
+			SRC_STREAM_OPEN(geometryShader);
+			shaders.push_back(Program::createShader(GL_GEOMETRY_SHADER, geometryShader->contents));
+		}
 
 		id = Program::createProgram(programName, shaders);
 	}
@@ -352,7 +389,7 @@ void Program::reload()
 
 	if ( ! glIsProgram(id))
 	{
-		throw string{"rn::Program{" + programName + "}::reload() - could not create proper OpenGL shader program (\"" + fragmentShader->name() + "\", \"" + vertexShader->name() + "\")"};
+		throw string{"rn::Program{" + programName + "}::reload() - could not create proper OpenGL shader program (\"" + fragmentShader->name() + "\", \"" + vertexShader->name() + "\"," + (geometryShader ? "\"" + geometryShader->name() + "\"" : string{"nullptr"}) + ")"};
 	}
 
 	for (auto &item : uniforms)
@@ -458,7 +495,7 @@ void Program::reload()
 	UTIL_DEBUG
 	{
 		clog << fixed;
-		clog << "  [Program \"" << programName << "\" {frag:" << (fragmentShader ? "\"" + fragmentShader->name() + "\"" : "no source") << "; vert:" << (vertexShader ? "\"" + vertexShader->name() + "\"" : "no source") << "}:" << (ngn::time() - timer) << "s]" << endl;
+		clog << "  [Program \"" << programName << "\" {" << (fragmentShader ? "\"" + fragmentShader->name() + "\"" : "no source") << "; " << (vertexShader ? "\"" + vertexShader->name() + "\"" : "no source") << "; " << (geometryShader ? "\"" + geometryShader->name() + "\"" : "no source") << "}:" << (ngn::time() - timer) << "s]" << endl;
 		clog.unsetf(ios::floatfield);
 	}
 }

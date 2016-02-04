@@ -12,7 +12,7 @@
  * CSM_FORCE_CASCADES_BLENDING x
  */
 
-#define CSM_FORCE_KERNEL_SIZE 3
+// #define CSM_FORCE_KERNEL_SIZE 7
 
 #if defined(CSM_FORCE_KERNEL_SIZE)
 	#undef CSM_ENABLE_KERNEL_SIZE_1
@@ -45,17 +45,23 @@
 	#define CSM_ENABLE_KERNEL_SIZE_9
 #endif
 
+// csmMaxCascades must be equal to fx::CSM::maxCascades
 #if defined(CSM_FORCE_MAX_CASCADES)
 const uint csmMaxCascades = CSM_FORCE_MAX_CASCADES;
 #else
 const uint csmMaxCascades = 5;
 #endif
 
+struct CSMLayer
+{
+	mat4 MVP;
+	vec3 centers;
+	float radiuses2;
+};
+
 struct CSM
 {
-	mat4 MVP[csmMaxCascades];
-	vec3 centers[csmMaxCascades];
-	float radiuses2[csmMaxCascades];
+	CSMLayer layers[csmMaxCascades];
 	uint kernelSize;
 	uint splits;
 	bool blendCascades;
@@ -121,6 +127,11 @@ float csmBilerp(vec4 values, vec2 uv)
 }
 
 #ifdef CSM_ENABLE_KERNEL_SIZE_1
+	#undef SAMPLE_SIZE
+	#undef HALF_SIZE
+	#undef KERNEL_SIZE
+	#undef COMP_SIZE
+
 	#define SAMPLE_SIZE 1
 	#define HALF_SIZE ((SAMPLE_SIZE + 1) / 2)
 	#define KERNEL_SIZE (SAMPLE_SIZE * SAMPLE_SIZE)
@@ -152,29 +163,29 @@ float csmBilerp(vec4 values, vec2 uv)
 		float depths[KERNEL_SIZE];
 
 		#ifndef CSM_USE_IDENTITY_KERNEL
-		float kernel[KERNEL_SIZE] = float[KERNEL_SIZE](
-			1.0
-		);
+			float kernel[KERNEL_SIZE] = float[KERNEL_SIZE](
+				1.0
+			);
 		#endif
 
 		csmReadDepthComponents1(roundedShadowCoord, texDepths, comp);
 		csmBuildDepthArray1(comp, fractShadowCoord, shadowCoord.z, depths);
 
 		float acc = 0.0;
-		#ifndef CSM_USE_IDENTITY_KERNEL
 		float accDiv = 0.0;
-		#else
-		float accDiv = float(depths.length());
+
+		#ifndef CSM_USE_IDENTITY_KERNEL
+			accDiv = float(depths.length());
 		#endif
 
 		for (int i = 0; i < 1; i++)
 		{
 			#ifndef CSM_USE_IDENTITY_KERNEL
-			accDiv += kernel[i];
-			kernel[i] = depths[i] * kernel[i];
-			acc += kernel[i];
+				accDiv += kernel[i];
+				kernel[i] = depths[i] * kernel[i];
+				acc += kernel[i];
 			#else
-			acc += depths[i];
+				acc += depths[i];
 			#endif
 		}
 
@@ -183,6 +194,11 @@ float csmBilerp(vec4 values, vec2 uv)
 #endif
 
 #ifdef CSM_ENABLE_KERNEL_SIZE_3
+	#undef SAMPLE_SIZE
+	#undef HALF_SIZE
+	#undef KERNEL_SIZE
+	#undef COMP_SIZE
+
 	#define SAMPLE_SIZE 3
 	#define HALF_SIZE ((SAMPLE_SIZE + 1) / 2)
 	#define KERNEL_SIZE (SAMPLE_SIZE * SAMPLE_SIZE)
@@ -216,31 +232,31 @@ float csmBilerp(vec4 values, vec2 uv)
 		float depths[KERNEL_SIZE];
 
 		#ifndef CSM_USE_IDENTITY_KERNEL
-		float kernel[KERNEL_SIZE] = float[KERNEL_SIZE](
-			0.5, 1.0, 0.5,
-			1.0, 1.0, 1.0,
-			0.5, 1.0, 0.5
-		);
+			float kernel[KERNEL_SIZE] = float[KERNEL_SIZE](
+				0.5, 1.0, 0.5,
+				1.0, 1.0, 1.0,
+				0.5, 1.0, 0.5
+			);
 		#endif
 
 		csmReadDepthComponents3(roundedShadowCoord, texDepths, comp);
 		csmBuildDepthArray3(comp, fractShadowCoord, shadowCoord.z, depths);
 
 		float acc = 0.0;
-		#ifndef CSM_USE_IDENTITY_KERNEL
 		float accDiv = 0.0;
-		#else
-		float accDiv = float(depths.length());
+
+		#ifndef CSM_USE_IDENTITY_KERNEL
+			accDiv = float(depths.length());
 		#endif
 
 		for (int i = 0; i < KERNEL_SIZE; i++)
 		{
 			#ifndef CSM_USE_IDENTITY_KERNEL
-			accDiv += kernel[i];
-			kernel[i] = depths[i] * kernel[i];
-			acc += kernel[i];
+				accDiv += kernel[i];
+				kernel[i] = depths[i] * kernel[i];
+				acc += kernel[i];
 			#else
-			acc += depths[i];
+				acc += depths[i];
 			#endif
 		}
 
@@ -249,6 +265,11 @@ float csmBilerp(vec4 values, vec2 uv)
 #endif
 
 #ifdef CSM_ENABLE_KERNEL_SIZE_5
+	#undef SAMPLE_SIZE
+	#undef HALF_SIZE
+	#undef KERNEL_SIZE
+	#undef COMP_SIZE
+
 	#define SAMPLE_SIZE 5
 	#define HALF_SIZE ((SAMPLE_SIZE + 1) / 2)
 	#define KERNEL_SIZE (SAMPLE_SIZE * SAMPLE_SIZE)
@@ -280,41 +301,41 @@ float csmBilerp(vec4 values, vec2 uv)
 		float depths[KERNEL_SIZE];
 
 		#ifndef CSM_USE_IDENTITY_KERNEL
-		float kernel[KERNEL_SIZE] = float[KERNEL_SIZE](
-			/**/
-			0.25, 0.50, 1.00, 0.50, 0.25,
-			0.50, 1.00, 1.00, 1.00, 0.50,
-			1.00, 1.00, 1.00, 1.00, 1.00,
-			0.50, 1.00, 1.00, 1.00, 0.50,
-			0.25, 0.50, 1.00, 0.50, 0.25
-			/*/
-			0.0, 0.5, 1.0, 0.5, 0.0,
-			0.5, 1.0, 1.0, 1.0, 0.5,
-			1.0, 1.0, 1.0, 1.0, 1.0,
-			0.5, 1.0, 1.0, 1.0, 0.5,
-			0.0, 0.5, 1.0, 0.5, 0.0
-			/**/
-		);
+			float kernel[KERNEL_SIZE] = float[KERNEL_SIZE](
+				/**/
+				0.25, 0.50, 1.00, 0.50, 0.25,
+				0.50, 1.00, 1.00, 1.00, 0.50,
+				1.00, 1.00, 1.00, 1.00, 1.00,
+				0.50, 1.00, 1.00, 1.00, 0.50,
+				0.25, 0.50, 1.00, 0.50, 0.25
+				/*/
+				0.0, 0.5, 1.0, 0.5, 0.0,
+				0.5, 1.0, 1.0, 1.0, 0.5,
+				1.0, 1.0, 1.0, 1.0, 1.0,
+				0.5, 1.0, 1.0, 1.0, 0.5,
+				0.0, 0.5, 1.0, 0.5, 0.0
+				/**/
+			);
 		#endif
 
 		csmReadDepthComponents5(roundedShadowCoord, texDepths, comp);
 		csmBuildDepthArray5(comp, fractShadowCoord, shadowCoord.z, depths);
 
 		float acc = 0.0;
-		#ifndef CSM_USE_IDENTITY_KERNEL
 		float accDiv = 0.0;
-		#else
-		float accDiv = float(depths.length());
+
+		#ifdef CSM_USE_IDENTITY_KERNEL
+			accDiv = float(depths.length());
 		#endif
 
 		for (int i = 0; i < KERNEL_SIZE; i++)
 		{
 			#ifndef CSM_USE_IDENTITY_KERNEL
-			accDiv += kernel[i];
-			kernel[i] = depths[i] * kernel[i];
-			acc += kernel[i];
+				accDiv += kernel[i];
+				kernel[i] = depths[i] * kernel[i];
+				acc += kernel[i];
 			#else
-			acc += depths[i];
+				acc += depths[i];
 			#endif
 		}
 
@@ -323,6 +344,11 @@ float csmBilerp(vec4 values, vec2 uv)
 #endif
 
 #ifdef CSM_ENABLE_KERNEL_SIZE_7
+	#undef SAMPLE_SIZE
+	#undef HALF_SIZE
+	#undef KERNEL_SIZE
+	#undef COMP_SIZE
+
 	#define SAMPLE_SIZE 7
 	#define HALF_SIZE ((SAMPLE_SIZE + 1) / 2)
 	#define KERNEL_SIZE (SAMPLE_SIZE * SAMPLE_SIZE)
@@ -354,45 +380,45 @@ float csmBilerp(vec4 values, vec2 uv)
 		float depths[KERNEL_SIZE];
 
 		#ifndef CSM_USE_IDENTITY_KERNEL
-		float kernel[KERNEL_SIZE] = float[KERNEL_SIZE](
-			/**/
-			0.125, 0.250, 0.500, 1.000, 0.500, 0.250, 0.125,
-			0.250, 0.750, 1.000, 1.000, 1.000, 0.750, 0.250,
-			0.500, 1.000, 1.000, 1.000, 1.000, 1.000, 0.500,
-			1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,
-			0.500, 1.000, 1.000, 1.000, 1.000, 1.000, 0.500,
-			0.250, 0.750, 1.000, 1.000, 1.000, 0.750, 0.250,
-			0.125, 0.250, 0.500, 1.000, 0.500, 0.250, 0.125
-			/*/
-			0.0, 0.0, 0.5, 1.0, 0.5, 0.0, 0.0,
-			0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0,
-			0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5,
-			1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-			0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5,
-			0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0,
-			0.0, 0.0, 0.5, 1.0, 0.5, 0.0, 0.0
-			/**/
-		);
+			float kernel[KERNEL_SIZE] = float[KERNEL_SIZE](
+				/**/
+				0.125, 0.250, 0.500, 1.000, 0.500, 0.250, 0.125,
+				0.250, 0.750, 1.000, 1.000, 1.000, 0.750, 0.250,
+				0.500, 1.000, 1.000, 1.000, 1.000, 1.000, 0.500,
+				1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,
+				0.500, 1.000, 1.000, 1.000, 1.000, 1.000, 0.500,
+				0.250, 0.750, 1.000, 1.000, 1.000, 0.750, 0.250,
+				0.125, 0.250, 0.500, 1.000, 0.500, 0.250, 0.125
+				/*/
+				0.0, 0.0, 0.5, 1.0, 0.5, 0.0, 0.0,
+				0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0,
+				0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5,
+				1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+				0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5,
+				0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0,
+				0.0, 0.0, 0.5, 1.0, 0.5, 0.0, 0.0
+				/**/
+			);
 		#endif
 
 		csmReadDepthComponents7(roundedShadowCoord, texDepths, comp);
 		csmBuildDepthArray7(comp, fractShadowCoord, shadowCoord.z, depths);
 
 		float acc = 0.0;
-		#ifndef CSM_USE_IDENTITY_KERNEL
 		float accDiv = 0.0;
-		#else
-		float accDiv = float(depths.length());
+
+		#ifdef CSM_USE_IDENTITY_KERNEL
+			accDiv = float(depths.length());
 		#endif
 
 		for (int i = 0; i < KERNEL_SIZE; i++)
 		{
 			#ifndef CSM_USE_IDENTITY_KERNEL
-			accDiv += kernel[i];
-			kernel[i] = depths[i] * kernel[i];
-			acc += kernel[i];
+				accDiv += kernel[i];
+				kernel[i] = depths[i] * kernel[i];
+				acc += kernel[i];
 			#else
-			acc += depths[i];
+				acc += depths[i];
 			#endif
 		}
 
@@ -401,6 +427,11 @@ float csmBilerp(vec4 values, vec2 uv)
 #endif
 
 #ifdef CSM_ENABLE_KERNEL_SIZE_9
+	#undef SAMPLE_SIZE
+	#undef HALF_SIZE
+	#undef KERNEL_SIZE
+	#undef COMP_SIZE
+
 	#define SAMPLE_SIZE 9
 	#define HALF_SIZE ((SAMPLE_SIZE + 1) / 2)
 	#define KERNEL_SIZE (SAMPLE_SIZE * SAMPLE_SIZE)
@@ -432,49 +463,49 @@ float csmBilerp(vec4 values, vec2 uv)
 		float depths[KERNEL_SIZE];
 
 		#ifndef CSM_USE_IDENTITY_KERNEL
-		float kernel[KERNEL_SIZE] = float[KERNEL_SIZE](
-			/**/
-			0.125, 0.250, 0.500, 0.750, 1.000, 0.750, 0.500, 0.250, 0.125,
-			0.250, 0.500, 0.750, 1.000, 1.000, 1.000, 0.750, 0.500, 0.250,
-			0.500, 0.750, 1.000, 1.000, 1.000, 1.000, 1.000, 0.750, 0.500,
-			0.750, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 0.750,
-			1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,
-			0.750, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 0.750,
-			0.500, 0.750, 1.000, 1.000, 1.000, 1.000, 1.000, 0.750, 0.500,
-			0.250, 0.500, 0.750, 1.000, 1.000, 1.000, 0.750, 0.500, 0.250,
-			0.125, 0.250, 0.500, 0.750, 1.000, 0.750, 0.500, 0.250, 0.125
-			/*/
-			0.0, 0.0, 0.0, 0.5, 1.0, 0.5, 0.0, 0.0, 0.0,
-			0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0,
-			0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0,
-			0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5,
-			1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-			0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5,
-			0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0,
-			0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0,
-			0.0, 0.0, 0.0, 0.5, 1.0, 0.5, 0.0, 0.0, 0.0
-			/**/
-		);
+			float kernel[KERNEL_SIZE] = float[KERNEL_SIZE](
+				/**/
+				0.125, 0.250, 0.500, 0.750, 1.000, 0.750, 0.500, 0.250, 0.125,
+				0.250, 0.500, 0.750, 1.000, 1.000, 1.000, 0.750, 0.500, 0.250,
+				0.500, 0.750, 1.000, 1.000, 1.000, 1.000, 1.000, 0.750, 0.500,
+				0.750, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 0.750,
+				1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,
+				0.750, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 0.750,
+				0.500, 0.750, 1.000, 1.000, 1.000, 1.000, 1.000, 0.750, 0.500,
+				0.250, 0.500, 0.750, 1.000, 1.000, 1.000, 0.750, 0.500, 0.250,
+				0.125, 0.250, 0.500, 0.750, 1.000, 0.750, 0.500, 0.250, 0.125
+				/*/
+				0.0, 0.0, 0.0, 0.5, 1.0, 0.5, 0.0, 0.0, 0.0,
+				0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0,
+				0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0,
+				0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5,
+				1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+				0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5,
+				0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0,
+				0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0,
+				0.0, 0.0, 0.0, 0.5, 1.0, 0.5, 0.0, 0.0, 0.0
+				/**/
+			);
 		#endif
 
 		csmReadDepthComponents9(roundedShadowCoord, texDepths, comp);
 		csmBuildDepthArray9(comp, fractShadowCoord, shadowCoord.z, depths);
 
 		float acc = 0.0;
-		#ifndef CSM_USE_IDENTITY_KERNEL
 		float accDiv = 0.0;
-		#else
-		float accDiv = float(depths.length());
+
+		#ifdef CSM_USE_IDENTITY_KERNEL
+			accDiv = float(depths.length());
 		#endif
 
 		for (int i = 0; i < KERNEL_SIZE; i++)
 		{
 			#ifndef CSM_USE_IDENTITY_KERNEL
-			accDiv += kernel[i];
-			kernel[i] = depths[i] * kernel[i];
-			acc += kernel[i];
+				accDiv += kernel[i];
+				kernel[i] = depths[i] * kernel[i];
+				acc += kernel[i];
 			#else
-			acc += depths[i];
+				acc += depths[i];
 			#endif
 		}
 
@@ -524,45 +555,44 @@ float csmVisibility(vec4 position, float cosTheta, struct CSM csm, sampler2DArra
 	float zBias = 0.0; // -clamp(0.0001 * tan(acos(cosTheta)), 0.0, 0.01);
 
 	uint splits = min(csmMaxCascades, csm.splits);
-	#if defined(CSM_FORCE_CASCADES_BLENDING)
-	bool blendCascades = CSM_FORCE_CASCADES_BLENDING;
-	#else
 	bool blendCascades = csm.blendCascades;
+
+	#if defined(CSM_FORCE_CASCADES_BLENDING)
+		blendCascades = CSM_FORCE_CASCADES_BLENDING;
 	#endif
 
 	if (blendCascades)
 	{
-		float radiusPadding = 0.9;
+		float radiusPadding = 0.8;
 		float radiusPadding2 = radiusPadding * radiusPadding;
-
 
 		for (uint i = 0; i < splits; i++)
 		{
-			vec4 shadowCoord = csm.MVP[i] * position;
+			vec4 shadowCoord = csm.layers[i].MVP * position;
 			shadowCoord.z -= zBias;
 			shadowCoord.w = i;
 
-			vec3 camCenterPosDiff = csm.centers[i] - position.xyz;
+			vec3 camCenterPosDiff = csm.layers[i].centers.xyz - position.xyz;
 			float camDistance2 = dot(camCenterPosDiff, camCenterPosDiff);
 
-			if (csm.radiuses2[i] > camDistance2)
+			if (csm.layers[i].radiuses2 > camDistance2)
 			{
 				visibility = csmVisibilityPCF(shadowCoord, csm, texDepths);
 
-				if (csm.radiuses2[i] * radiusPadding2 < camDistance2)
+				if (csm.layers[i].radiuses2 * radiusPadding2 < camDistance2)
 				{
 					float visibility2 = 1.0;
 
 					if (i + 1 < splits)
 					{
-						vec4 shadowCoord2 = csm.MVP[i + 1] * position;
+						vec4 shadowCoord2 = csm.layers[i + 1].MVP * position;
 						shadowCoord2.z -= zBias;
 						shadowCoord2.w = i + 1;
 
 						visibility2 = csmVisibilityPCF(shadowCoord2, csm, texDepths);
 					}
 
-					float blend = smoothstep(csm.radiuses2[i] * radiusPadding2, csm.radiuses2[i], camDistance2);
+					float blend = smoothstep(csm.layers[i].radiuses2 * radiusPadding2, csm.layers[i].radiuses2, camDistance2);
 
 					visibility = mix(visibility, visibility2, blend);
 				}
@@ -575,14 +605,14 @@ float csmVisibility(vec4 position, float cosTheta, struct CSM csm, sampler2DArra
 	{
 		for (uint i = 0; i < splits; i++)
 		{
-			vec4 shadowCoord = csm.MVP[i] * position;
+			vec4 shadowCoord = csm.layers[i].MVP * position;
 			shadowCoord.z -= zBias;
 			shadowCoord.w = i;
 
-			vec3 camCenterPosDiff = csm.centers[i] - position.xyz;
+			vec3 camCenterPosDiff = csm.layers[i].centers.xyz - position.xyz;
 			float camDistance2 = dot(camCenterPosDiff, camCenterPosDiff);
 
-			if (csm.radiuses2[i] > camDistance2)
+			if (csm.layers[i].radiuses2 > camDistance2)
 			{
 				visibility = csmVisibilityPCF(shadowCoord, csm, texDepths);
 				break;
@@ -594,3 +624,18 @@ float csmVisibility(vec4 position, float cosTheta, struct CSM csm, sampler2DArra
 	return visibility * visibility;
 	// return visibility;
 }
+
+#undef CSM_CONCAT2
+#undef CSM_CONCAT2_IMPL
+#undef CSM_ENABLE_KERNEL_SIZE_1
+#undef CSM_ENABLE_KERNEL_SIZE_3
+#undef CSM_ENABLE_KERNEL_SIZE_5
+#undef CSM_ENABLE_KERNEL_SIZE_7
+#undef CSM_ENABLE_KERNEL_SIZE_9
+#undef csmBuildDepthArray_IMPL
+#undef csmExtractComp_IMPL
+#undef csmReadDepthComponents_IMPL
+#undef HALF_SIZE
+#undef COMP_SIZE
+#undef KERNEL_SIZE
+#undef SAMPLE_SIZE

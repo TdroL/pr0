@@ -1,5 +1,4 @@
-#ifndef RN_EXT_HPP
-#define RN_EXT_HPP
+#pragma once
 
 #include <vector>
 #include <string>
@@ -164,5 +163,3 @@ extern rn::Ext KHR_texture_compression_astc_ldr;
 } // ext
 
 } // rn
-
-#endif

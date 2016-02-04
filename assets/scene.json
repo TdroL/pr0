@@ -27,7 +27,7 @@
 		},
 		"material": {
 			"diffuse": [0.25, 0.5, 0.75, 1.0],
-			"shininess": 0.0
+			"roughness": 0.0
 		},
 		"shading": {
 			"group": "shaded"
@@ -49,7 +49,7 @@
 		},
 		"material": {
 			"diffuse": [0.75, 0.75, 0.75, 1.0],
-			"shininess": 0.0675
+			"roughness": 0.0675
 		},
 		"shading": {
 			"group": "shaded"
@@ -68,7 +68,7 @@
 		},
 		"material": {
 			"diffuse": [0.19, 0.15, 0.11, 1.0],
-			"shininess": 0.5
+			"roughness": 0.5
 		},
 		"shading": {
 			"group": "shaded"
@@ -87,7 +87,7 @@
 		},
 		"material": {
 			"diffuse": [0.16, 0.04, 0.16, 1.0],
-			"shininess": 0.25
+			"roughness": 0.25
 		},
 		"shading": {
 			"group": "shaded"
@@ -107,7 +107,7 @@
 		},
 		"material": {
 			"diffuse": [0.16, 0.16, 0.04, 1.0],
-			"shininess": 0.125
+			"roughness": 0.125
 		},
 		"shading": {
 			"group": "shaded"
@@ -127,7 +127,7 @@
 		},
 		"material": {
 			"diffuse": [0.16, 0.16, 0.04, 1.0],
-			"shininess": 0.25
+			"roughness": 0.25
 		},
 		"shading": {
 			"group": "shaded"
@@ -148,7 +148,7 @@
 		},
 		"material": {
 			"diffuse": [0.16, 0.16, 0.04, 1.0],
-			"shininess": 0.125
+			"roughness": 0.125
 		},
 		"shading": {
 			"group": "shaded"
@@ -169,7 +169,28 @@
 		},
 		"material": {
 			"diffuse": [0.16, 0.04, 0.04, 1.0],
-			"shininess": 0.125
+			"roughness": 0.125
+		},
+		"shading": {
+			"group": "shaded"
+		},
+		"mesh": {
+			"id": "torus.sbm"
+		},
+		"occluder": {}
+	},
+	{
+		"name": {
+			"name": "Torus #3"
+		},
+		"transform": {
+			"translation": [6.5, 0.0, -1.5],
+			"scale": [1.0],
+			"rotation": [90.0, 30.0, 60.0]
+		},
+		"material": {
+			"diffuse": [0.16, 0.04, 0.04, 1.0],
+			"roughness": 0.125
 		},
 		"shading": {
 			"group": "shaded"
@@ -189,7 +210,7 @@
 		},
 		"material": {
 			"diffuse": [0.04, 0.16, 0.04, 1.0],
-			"shininess": 0.675
+			"roughness": 0.675
 		},
 		"shading": {
 			"group": "shaded"
@@ -207,7 +228,7 @@
 		},
 		"material": {
 			"diffuse": [0.18, 0.18, 0.18, 1.0],
-			"shininess": 0.03375
+			"roughness": 0.03375
 		},
 		"shading": {
 			"group": "shaded"
@@ -231,7 +252,7 @@
 		},
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
-			"shininess": 0.04
+			"roughness": 0.04
 		},
 		"shading": {
 			"group": "shaded"
@@ -250,7 +271,7 @@
 		},
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
-			"shininess": 0.08
+			"roughness": 0.08
 		},
 		"shading": {
 			"group": "shaded"
@@ -269,7 +290,7 @@
 		},
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
-			"shininess": 0.12
+			"roughness": 0.12
 		},
 		"shading": {
 			"group": "shaded"
@@ -288,7 +309,7 @@
 		},
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
-			"shininess": 0.16
+			"roughness": 0.16
 		},
 		"shading": {
 			"group": "shaded"
@@ -307,7 +328,7 @@
 		},
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
-			"shininess": 0.2
+			"roughness": 0.2
 		},
 		"shading": {
 			"group": "shaded"
@@ -326,7 +347,7 @@
 		},
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
-			"shininess": 0.24
+			"roughness": 0.24
 		},
 		"shading": {
 			"group": "shaded"
@@ -345,7 +366,7 @@
 		},
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
-			"shininess": 0.28
+			"roughness": 0.28
 		},
 		"shading": {
 			"group": "shaded"
@@ -364,7 +385,7 @@
 		},
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
-			"shininess": 0.32
+			"roughness": 0.32
 		},
 		"shading": {
 			"group": "shaded"
@@ -383,7 +404,7 @@
 		},
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
-			"shininess": 0.36
+			"roughness": 0.36
 		},
 		"shading": {
 			"group": "shaded"
@@ -402,7 +423,7 @@
 		},
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
-			"shininess": 0.4
+			"roughness": 0.4
 		},
 		"shading": {
 			"group": "shaded"
@@ -421,7 +442,7 @@
 		},
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
-			"shininess": 0.44
+			"roughness": 0.44
 		},
 		"shading": {
 			"group": "shaded"
@@ -440,7 +461,7 @@
 		},
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
-			"shininess": 0.48
+			"roughness": 0.48
 		},
 		"shading": {
 			"group": "shaded"
@@ -459,7 +480,7 @@
 		},
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
-			"shininess": 0.52
+			"roughness": 0.52
 		},
 		"shading": {
 			"group": "shaded"
@@ -478,7 +499,7 @@
 		},
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
-			"shininess": 0.56
+			"roughness": 0.56
 		},
 		"shading": {
 			"group": "shaded"
@@ -497,7 +518,7 @@
 		},
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
-			"shininess": 0.6
+			"roughness": 0.6
 		},
 		"shading": {
 			"group": "shaded"
@@ -516,7 +537,7 @@
 		},
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
-			"shininess": 0.64
+			"roughness": 0.64
 		},
 		"shading": {
 			"group": "shaded"
@@ -535,7 +556,7 @@
 		},
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
-			"shininess": 0.68
+			"roughness": 0.68
 		},
 		"shading": {
 			"group": "shaded"
@@ -554,7 +575,7 @@
 		},
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
-			"shininess": 0.72
+			"roughness": 0.72
 		},
 		"shading": {
 			"group": "shaded"
@@ -573,7 +594,7 @@
 		},
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
-			"shininess": 0.76
+			"roughness": 0.76
 		},
 		"shading": {
 			"group": "shaded"
@@ -592,7 +613,7 @@
 		},
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
-			"shininess": 0.8
+			"roughness": 0.8
 		},
 		"shading": {
 			"group": "shaded"
@@ -611,7 +632,7 @@
 		},
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
-			"shininess": 0.84
+			"roughness": 0.84
 		},
 		"shading": {
 			"group": "shaded"
@@ -630,7 +651,7 @@
 		},
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
-			"shininess": 0.88
+			"roughness": 0.88
 		},
 		"shading": {
 			"group": "shaded"
@@ -649,7 +670,7 @@
 		},
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
-			"shininess": 0.92
+			"roughness": 0.92
 		},
 		"shading": {
 			"group": "shaded"
@@ -668,7 +689,7 @@
 		},
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
-			"shininess": 0.96
+			"roughness": 0.96
 		},
 		"shading": {
 			"group": "shaded"
@@ -687,7 +708,7 @@
 		},
 		"material": {
 			"diffuse": [0.5, 0.5, 0.5, 1],
-			"shininess": 1.0
+			"roughness": 1.0
 		},
 		"shading": {
 			"group": "shaded"

@@ -7,7 +7,7 @@ namespace util
 void Timer::reset()
 {
 	updated = false;
-	timed = 0.0;
+	timed = 0.f;
 	timef = 0.f;
 }
 
@@ -16,7 +16,7 @@ void Timer::togglePause()
 	paused = ! paused;
 }
 
-bool Timer::update()
+bool Timer::update(float rate)
 {
 	if ( ! updated)
 	{
@@ -27,13 +27,13 @@ bool Timer::update()
 	if (paused)
 	{
 		prevTime = ngn::ct;
+
 		return false;
 	}
 
-	timed += ngn::ct - prevTime;
+	timed += (ngn::ct - prevTime) * rate;
 	timef = static_cast<float>(timed);
 	prevTime = ngn::ct;
-
 
 	return false;
 }

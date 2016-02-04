@@ -16,9 +16,16 @@
 
 #include <GLFW/glfw3.h>
 
+#define GLM_SWIZZLE
+#define GLM_LEFT_HANDED
+#define GLM_FORCE_CXX11
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_access.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
-// #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/compatibility.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 #include "util/initq.hpp"
 #include "util.hpp"
@@ -52,11 +59,13 @@ struct Default
 	static constexpr GLenum cullFace = GL_BACK;
 	static constexpr GLenum frontFace = GL_CCW;
 	static constexpr GLenum depthMask = GL_TRUE;
+	static constexpr GLenum depthFunc = GL_GEQUAL;
 	static constexpr GLenum clipControlOrigin = GL_LOWER_LEFT;
 	static constexpr GLenum clipControlDepth = GL_ZERO_TO_ONE;
-	static constexpr GLenum depthFunc = GL_GEQUAL;
-	static constexpr GLenum blendFuncSFactor = GL_SRC_ALPHA;
-	static constexpr GLenum blendFuncDFactor = GL_ONE_MINUS_SRC_ALPHA;
+	static constexpr GLenum blendFuncSrcRGB = GL_SRC_ALPHA;
+	static constexpr GLenum blendFuncDstRGB = GL_ONE_MINUS_SRC_ALPHA;
+	static constexpr GLenum blendFuncSrcA = GL_ONE;
+	static constexpr GLenum blendFuncDstA = GL_ONE;
 };
 
 template<typename T>

@@ -14,7 +14,7 @@ MaterialParser materialParser{"material", [] (ecs::Entity &entity, const Parser:
 	auto &material = ecs::get<comp::Material>(entity);
 
 	MaterialParser::assign(object, "diffuse", material.diffuse);
-	MaterialParser::assign(object, "shininess", material.shininess);
+	MaterialParser::assign(object, "roughness", material.roughness);
 }};
 
 }

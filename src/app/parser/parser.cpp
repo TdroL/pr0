@@ -31,7 +31,8 @@ void Parser::parse(ecs::Entity &entity, const Parser::objectType &object)
 
 	for (const auto &entry : Parser::parsersMap())
 	{
-		enter(object, entry.first.c_str(), [&] (const Parser::objectType &member) {
+		enter(object, entry.first.c_str(), [&] (const Parser::objectType &member)
+		{
 			entry.second(entity, member);
 		});
 	}

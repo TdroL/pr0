@@ -28,10 +28,12 @@ public:
 
 	void render();
 
-	void zPrefillForwardPass();
-	void setupLightsForwardPass();
-	void renderShadowsForwardPass();
-	void lightingForwardPass();
+	void zPrefillPass();
+	void setupLightsPass();
+	void renderShadowMapsPass();
+	void forwardLightingPass();
+	void wireframePass();
+	void postProcessingPass();
 
 	void ssaoPass();
 };

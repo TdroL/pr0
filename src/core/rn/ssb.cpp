@@ -19,6 +19,28 @@ SSB::~SSB()
 	reset();
 }
 
+void * SSB::mapData(size_t size)
+{
+	size_t origSize = data.size();
+
+	if (size)
+	{
+		data.resize(data.size() + size / sizeof(DataType));
+	}
+
+	return &(*(data.begin() + origSize));
+}
+
+size_t SSB::size()
+{
+	return data.size();
+}
+
+void SSB::reserve(size_t size)
+{
+	data.reserve(size);
+}
+
 void SSB::clear()
 {
 	data.clear();
@@ -40,8 +62,6 @@ void SSB::reload()
 	reset();
 
 	RN_CHECK(glCreateBuffers(1, &id));
-	RN_CHECK(glBindBuffer(GL_SHADER_STORAGE_BUFFER, id)); // initialize
-	RN_CHECK(glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0));
 
 	upload();
 }

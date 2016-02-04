@@ -1,5 +1,4 @@
-#ifndef RN_TIMER_HPP
-#define RN_TIMER_HPP
+#pragma once
 
 #include "../rn.hpp"
 #include "../util.hpp"
@@ -70,5 +69,3 @@ public:
 #define RN_PROF_RUN(profSource) rn::ProfScoper UTIL_CONCAT2(ProfScoper, __COUNTER__)(profSource)
 
 } // rn
-
-#endif

@@ -10,15 +10,15 @@ public:
 	bool updated = false;
 	bool paused = false;
 
-	double prevTime = 0.0;
-	double timed = 0.0;
+	double prevTime = 0.f;
+	double timed = 0.f;
 	float timef = 0.f;
 
 	void reset();
 
 	void togglePause();
 
-	bool update();
+	bool update(float rate = 1.f);
 };
 
 }

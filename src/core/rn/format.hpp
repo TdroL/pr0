@@ -1,5 +1,4 @@
-#ifndef RN_FORMAT_HPP
-#define RN_FORMAT_HPP
+#pragma once
 
 #include "../rn.hpp"
 
@@ -86,5 +85,3 @@ extern const rn::InternalFormat D32FS8;
 } // internal
 
 } // rn
-
-#endif

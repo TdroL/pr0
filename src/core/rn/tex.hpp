@@ -1,5 +1,4 @@
-#ifndef RN_TEX_HPP
-#define RN_TEX_HPP
+#pragma once
 
 #include "../rn.hpp"
 #include "types.hpp"
@@ -32,5 +31,3 @@ public:
 };
 
 } // rn
-
-#endif

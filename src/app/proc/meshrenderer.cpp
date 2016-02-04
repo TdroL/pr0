@@ -15,6 +15,7 @@ namespace proc
 
 using namespace comp;
 
+/*
 void MeshRenderer::renderZ(const ecs::Entity &entity, rn::Program &prog, GLint locationM)
 {
 	glm::mat4 M{1.f};
@@ -41,7 +42,7 @@ void MeshRenderer::render(const ecs::Entity &entity, rn::Program &prog)
 	{
 		const auto &material = ecs::get<Material>(entity);
 		prog.uniform("matDiffuse", material.diffuse);
-		prog.uniform("matShininess", material.shininess);
+		prog.uniform("matRoughness", material.roughness);
 	}
 
 	glm::mat4 M{1.f};
@@ -58,6 +59,12 @@ void MeshRenderer::render(const ecs::Entity &entity, rn::Program &prog)
 
 	prog.uniform("M", M);
 
+	auto &mesh = asset::mesh::get(ecs::get<Mesh>(entity).id);
+	mesh.render();
+}
+*/
+void MeshRenderer::render(const ecs::Entity &entity)
+{
 	auto &mesh = asset::mesh::get(ecs::get<Mesh>(entity).id);
 	mesh.render();
 }

@@ -9,9 +9,12 @@
 #include "../src/mem.hpp"
 #include "../util.hpp"
 
+#include <minball/minball.hpp>
+
 #include <iostream>
 #include <algorithm>
 #include <limits>
+#include <cmath>
 
 namespace rn
 {
@@ -68,9 +71,8 @@ Mesh::Mesh(Mesh &&rhs)
 	arrays = move(rhs.arrays);
 	meshName = rhs.meshName; // copy
 
-	boundingRadius = rhs.boundingRadius;
-	boundingBox.min = rhs.boundingBox.min;
-	boundingBox.max = rhs.boundingBox.max;
+	boundingSphere.center = rhs.boundingSphere.center;
+	boundingSphere.radius = rhs.boundingSphere.radius;
 
 	rhs.vbo = 0;
 	rhs.ibo = 0;
@@ -87,7 +89,6 @@ Mesh::Mesh(string &&name)
 
 Mesh::~Mesh()
 {
-	// Mesh::collection.remove(this);
 	Mesh::collection.erase(remove(begin(Mesh::collection), end(Mesh::collection), this), end(Mesh::collection));
 }
 
@@ -104,9 +105,8 @@ Mesh & Mesh::operator=(Mesh &&rhs)
 	arrays = move(rhs.arrays);
 	meshName = rhs.meshName; // copy
 
-	boundingRadius = rhs.boundingRadius;
-	boundingBox.min = rhs.boundingBox.min;
-	boundingBox.max = rhs.boundingBox.max;
+	boundingSphere.center = rhs.boundingSphere.center;
+	boundingSphere.radius = rhs.boundingSphere.radius;
 
 	rhs.vbo = 0;
 	rhs.ibo = 0;
@@ -177,6 +177,8 @@ void Mesh::reload()
 	{
 		clog << fixed;
 		clog << "  [Mesh \"" << meshName << "\" {\"" << source->name() << "\"}:" << (ngn::time() - timer) << "s]" << endl;
+		// clog << "    Bounding sphere: " << glm::to_string(boundingSphere.center) << "; r=" << boundingSphere.radius << endl;
+
 		clog.unsetf(ios::floatfield);
 		// clog << "    layouts=" << layouts.size() << endl;
 		// clog << "    indices=" << indices.size() << endl;
@@ -232,11 +234,11 @@ void Mesh::reset()
 
 void Mesh::buildBounds(const rn::BufferData &vertexData, const rn::VertexLayout &layout)
 {
-	boundingRadius = -1.f;
-	boundingBox.min = glm::vec3{numeric_limits<float>::max()};
-	boundingBox.max = glm::vec3{-numeric_limits<float>::max()};
+	boundingSphere.radius = -1.f;
+	boundingSphere.center = glm::vec3{0.f};
 
-	if ( ! vertexData.data) {
+	if ( ! vertexData.data)
+	{
 		return;
 	}
 
@@ -258,26 +260,30 @@ void Mesh::buildBounds(const rn::BufferData &vertexData, const rn::VertexLayout 
 		return;
 	}
 
-	const uint8_t *data = reinterpret_cast<uint8_t *>(vertexData.data) + static_cast<size_t>(layout.offset);
+	const uint8_t *start = reinterpret_cast<uint8_t *>(vertexData.data) + static_cast<size_t>(layout.offset);
 	const uint8_t *end = reinterpret_cast<uint8_t *>(vertexData.data) + vertexData.size;
+	const GLsizei vertSize = static_cast<GLsizei>(sizeof(GLfloat) * 3);
 
-	while ((data + sizeof(GLfloat) * 3) < end)
+	Minball minball{static_cast<size_t>((end - start) / max(vertSize, layout.stride))};
+
+	const uint8_t *data = start;
+	for (size_t i = 0; (data + vertSize) < end; i++)
 	{
 		const GLfloat *vert = reinterpret_cast<const GLfloat *>(data);
 
-		boundingBox.min.x = min(boundingBox.min.x, vert[0]);
-		boundingBox.max.x = max(boundingBox.max.x, vert[0]);
-		boundingBox.min.y = min(boundingBox.min.y, vert[1]);
-		boundingBox.max.y = max(boundingBox.max.y, vert[1]);
-		boundingBox.min.z = min(boundingBox.min.z, vert[2]);
-		boundingBox.max.z = max(boundingBox.max.z, vert[2]);
-
-		boundingRadius = max(boundingRadius, vert[0] * vert[0] + vert[1] * vert[1] + vert[2] * vert[2]);
-
 		data += layout.stride;
+
+		minball.setPoint(i, vert[0], vert[1], vert[2]);
 	}
 
-	boundingRadius = sqrt(boundingRadius);
+	// boundingRadius = sqrt(boundingRadius);
+
+	auto minballCenter = minball.center();
+
+	boundingSphere.center[0] = minballCenter[0];
+	boundingSphere.center[1] = minballCenter[1];
+	boundingSphere.center[2] = minballCenter[2];
+	boundingSphere.radius = minball.radius();
 }
 
 void Mesh::render()

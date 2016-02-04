@@ -1,5 +1,4 @@
-#ifndef RN_MESH_HPP
-#define RN_MESH_HPP
+#pragma once
 
 #include <string>
 #include <memory>
@@ -34,11 +33,10 @@ public:
 
 	std::string meshName = "Unnamed mesh";
 
-	GLfloat boundingRadius = 0.f;
-	struct BoundingBox{
-		glm::vec3 min{};
-		glm::vec3 max{};
-	} boundingBox{};
+	struct BoundingSphere{
+		glm::vec3 center{};
+		float radius = 0.f;
+	} boundingSphere{};
 
 	Mesh();
 	Mesh(Mesh &&rhs);
@@ -60,5 +58,3 @@ public:
 };
 
 } // rn
-
-#endif

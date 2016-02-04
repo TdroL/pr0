@@ -13,6 +13,8 @@ uniform vec2 scale;
 
 void main()
 {
+#define RADIUS 8
+
 #if !defined(RADIUS)
 	#define RADIUS 10
 #endif
@@ -45,6 +47,18 @@ void main()
 	gaussianKernel[6] = 0.036108;
 
 	float stride = 2.0;
+#elif RADIUS == 8
+	gaussianKernel[0] = 0.880947;
+	gaussianKernel[1] = 0.583832;
+	gaussianKernel[2] = 0.468721;
+	gaussianKernel[3] = 0.415692;
+	gaussianKernel[4] = 0.364828;
+	gaussianKernel[5] = 0.316227;
+	gaussianKernel[6] = 0.270142;
+	gaussianKernel[7] = 0.226274;
+	gaussianKernel[8] = 0.185202;
+
+	float stride = 1.0;
 #elif RADIUS == 10
 	gaussianKernel[0]  = 0.580947;
 	gaussianKernel[1]  = 0.523832;

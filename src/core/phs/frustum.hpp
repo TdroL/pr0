@@ -1,12 +1,10 @@
-#ifndef PHS_FRUSTUM_HPP
-#define PHS_FRUSTUM_HPP
+#pragma once
 
 #include "sphere.hpp"
 #include "aabb.hpp"
 #include "point.hpp"
 #include "plane.hpp"
-
-#include <glm/glm.hpp>
+#include "../rn.hpp"
 
 namespace phs
 {
@@ -27,5 +25,3 @@ public:
 };
 
 } // phs
-
-#endif

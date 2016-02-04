@@ -64,7 +64,7 @@ void Mesh::open()
 	const uint32_t typeIndices        = 0x0002;
 	const uint32_t typeLayouts        = 0x0003;
 	const uint32_t typeArrays         = 0x0004;
-	const uint32_t typeBounds         = 0x0005; // [squared radius, AABB: [MinX, MinY, MinZ, MaxX, MaxY, MaxZ]]
+	const uint32_t typeBounds         = 0x0005; // [squared radius, AABB: [MinX, MinY, MinZ, MaxX, MaxY, MaxZ]]; TODO: [center, radius, squared radius]
 
 	while (data < dataEnd)
 	{
@@ -142,15 +142,15 @@ void Mesh::open()
 			}
 			case typeBounds:
 			{
-				decltype(boundingSphere) *boundingSphereData = reinterpret_cast<decltype(boundingSphere) *>(data + sizeof(header->type));
-				boundingSphere = *boundingSphereData;
+				// decltype(boundingSphere) *boundingSphereData = reinterpret_cast<decltype(boundingSphere) *>(data + sizeof(header->type));
+				// boundingSphere = *boundingSphereData;
 
-				decltype(boundingBox) *boundingBoxData = reinterpret_cast<decltype(boundingBox) *>(data + sizeof(header->type) + sizeof(boundingSphere));
+				// decltype(boundingBox) *boundingBoxData = reinterpret_cast<decltype(boundingBox) *>(data + sizeof(header->type) + sizeof(boundingSphere));
 
-				for (size_t i = 0; i < util::countOf(boundingBox); ++i)
-				{
-					boundingBox[i] = (*boundingBoxData)[i];
-				}
+				// for (size_t i = 0; i < util::countOf(boundingBox); ++i)
+				// {
+				// 	boundingBox[i] = (*boundingBoxData)[i];
+				// }
 
 				break;
 			}

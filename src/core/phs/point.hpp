@@ -1,7 +1,6 @@
-#ifndef PHS_POINT_HPP
-#define PHS_POINT_HPP
+#pragma once
 
-#include <glm/glm.hpp>
+#include "../rn.hpp"
 
 namespace phs
 {
@@ -21,5 +20,3 @@ public:
 };
 
 } // phs
-
-#endif

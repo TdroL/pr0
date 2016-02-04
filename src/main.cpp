@@ -34,7 +34,6 @@ namespace win = ngn::window;
 
 int main(int argc, char const* argv[])
 {
-
 	UTIL_DEBUG
 	{
 		cout << "Debug: ON" << endl;

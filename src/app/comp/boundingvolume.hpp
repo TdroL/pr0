@@ -11,7 +11,6 @@ struct BoundingVolume : public ecs::Component<BoundingVolume>
 {
 	bool dirty = true;
 	phs::Sphere sphere{};
-	phs::AABB aabb{};
 };
 
 } // comp

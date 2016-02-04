@@ -1,5 +1,4 @@
-#ifndef RN_FONT_HPP
-#define RN_FONT_HPP
+#pragma once
 
 #include "../rn.hpp"
 #include "../src.hpp"
@@ -84,6 +83,4 @@ public:
 	void render(const std::string &text);
 };
 
-}
-
-#endif
+} // rn

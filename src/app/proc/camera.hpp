@@ -2,7 +2,7 @@
 #define APP_PROC_CAMERA_HPP
 
 #include <core/ecs/entity.hpp>
-#include <glm/glm.hpp>
+#include <core/rn.hpp>
 
 namespace proc
 {

@@ -1,5 +1,4 @@
-#ifndef RN_FB_HPP
-#define RN_FB_HPP
+#pragma once
 
 #include <vector>
 #include <string>
@@ -92,5 +91,3 @@ public:
 #define RN_FB_BIND(fbSource) rn::FBScoper UTIL_CONCAT2(FBScoper, __COUNTER__)(fbSource)
 
 } // rn
-
-#endif

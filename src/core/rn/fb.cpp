@@ -274,7 +274,7 @@ void FB::clear(BuffersMask mask)
 	{
 		if ((mask & BUFFER_DEPTH) && (mask & BUFFER_STENCIL) && depthContainer.tex->isDepthStencil())
 		{
-			RN_CHECK(glClearNamedFramebufferfi(id, GL_DEPTH_STENCIL, clearDepthValue, clearStencilValue));
+			RN_CHECK(glClearNamedFramebufferfi(id, GL_DEPTH_STENCIL, 0, clearDepthValue, clearStencilValue));
 		}
 		else if (mask & BUFFER_DEPTH && depthContainer.tex->isDepth())
 		{
@@ -300,7 +300,7 @@ void FB::clearDepthStencil()
 {
 	if (depthContainer.tex && depthContainer.tex->id && depthContainer.tex->isDepthStencil())
 	{
-		RN_CHECK(glClearNamedFramebufferfi(id, GL_DEPTH_STENCIL, clearDepthValue, clearStencilValue));
+		RN_CHECK(glClearNamedFramebufferfi(id, GL_DEPTH_STENCIL, 0, clearDepthValue, clearStencilValue));
 	}
 }
 
@@ -383,7 +383,8 @@ void FB::reloadSoft()
 
 			// RN_CHECK(glBindTexture(colorContainers[i].tex->targetType(), colorContainers[i].tex->id));
 
-			switch (colorContainers[i].tex->targetType()) {
+			switch (colorContainers[i].tex->targetType())
+			{
 				case GL_TEXTURE_2D:
 					// RN_CHECK_PARAM(glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, colorContainers[i].tex->id, colorContainers[i].level), colorContainers[i].level);
 					RN_CHECK_PARAM(glNamedFramebufferTexture(id, GL_COLOR_ATTACHMENT0 + i, colorContainers[i].tex->id, colorContainers[i].level), colorContainers[i].level);
@@ -420,7 +421,8 @@ void FB::reloadSoft()
 
 		// RN_CHECK(glBindTexture(depthContainer.tex->targetType(), depthContainer.tex->id));
 
-		switch (depthContainer.tex->targetType()) {
+		switch (depthContainer.tex->targetType())
+		{
 			case GL_TEXTURE_2D:
 				// RN_CHECK_PARAM(glFramebufferTexture(GL_FRAMEBUFFER, attachment, depthContainer.tex->id, depthContainer.level), depthContainer.level);
 				RN_CHECK_PARAM(glNamedFramebufferTexture(id, attachment, depthContainer.tex->id, depthContainer.level), depthContainer.level);

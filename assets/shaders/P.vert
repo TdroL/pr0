@@ -7,9 +7,10 @@ uniform mat4 V;
 uniform mat4 P;
 
 out vec4 position;
-out vec3 normal;
 
 void main()
 {
-	gl_Position = P * V * M * vec4(vertPosition, 1.0);
+	position = V * M * vec4(vertPosition, 1.0);
+
+	gl_Position = P * position;
 }

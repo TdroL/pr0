@@ -21,6 +21,8 @@ public:
 	std::vector<GLfloat> vertexCache{};
 	std::vector<GLuint> indexCache{};
 
+	bool flipZs = true;
+
 	Mesh(std::string &&fileName);
 	void open() override;
 	void close() override;

@@ -7,11 +7,7 @@
 #include <app/comp/temporaltransform.hpp>
 
 #include <core/ngn.hpp>
-
-#include <glm/gtc/quaternion.hpp>
-// #include <glm/glm.hpp>
-// #include <glm/gtc/matrix_transform.hpp>
-// #include <glm/gtc/constants.hpp>
+#include <core/rn.hpp>
 
 #include <cmath>
 
@@ -25,23 +21,20 @@ void TransformProcess::update(const ecs::Entity &entity)
 	auto &temporalTransform = ecs::get<TemporalTransform>(entity);
 	auto &transform = ecs::get<Transform>(entity);
 
+	if (temporalTransform.translation != glm::vec3{0.0})
 	{
-		if (temporalTransform.translation != glm::vec3{0.0})
+		if (temporalTransform.translationNormalized)
 		{
-			if (temporalTransform.translationNormalized)
-			{
-				temporalTransform.translation = glm::normalize(temporalTransform.translation);
-			}
-
-			transform.translation += temporalTransform.translation * temporalTransform.translationSpeed * static_cast<float>(ngn::dt);
-			temporalTransform.translation = glm::vec3{0.0};
-
-			if (ecs::has<BoundingVolume>(entity))
-			{
-				ecs::get<BoundingVolume>(entity).dirty = true;
-			}
+			temporalTransform.translation = glm::normalize(temporalTransform.translation);
 		}
 
+		transform.translation += temporalTransform.translation * temporalTransform.translationSpeed * static_cast<float>(ngn::dt);
+		temporalTransform.translation = glm::vec3{0.0};
+
+		if (ecs::has<BoundingVolume>(entity))
+		{
+			ecs::get<BoundingVolume>(entity).dirty = true;
+		}
 	}
 }
 

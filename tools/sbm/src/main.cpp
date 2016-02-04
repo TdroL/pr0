@@ -117,49 +117,51 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		GLfloat sphereRadius2 = 0.f;
-		GLfloat boundingBox[6] = {
-			+numeric_limits<GLfloat>::max(), +numeric_limits<GLfloat>::max(), +numeric_limits<GLfloat>::max()
-			-numeric_limits<GLfloat>::max(), -numeric_limits<GLfloat>::max(), -numeric_limits<GLfloat>::max()
-		};
+		// GLfloat sphereRadius2 = 0.f;
+		// GLfloat boundingBox[6] = {
+		// 	+numeric_limits<GLfloat>::max(), +numeric_limits<GLfloat>::max(), +numeric_limits<GLfloat>::max()
+		// 	-numeric_limits<GLfloat>::max(), -numeric_limits<GLfloat>::max(), -numeric_limits<GLfloat>::max()
+		// };
 
-		for (auto &layout : mesh->layouts)
-		{
-			if (layout.index == rn::LayoutLocation::pos) {
+		// for (auto &layout : mesh->layouts)
+		// {
+		// 	if (layout.index == rn::LayoutLocation::pos)
+		// 	{
+		// 		if (layout.type != GL_FLOAT)
+		// 		{
+		// 			clog << "Warning: bounding volumes calculation supports only float data types" << endl;
+		// 			break;
+		// 		}
 
-				if (layout.type != GL_FLOAT) {
-					clog << "Warning: bounding volumes calculation supports only float data types" << endl;
-					break;
-				}
+		// 		GLbyte *data = reinterpret_cast<GLbyte *>(mesh->vertexData.data);
+		// 		GLint step = layout.stride + layout.size * sizeof(GLfloat);
 
-				GLbyte *data = reinterpret_cast<GLbyte *>(mesh->vertexData.data);
-				GLint step = layout.stride + layout.size * sizeof(GLfloat);
+		// 		for (GLint i = layout.stride; i < mesh->vertexData.size; i += step)
+		// 		{
+		// 			GLfloat radius2 = 0.f;
 
-				for (GLint i = layout.stride; i < mesh->vertexData.size; i += step) {
-					GLfloat radius2 = 0.f;
+		// 			for (GLint j = 0; j < layout.size; j++)
+		// 			{
+		// 				GLfloat v = reinterpret_cast<GLfloat *>(data + i)[j];
 
-					for (GLint j = 0; j < layout.size; j++)
-					{
-						GLfloat v = reinterpret_cast<GLfloat *>(data + i)[j];
+		// 				boundingBox[j + 0] = min(boundingBox[j + 0], v);
+		// 				boundingBox[j + 3] = max(boundingBox[j + 3], v);
+		// 				radius2 += v * v;
+		// 			}
 
-						boundingBox[j + 0] = min(boundingBox[j + 0], v);
-						boundingBox[j + 3] = max(boundingBox[j + 3], v);
-						radius2 += v * v;
-					}
+		// 			sphereRadius2 = max(sphereRadius2, radius2);
+		// 		}
 
-					sphereRadius2 = max(sphereRadius2, radius2);
-				}
+		// 		break;
+		// 	}
+		// }
 
-				break;
-			}
-		}
-
-		size = sizeof(typeBounds) + sizeof(sphereRadius2) + sizeof(boundingBox);
-		overall += size;
-		outputFile.write(reinterpret_cast<char *>(&size), sizeof(size));
-		outputFile.write(reinterpret_cast<char *>(&typeBounds), sizeof(typeBounds));
-		outputFile.write(reinterpret_cast<char *>(&sphereRadius2), sizeof(sphereRadius2));
-		outputFile.write(reinterpret_cast<char *>(&boundingBox), sizeof(boundingBox));
+		// size = sizeof(typeBounds) + sizeof(sphereRadius2) + sizeof(boundingBox);
+		// overall += size;
+		// outputFile.write(reinterpret_cast<char *>(&size), sizeof(size));
+		// outputFile.write(reinterpret_cast<char *>(&typeBounds), sizeof(typeBounds));
+		// outputFile.write(reinterpret_cast<char *>(&sphereRadius2), sizeof(sphereRadius2));
+		// outputFile.write(reinterpret_cast<char *>(&boundingBox), sizeof(boundingBox));
 
 		cout << "done [" << overall << " bytes]" << endl;
 	}

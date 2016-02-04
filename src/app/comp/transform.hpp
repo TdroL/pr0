@@ -3,7 +3,7 @@
 #include <core/ecs/component.hpp>
 #include <core/phs/sphere.hpp>
 #include <core/phs/aabb.hpp>
-#include <glm/glm.hpp>
+#include <core/rn.hpp>
 
 namespace comp
 {

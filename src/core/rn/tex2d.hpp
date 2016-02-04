@@ -1,5 +1,4 @@
-#ifndef RN_TEX2D_HPP
-#define RN_TEX2D_HPP
+#pragma once
 
 #include "../rn.hpp"
 #include "../src.hpp"
@@ -81,5 +80,3 @@ public:
 };
 
 } // rn
-
-#endif

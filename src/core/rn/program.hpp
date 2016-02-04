@@ -1,5 +1,4 @@
-#ifndef RN_PROGRAM_HPP
-#define RN_PROGRAM_HPP
+#pragma once
 
 #include <string>
 #include <vector>
@@ -42,6 +41,7 @@ public:
 
 	std::unique_ptr<Source> fragmentShader{nullptr};
 	std::unique_ptr<Source> vertexShader{nullptr};
+	std::unique_ptr<Source> geometryShader{nullptr};
 
 	std::string programName = "Unnamed program";
 
@@ -50,8 +50,12 @@ public:
 	~Program();
 
 	void load(const std::string &fragmentShader, const std::string &vertexShader);
+	void load(const std::string &fragmentShader, const std::string &vertexShader, const std::string &geometryShader);
 	void load(Source *fragmentShader, Source *vertexShader);
+	void load(Source *fragmentShader, Source *vertexShader, Source *geometryShader);
 	void load(std::unique_ptr<Source> &&fragmentShader, std::unique_ptr<Source> &&vertexShader);
+	void load(std::unique_ptr<Source> &&fragmentShader, std::unique_ptr<Source> &&vertexShader, std::unique_ptr<Source> &&geometryShader);
+
 	void reload();
 	void reset();
 
@@ -123,5 +127,3 @@ public:
 };
 
 } // rn
-
-#endif

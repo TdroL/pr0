@@ -31,6 +31,11 @@ float normZero(float value)
 Mesh::Mesh(string &&fileName)
 	: fileName{move(fileName)}
 {
+	#if defined(GLM_LEFT_HANDED)
+		flipZs = true;
+	#else
+		flipZs = false;
+	#endif
 }
 
 void Mesh::open()
@@ -64,9 +69,10 @@ void Mesh::open()
 			glm::vec3 vert;
 			stringstream{line.substr(2)} >> vert.x >> vert.y >> vert.z;
 
-			#if defined(GLM_LEFT_HANDED)
-			vert.z = -vert.z;
-			#endif
+			if (flipZs)
+			{
+				vert.z = -vert.z;
+			}
 
 			vert.x = normZero(vert.x);
 			vert.y = normZero(vert.y);
@@ -89,9 +95,10 @@ void Mesh::open()
 			glm::vec3 vert;
 			stringstream{line.substr(3)} >> vert.x >> vert.y >> vert.z;
 
-			#if defined(GLM_LEFT_HANDED)
-			vert.z = -vert.z;
-			#endif
+			if (flipZs)
+			{
+				vert.z = -vert.z;
+			}
 
 			vert.x = normZero(vert.x);
 			vert.y = normZero(vert.y);
@@ -345,7 +352,7 @@ void Mesh::open()
 		case Branch::vert:
 		{
 			GLsizei stride = 3 * sizeof(GLfloat);
-			// layouts.emplace_back(rn::LayoutLocation::pos, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, static_cast<GLuint>(0 * sizeof(GLfloat)));
+
 			layouts.emplace_back(rn::LayoutLocation::pos, 3, GL_FLOAT, stride, 0 * sizeof(GLfloat));
 
 			break;
@@ -353,9 +360,8 @@ void Mesh::open()
 		case Branch::vert_uv:
 		{
 			GLsizei stride = 5 * sizeof(GLfloat);
-			// layouts.emplace_back(rn::LayoutLocation::pos, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, static_cast<GLuint>(0 * sizeof(GLfloat)));
+
 			layouts.emplace_back(rn::LayoutLocation::pos, 3, GL_FLOAT, stride, 0 * sizeof(GLfloat));
-			// layouts.emplace_back(rn::LayoutLocation::tex, static_cast<GLint>(2), static_cast<GLenum>(GL_FLOAT), stride, static_cast<GLuint>(3 * sizeof(GLfloat)));
 			layouts.emplace_back(rn::LayoutLocation::tex, 2, GL_FLOAT, stride, 3 * sizeof(GLfloat));
 
 			break;
@@ -363,9 +369,8 @@ void Mesh::open()
 		case Branch::vert_norm:
 		{
 			GLsizei stride = 6 * sizeof(GLfloat);
-			// layouts.emplace_back(rn::LayoutLocation::pos, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, static_cast<GLuint>(0 * sizeof(GLfloat)));
+
 			layouts.emplace_back(rn::LayoutLocation::pos, 3, GL_FLOAT, stride, 0 * sizeof(GLfloat));
-			// layouts.emplace_back(rn::LayoutLocation::norm, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, static_cast<GLuint>(3 * sizeof(GLfloat)));
 			layouts.emplace_back(rn::LayoutLocation::norm, 3, GL_FLOAT, stride, 3 * sizeof(GLfloat));
 
 			break;
@@ -373,11 +378,9 @@ void Mesh::open()
 		case Branch::vert_uv_norm:
 		{
 			GLsizei stride = 8 * sizeof(GLfloat);
-			// layouts.emplace_back(rn::LayoutLocation::pos, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, static_cast<GLuint>(0 * sizeof(GLfloat)));
+
 			layouts.emplace_back(rn::LayoutLocation::pos, 3, GL_FLOAT, stride, 0 * sizeof(GLfloat));
-			// layouts.emplace_back(rn::LayoutLocation::tex, static_cast<GLint>(2), static_cast<GLenum>(GL_FLOAT), stride, static_cast<GLuint>(3 * sizeof(GLfloat)));
 			layouts.emplace_back(rn::LayoutLocation::tex, 2, GL_FLOAT, stride, 3 * sizeof(GLfloat));
-			// layouts.emplace_back(rn::LayoutLocation::norm, static_cast<GLint>(3), static_cast<GLenum>(GL_FLOAT), stride, static_cast<GLuint>(5 * sizeof(GLfloat)));
 			layouts.emplace_back(rn::LayoutLocation::norm, 3, GL_FLOAT, stride, 5 * sizeof(GLfloat));
 
 			break;
@@ -425,7 +428,6 @@ unique_ptr<src::Mesh> mesh(string &&fileName)
 {
 	return unique_ptr<src::Mesh>{new Mesh{move(fileName)}};
 }
-
 
 } // obj
 

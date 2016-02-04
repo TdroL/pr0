@@ -1,8 +1,6 @@
-#ifndef PHS_SPHERE_HPP
-#define PHS_SPHERE_HPP
+#pragma once
 
-#include <pch.hpp>
-// #include <glm/glm.hpp>
+#include "../rn.hpp"
 
 namespace phs
 {
@@ -18,5 +16,3 @@ public:
 };
 
 } // phs
-
-#endif

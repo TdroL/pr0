@@ -1,11 +1,9 @@
-#ifndef PHS_PLANE_HPP
-#define PHS_PLANE_HPP
+#pragma once
 
 #include "aabb.hpp"
 #include "point.hpp"
 #include "sphere.hpp"
-
-#include <glm/glm.hpp>
+#include "../rn.hpp"
 
 namespace phs
 {
@@ -29,5 +27,3 @@ public:
 };
 
 } // phs
-
-#endif

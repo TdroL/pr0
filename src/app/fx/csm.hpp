@@ -1,12 +1,10 @@
-#ifndef APP_FX_CSM_HPP
-#define APP_FX_CSM_HPP
-
-// #include <pch.hpp>
+#pragma once
 
 #include <app/comp/directionallight.hpp>
 #include <app/comp/projection.hpp>
 #include <app/comp/view.hpp>
 
+#include <core/rn.hpp>
 #include <core/rn/fb.hpp>
 #include <core/rn/prof.hpp>
 #include <core/rn/program.hpp>
@@ -16,18 +14,18 @@
 #include <vector>
 #include <utility>
 
-#include <glm/glm.hpp>
-
 namespace fx
 {
 
 class CSM
 {
 public:
-	static const size_t textureResolution = 2 * 1024;
+	static constexpr size_t maxCascades = 5;
+	static constexpr size_t textureResolution = 2 * 1024;
 
+	float lambda = 0.875f;
 	unsigned int kernelSize = 7;
-	size_t splits = 5;
+	size_t splits = 4;
 	bool blendCascades = true;
 	float maxShadowDistance = 256.f;
 
@@ -35,13 +33,12 @@ public:
 	std::vector<rn::FB> fbShadows{};
 
 	rn::Program progDepth{"fx::CSM::progDepth"};
-	// rn::Prof profRender{"fx::CSM::profRender"};
 
-	std::vector<float> radiuses2{};
 	std::vector<glm::mat4> Ps{};
 	std::vector<glm::mat4> Vs{};
 	std::vector<glm::mat4> shadowBiasedVPs{};
 	std::vector<glm::vec3> centers{};
+	std::vector<float> radiuses2{};
 
 	void init();
 
@@ -49,5 +46,3 @@ public:
 };
 
 } // fx
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef RN_TEX2DARRAY_HPP
-#define RN_TEX2DARRAY_HPP
+#pragma once
 
 #include "../rn.hpp"
 #include "../src.hpp"
@@ -82,5 +81,3 @@ public:
 };
 
 } // rn
-
-#endif

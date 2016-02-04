@@ -1,5 +1,4 @@
-#ifndef RN_TYPES_HPP
-#define RN_TYPES_HPP
+#pragma once
 
 #include "../rn.hpp"
 #include <vector>
@@ -247,5 +246,3 @@ static const GLenum BUFFER_COLOR   = GL_COLOR_BUFFER_BIT;
 typedef GLbitfield BuffersMask;
 
 } // rn
-
-#endif

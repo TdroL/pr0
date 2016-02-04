@@ -21,9 +21,6 @@ public:
 	std::vector<rn::DrawIndex> indices{};
 	std::vector<rn::DrawArray> arrays{};
 
-	GLfloat boundingSphere = 0.f;
-	GLfloat boundingBox[6] = {};
-
 	virtual void open() {}
 	virtual void close() {}
 	virtual std::string name() { return "Unknown"; }

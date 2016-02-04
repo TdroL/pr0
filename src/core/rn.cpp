@@ -120,7 +120,7 @@ void reload()
 	// glEnable(GL_MULTISAMPLE);
 
 	// RN_CHECK(glEnable(GL_BLEND));
-	RN_CHECK(glBlendFunc(rn::Default::blendFuncSFactor, rn::Default::blendFuncDFactor /*GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA*/));
+	RN_CHECK(glBlendFuncSeparate(rn::Default::blendFuncSrcRGB, rn::Default::blendFuncDstRGB, rn::Default::blendFuncSrcA, rn::Default::blendFuncDstA));
 
 	RN_CHECK(glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS));
 	RN_CHECK(glDebugMessageCallback(debugHandler, nullptr));
