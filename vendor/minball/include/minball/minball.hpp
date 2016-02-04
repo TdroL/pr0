@@ -14,7 +14,7 @@ public:
 
 	static constexpr int dimensions = 3;
 
-	explicit Minball(int capacity = 8);
+	explicit Minball(size_t capacity = 8);
 	Minball(Minball &&rhs);
 	Minball(const Minball &lhs) = delete;
 

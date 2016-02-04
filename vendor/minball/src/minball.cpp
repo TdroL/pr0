@@ -9,7 +9,7 @@ public:
 	Container points;
 	Seb::Smallest_enclosing_ball<Minball::ImplType, Point, Container> mb;
 
-	explicit MinballImpl(int capacity);
+	explicit MinballImpl(size_t capacity);
 
 	void setPoints(const std::vector<Minball::DataType> &newPoints);
 	void setPoint(size_t index, Minball::DataType x, Minball::DataType y, Minball::DataType z);
@@ -19,7 +19,7 @@ public:
 
 // Minball
 
-Minball::Minball(int capacity)
+Minball::Minball(size_t capacity)
 	: pimpl{new MinballImpl(capacity)}
 {}
 
@@ -67,7 +67,7 @@ void Minball::reset()
 
 // MinballImpl
 
-MinballImpl::MinballImpl(int capacity)
+MinballImpl::MinballImpl(size_t capacity)
 	: points(capacity, Point{Minball::dimensions}), mb(Minball::dimensions, points, false)
 {}
 
@@ -111,7 +111,8 @@ std::array<Minball::DataType, Minball::dimensions> MinballImpl::center()
 
 	auto it = mb.center_begin();
 
-	for (int i = 0; i < Minball::dimensions; i++) {
+	for (int i = 0; i < Minball::dimensions; i++)
+	{
 		center[i] = *(it + i);
 	}
 
