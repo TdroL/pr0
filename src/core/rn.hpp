@@ -10,6 +10,8 @@
 	#include <GL/gl3w.h>
 #elif defined(NGN_USE_GLLOADGEN)
 	#include <GL/gl_core_4_4.h>
+#elif defined(NGN_USE_GLAD)
+	#include <glad/glad.h>
 #endif
 
 #include <GLFW/glfw3.h>

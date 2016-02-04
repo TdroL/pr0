@@ -50,7 +50,7 @@ void init()
 			throw string{"ngn::init() - glewInit() - "} + reinterpret_cast<const char *>(glewGetErrorString(err));
 		}
 	}
-#elif (NGN_USE_GL3W)
+#elif defined(NGN_USE_GL3W)
 	if (gl3wInit())
 	{
 		throw string{"ngn::init() - gl3wInit() - failed to initialize OpenGL"};
@@ -65,7 +65,7 @@ void init()
 
 		throw string{"ngn::init() - gl3wIsSupported(" + to_string(window::contextMajor) + ", " + to_string(window::contextMinor) + ") - OpenGL " + to_string(versionMajor) + "." + to_string(versionMinor)};
 	}
-#else
+#elif defined(NGN_USE_GLLOADGEN)
 	if (ogl_LoadFunctions() == ogl_LOAD_FAILED)
 	{
 		throw string{"ngn::init() - ogl_LoadFunctions() - failed to initialize OpenGL"};
@@ -78,6 +78,21 @@ void init()
 
 		throw string{"ngn::init() - ogl_IsVersionGEQ(" + to_string(window::contextMajor) + ", " + to_string(window::contextMinor) + ") - OpenGL " + to_string(versionMajor) + "." + to_string(versionMinor)};
 	}
+#elif defined(NGN_USE_GLAD)
+	if ( ! gladLoadGL())
+	{
+		throw string{"ngn::init() - gladLoadGL() - failed to initialize OpenGL"};
+	}
+
+	if ( ! (GLVersion.major > window::contextMajor || (GLVersion.major == window::contextMajor && GLVersion.minor >= window::contextMinor)))
+	{
+		int versionMajor = GLVersion.major;
+		int versionMinor = GLVersion.minor;
+
+		throw string{"ngn::init() - [GLVersion.major, GLVersion.minor] < [" + to_string(window::contextMajor) + ", " + to_string(window::contextMinor) + "] - OpenGL " + to_string(versionMajor) + "." + to_string(versionMinor)};
+	}
+#else
+	#error OpenGL loader not set
 #endif
 
 	UTIL_DEBUG

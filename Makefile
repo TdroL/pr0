@@ -7,17 +7,17 @@ BUILDDIR = tmp
 ARDIR = lib
 ARNAME = libcore
 PROGRAM = main
-CXXFLAGS = -Wall -Winline -Wextra -Wfatal-errors -std=c++14 -m64 -march=native
+CXXFLAGS = -Wall -Wextra -Wfatal-errors -std=c++14 -m64 -march=native
 CXXFLAGS_DEBUG = -g -Og -Weffc++ -Winvalid-pch
-CXXFLAGS_RELEASE = -O3 -flto -funroll-loops -msse -msse2 -msse3 -mfpmath=sse
+CXXFLAGS_RELEASE = -O3 -funroll-loops -msse -msse2 -msse3 -mfpmath=sse
 LFLAGS = -static
 LFLAGS_DEBUG =
 LFLAGS_RELEASE = -flto -s
 LDIR =
-LIBS = -lgcc -lglfw3 -lgl_core_4_4 -lopengl32 -lstb_image -lfreetype -lminball
+LIBS = -lgcc -lglfw3 -lglad -lopengl32 -lstb_image -lfreetype -lminball
 
 DEFINES = \
-	-DNGN_USE_GLLOADGEN
+	-DNGN_USE_GLAD
 
 ifeq ($(MAKECMDGOALS),release)
 	CXXFLAGS += $(CXXFLAGS_RELEASE)
